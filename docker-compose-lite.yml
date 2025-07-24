@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgis/postgis:14-3.2
+    container_name: drawing_postgres
+    environment:
+      POSTGRES_DB: drawing_index
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d drawing_index"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and Celery
+  redis:
+    image: redis:7-alpine
+    container_name: drawing_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (without Elasticsearch dependency)
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: drawing_backend
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/drawing_index
+      - REDIS_URL=redis://redis:6379
+      - UPLOAD_DIR=/app/uploads
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - SEARCH_ENGINE=database
+    ports:
+      - "8000:8000"
+    volumes:
+      - upload_data:/app/uploads
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "python -m alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: drawing_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000/api/v1
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    command: npm start
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  upload_data:
+    driver: local
+
+networks:
+  default:
+    name: drawing_network
