@@ -26,8 +26,8 @@ An AI-powered system for indexing and analyzing engineering drawings for railroa
 
 2. **Access the application**:
    - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
-   - API Documentation: http://localhost:8000/docs
+   - Backend API: http://localhost:8001
+   - API Documentation: http://localhost:8001/api/v1/docs
 
 ## Architecture
 
