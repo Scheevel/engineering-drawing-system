@@ -249,3 +249,149 @@ const [successfulUploads, setSuccessfulUploads] = useState<string[]>([]);
 **Modified Files**: 2 files (DrawingUpload.tsx, api.ts)  
 **Estimated Time**: 3-4 hours for full implementation
 **Dependencies**: Projects API endpoints must exist
+
+---
+
+## 📋 PLANNED: Collapsible Navigation Menu
+
+**Feature**: Transform the left navigation menu into a collapsible mini drawer that defaults to icon-only view and can expand to show full text labels, avoiding the hamburger menu pattern.
+
+### **UX Pattern Analysis** (Based on 2024 Best Practices):
+
+#### **Why Avoid Hamburger Menu:**
+- **Poor Desktop Discoverability**: "Out of sight, out of mind" - users forget hidden navigation
+- **Extra Clicks Required**: Requires additional interactions for common actions
+- **Mobile-First Anti-Pattern**: Hamburger menus are necessary evils for mobile, not desktop
+
+#### **Why Mini Drawer Pattern:**
+✅ **Always Discoverable**: Icons remain visible for instant recognition  
+✅ **Space Efficient**: More content area when collapsed  
+✅ **Professional UX**: Follows Material Design guidelines  
+✅ **User Choice**: Flexible based on workflow needs  
+✅ **Industry Standard**: Used by admin dashboards, SaaS platforms, developer tools
+
+### **Current State Analysis:**
+✅ **Navigation Structure**: Simple 4-item menu (Dashboard, Search, Upload, Export)  
+✅ **Material-UI Foundation**: Already using MUI Drawer component  
+❌ **Fixed Width**: Currently permanent 240px drawer  
+❌ **No Collapse State**: No space optimization available  
+
+### **Implementation Plan:**
+
+#### **1. Enhanced Navigation Component** (Navigation.tsx)
+**Core Features:**
+- **State Management**: Add `isExpanded` boolean state with toggle function
+- **Dynamic Width**: 64px collapsed / 240px expanded with smooth transitions
+- **Mini Variant Drawer**: Use Material-UI's mini variant pattern
+- **Toggle Control**: Optional expand/collapse button in drawer header
+- **Session Persistence**: Remember user preference via localStorage
+
+**Interaction Patterns:**
+- **Hover Expansion**: Temporary expand on mouse hover for quick access
+- **Click Toggle**: Persistent toggle for extended use sessions
+- **Tooltip Support**: Show full menu names on hover when collapsed
+- **Active State**: Clear visual indication of current page
+
+#### **2. Layout Adjustments** (App.tsx)
+**Responsive Content Area:**
+- **Dynamic Margin**: Adjust main content area based on drawer width
+- **Smooth Transitions**: Coordinate content reflow with drawer animation
+- **Z-index Management**: Maintain proper layering with other components
+
+#### **3. Responsive Behavior:**
+**Breakpoint Strategy:**
+- **Desktop (≥1200px)**: Mini drawer with hover/toggle functionality
+- **Tablet (768-1199px)**: Standard drawer behavior with manual toggle
+- **Mobile (<768px)**: Temporary overlay drawer (preserve existing behavior)
+
+**Auto-Collapse Logic:**
+- **Screen Resize**: Auto-collapse when viewport becomes constrained
+- **Mobile Detection**: Force temporary drawer on mobile devices
+
+#### **4. Accessibility & Performance:**
+**Accessibility Features:**
+- **ARIA Labels**: Proper labeling for screen readers
+- **Keyboard Navigation**: Full keyboard accessibility support
+- **Focus Management**: Logical focus order in collapsed/expanded states
+- **High Contrast**: Ensure visibility in all theme modes
+
+**Performance Optimizations:**
+- **CSS Transitions**: Hardware-accelerated animations
+- **Debounced Hover**: Prevent excessive state changes on mouse movement
+- **Lazy Tooltips**: Only render tooltips when needed
+
+### **User Experience Flow:**
+
+#### **Default State (Collapsed):**
+1. **Navigation appears** as vertical icon strip (64px wide)
+2. **Hover over icon** → Tooltip shows full menu name
+3. **Content area** uses maximum available space
+
+#### **Expansion Options:**
+**Option A - Hover Expansion:**
+1. **Hover over drawer** → Temporary expansion with full labels
+2. **Mouse leave** → Auto-collapse after 500ms delay
+3. **Click menu item** → Navigate and maintain expanded state briefly
+
+**Option B - Toggle Expansion:**
+1. **Click toggle button** (or double-click drawer) → Persistent expansion
+2. **Full labels visible** until user manually collapses
+3. **Preference saved** for future sessions
+
+#### **Mobile Adaptation:**
+1. **Viewport <768px** → Auto-switch to temporary drawer
+2. **Hamburger/Menu button** appears in top toolbar
+3. **Drawer overlays content** instead of pushing it
+
+### **Technical Implementation Details:**
+
+#### **State Management:**
+```typescript
+const [isExpanded, setIsExpanded] = useState(
+  localStorage.getItem('navigation-expanded') === 'true'
+);
+const [isHovered, setIsHovered] = useState(false);
+```
+
+#### **Drawer Configuration:**
+```typescript
+const drawerWidth = isExpanded || isHovered ? 240 : 64;
+const variant = isMobile ? 'temporary' : 'permanent';
+```
+
+#### **Animation Timing:**
+- **Expand/Collapse**: 300ms Material Motion easing
+- **Hover Delay**: 200ms enter, 500ms exit
+- **Content Reflow**: Synchronized with drawer transition
+
+### **Design Considerations:**
+
+#### **Visual Hierarchy:**
+- **Icons**: Use consistent 24px Material Icons
+- **Typography**: Roboto Medium for menu labels
+- **Spacing**: 8px padding, 48px minimum touch targets
+- **Colors**: Follow Material Design color system
+
+#### **Responsive Breakpoints:**
+- **1200px+**: Full mini drawer functionality
+- **768-1199px**: Manual toggle only (no hover)
+- **<768px**: Temporary overlay drawer
+
+### **Success Criteria:**
+- **Space Efficiency**: 25% more content area when collapsed
+- **Discoverability**: Icons remain visible and recognizable
+- **Performance**: <300ms transition times, 60fps animations
+- **Accessibility**: Full keyboard navigation and screen reader support
+- **User Adoption**: Preference persistence across sessions
+
+### **Implementation Scope:**
+**Modified Files**: 2 files (Navigation.tsx, App.tsx)  
+**New Dependencies**: None (uses existing MUI components)  
+**Estimated Time**: 2-3 hours for full responsive implementation  
+**Complexity**: Medium (involves responsive behavior and state management)
+
+### **Future Enhancements:**
+- **Submenu Support**: Collapsible nested navigation items
+- **Customizable Width**: User-adjustable collapsed/expanded sizes
+- **Gesture Support**: Swipe to expand/collapse on touch devices
+- **Theme Integration**: Dark/light mode adaptive styling

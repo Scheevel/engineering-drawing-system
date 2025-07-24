@@ -792,7 +792,13 @@ const DrawingViewer: React.FC = () => {
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <Paper sx={{ mb: 1 }}>
+      <Paper sx={{ 
+        mb: 1, 
+        position: 'sticky', 
+        top: 64, 
+        zIndex: (theme) => theme.zIndex.appBar + 1,
+        backgroundColor: 'background.paper'
+      }}>
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             {drawing.file_name}
