@@ -11,13 +11,23 @@ import Navigation from './components/Navigation.tsx';
 const App: React.FC = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <AppBar position="static">
+      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Typography 
+            variant="h6" 
+            component="div" 
+            sx={{ 
+              flexGrow: 1,
+              whiteSpace: 'nowrap',
+              overflow: 'visible',
+              minWidth: 'fit-content'
+            }}
+          >
             Engineering Drawing Index System
           </Typography>
         </Toolbar>
       </AppBar>
+      <Toolbar />
       
       <Box sx={{ display: 'flex', flexGrow: 1 }}>
         <Navigation />

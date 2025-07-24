@@ -399,12 +399,31 @@ const DrawingViewer: React.FC = () => {
       if (!component.location_x || !component.location_y) return;
 
       const isHighlighted = component.id === viewerState.highlightedComponent;
+      const isPending = component.review_status === 'pending';
+      const isManualCreation = component.manual_creation === true;
       
       // Draw bounding box if available
       if (component.bounding_box) {
         const { x, y, width, height } = component.bounding_box;
-        ctx.strokeStyle = isHighlighted ? '#ff4444' : '#44ff44';
+        
+        // Different colors for different component states
+        if (isHighlighted) {
+          ctx.strokeStyle = '#ff4444';
+        } else if (isPending) {
+          ctx.strokeStyle = '#ff9800'; // Orange for pending review
+        } else {
+          ctx.strokeStyle = '#44ff44'; // Green for verified
+        }
+        
         ctx.lineWidth = isHighlighted ? 3 : 2;
+        
+        // Use dashed line for pending components
+        if (isPending && !isHighlighted) {
+          ctx.setLineDash([5, 5]);
+        } else {
+          ctx.setLineDash([]);
+        }
+        
         ctx.strokeRect(x, y, width, height);
         
         if (isHighlighted) {
@@ -431,11 +450,13 @@ const DrawingViewer: React.FC = () => {
       const bgWidth = textWidth + (padding * 2);
       const bgHeight = textHeight + 2;
       
-      // Background color with transparency
+      // Background color with transparency based on component state
       if (isHighlighted) {
         ctx.fillStyle = 'rgba(255, 68, 68, 0.8)'; // Red highlight for selected
+      } else if (isPending) {
+        ctx.fillStyle = 'rgba(255, 152, 0, 0.8)'; // Orange for pending review
       } else {
-        ctx.fillStyle = 'rgba(68, 255, 68, 0.8)'; // Green highlight for normal
+        ctx.fillStyle = 'rgba(68, 255, 68, 0.8)'; // Green for verified
       }
       
       // Draw rounded rectangle background
@@ -455,14 +476,57 @@ const DrawingViewer: React.FC = () => {
       ctx.closePath();
       ctx.fill();
       
-      // Add subtle border to background
-      ctx.strokeStyle = isHighlighted ? '#cc0000' : '#00cc00';
+      // Add subtle border to background with state-based colors
+      if (isHighlighted) {
+        ctx.strokeStyle = '#cc0000'; // Red for highlighted
+      } else if (isPending) {
+        ctx.strokeStyle = '#f57c00'; // Darker orange for pending
+      } else {
+        ctx.strokeStyle = '#00cc00'; // Green for verified
+      }
+      
       ctx.lineWidth = 1;
+      
+      // Use dashed border for pending markers
+      if (isPending && !isHighlighted) {
+        ctx.setLineDash([3, 3]);
+      } else {
+        ctx.setLineDash([]);
+      }
+      
       ctx.stroke();
+      
+      // Reset line dash for text
+      ctx.setLineDash([]);
 
       // Draw piece mark label with white text for contrast
       ctx.fillStyle = '#ffffff';
       ctx.fillText(component.piece_mark, textX, textY);
+      
+      // Add pending indicator for markers that need review
+      if (isPending && !isHighlighted) {
+        const badgeRadius = 8;
+        const badgeX = textX + (textWidth / 2) + padding + badgeRadius;
+        const badgeY = textY - textHeight + badgeRadius + 2;
+        
+        // Draw small orange circle
+        ctx.beginPath();
+        ctx.arc(badgeX, badgeY, badgeRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = '#ff9800';
+        ctx.fill();
+        ctx.strokeStyle = '#f57c00';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        
+        // Draw "P" for pending
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('P', badgeX, badgeY + 3);
+        
+        // Reset font for next component
+        ctx.font = 'bold 16px Arial';
+      }
     });
   }, [components, viewerState.showComponents, viewerState.highlightedComponent, overlayRefreshKey]);
 
@@ -537,11 +601,7 @@ const DrawingViewer: React.FC = () => {
     e.preventDefault();
     console.log('Right-click detected! Edit mode:', editMode);
     
-    if (!editMode) {
-      console.log('Context menu blocked: edit mode is off');
-      return;
-    }
-    
+    // Remove edit mode requirement - allow right-click in any mode
     if (!canvasRef.current || !containerRef.current) {
       console.log('Context menu blocked: missing canvas refs');
       return;
@@ -595,6 +655,7 @@ const DrawingViewer: React.FC = () => {
     console.log('Showing context menu at:', { x: e.clientX, y: e.clientY });
     console.log('Drawing position:', { drawingX, drawingY });
     console.log('Clicked component:', clickedComponent);
+    console.log('Current edit mode:', editMode);
     
     // Show context menu
     setContextMenu({
@@ -945,6 +1006,7 @@ const DrawingViewer: React.FC = () => {
         drawingId={id!}
         position={creationPosition}
         onComponentCreated={handleComponentCreated}
+        quickMode={!editMode} // Use quick mode when not in edit mode
       />
     </Box>
   );

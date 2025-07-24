@@ -15,6 +15,7 @@ import {
   CheckCircle as VerifyIcon,
   Straighten as DimensionIcon,
   Assignment as SpecIcon,
+  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 
 interface DrawingContextMenuProps {
@@ -51,10 +52,7 @@ const DrawingContextMenu: React.FC<DrawingContextMenuProps> = ({
     onClose();
   };
 
-  if (!editMode) {
-    return null; // Only show context menu in edit mode
-  }
-
+  // Always show context menu, but with different options based on edit mode
   return (
     <Menu
       open={open}
@@ -81,64 +79,87 @@ const DrawingContextMenu: React.FC<DrawingContextMenuProps> = ({
           </MenuItem>
           <Divider />
           
-          <MenuItem onClick={() => handleMenuItemClick(() => onEditComponent(clickedComponent.id))}>
-            <ListItemIcon>
-              <EditIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Edit Component</ListItemText>
-          </MenuItem>
-          
-          <MenuItem onClick={() => handleMenuItemClick(() => onDuplicateComponent(clickedComponent.id))}>
-            <ListItemIcon>
-              <DuplicateIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Duplicate Component</ListItemText>
-          </MenuItem>
-          
-          <MenuItem onClick={() => handleMenuItemClick(() => onVerifyComponent(clickedComponent.id))}>
-            <ListItemIcon>
-              <VerifyIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Mark as Verified</ListItemText>
-          </MenuItem>
-          
-          <Divider />
-          
-          <MenuItem>
-            <ListItemIcon>
-              <DimensionIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Add Dimension</ListItemText>
-          </MenuItem>
-          
-          <MenuItem>
-            <ListItemIcon>
-              <SpecIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Add Specification</ListItemText>
-          </MenuItem>
-          
-          <Divider />
-          
-          <MenuItem 
-            onClick={() => handleMenuItemClick(() => onDeleteComponent(clickedComponent.id))}
-            sx={{ color: 'error.main' }}
-          >
-            <ListItemIcon>
-              <DeleteIcon fontSize="small" color="error" />
-            </ListItemIcon>
-            <ListItemText>Delete Component</ListItemText>
-          </MenuItem>
+          {editMode ? (
+            // Full options in edit mode
+            <>
+              <MenuItem onClick={() => handleMenuItemClick(() => onEditComponent(clickedComponent.id))}>
+                <ListItemIcon>
+                  <EditIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Edit Component</ListItemText>
+              </MenuItem>
+              
+              <MenuItem onClick={() => handleMenuItemClick(() => onDuplicateComponent(clickedComponent.id))}>
+                <ListItemIcon>
+                  <DuplicateIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Duplicate Component</ListItemText>
+              </MenuItem>
+              
+              <MenuItem onClick={() => handleMenuItemClick(() => onVerifyComponent(clickedComponent.id))}>
+                <ListItemIcon>
+                  <VerifyIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Mark as Verified</ListItemText>
+              </MenuItem>
+              
+              <Divider />
+              
+              <MenuItem>
+                <ListItemIcon>
+                  <DimensionIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Add Dimension</ListItemText>
+              </MenuItem>
+              
+              <MenuItem>
+                <ListItemIcon>
+                  <SpecIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Add Specification</ListItemText>
+              </MenuItem>
+              
+              <Divider />
+              
+              <MenuItem 
+                onClick={() => handleMenuItemClick(() => onDeleteComponent(clickedComponent.id))}
+                sx={{ color: 'error.main' }}
+              >
+                <ListItemIcon>
+                  <DeleteIcon fontSize="small" color="error" />
+                </ListItemIcon>
+                <ListItemText>Delete Component</ListItemText>
+              </MenuItem>
+            </>
+          ) : (
+            // Limited options when not in edit mode
+            <>
+              <MenuItem onClick={() => handleMenuItemClick(() => onEditComponent(clickedComponent.id))}>
+                <ListItemIcon>
+                  <VisibilityIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>View Component Details</ListItemText>
+              </MenuItem>
+            </>
+          )}
         </>
       ) : (
-        // Context menu for empty area (create new component)
+        // Context menu for empty area - always allow marker creation
         <>
           <MenuItem onClick={() => handleMenuItemClick(onCreateComponent)}>
             <ListItemIcon>
               <AddIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Create Component Here</ListItemText>
+            <ListItemText>Create Marker Here</ListItemText>
           </MenuItem>
+          
+          {!editMode && (
+            <MenuItem disabled>
+              <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                Enter edit mode for more options
+              </Typography>
+            </MenuItem>
+          )}
         </>
       )}
     </Menu>

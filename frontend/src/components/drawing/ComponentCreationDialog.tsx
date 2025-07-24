@@ -29,6 +29,7 @@ interface ComponentCreationDialogProps {
   drawingId: string;
   position: { x: number; y: number } | null;
   onComponentCreated: (component: any) => void;
+  quickMode?: boolean; // Quick marker creation mode
 }
 
 interface ComponentFormData {
@@ -45,12 +46,13 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
   drawingId,
   position,
   onComponentCreated,
+  quickMode = false,
 }) => {
   const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState<ComponentFormData>({
     piece_mark: '',
-    component_type: '',
+    component_type: quickMode ? 'generic' : '', // Default to generic for quick mode
     description: '',
     quantity: 1,
     material_type: '',
@@ -116,7 +118,8 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
       errors.push('Piece mark is required');
     }
     
-    if (!formData.component_type) {
+    // In quick mode, component type is optional (defaults to generic)
+    if (!quickMode && !formData.component_type) {
       errors.push('Component type is required');
     }
     
@@ -168,7 +171,9 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Create New Component</Typography>
+          <Typography variant="h6">
+            {quickMode ? 'Create Quick Marker' : 'Create New Component'}
+          </Typography>
           {position && (
             <Typography variant="caption" color="text.secondary">
               Position: ({Math.round(position.x)}, {Math.round(position.y)})
@@ -189,7 +194,7 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
         )}
 
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={quickMode ? 12 : 6}>
             <TextField
               fullWidth
               label="Piece Mark"
@@ -197,73 +202,109 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
               onChange={(e) => handleFieldChange('piece_mark', e.target.value)}
               required
               autoFocus
-              placeholder="e.g., W21x68, HSS12x12x1/2"
+              placeholder="e.g., W21x68, HSS12x12x1/2, CG3"
               helperText="Unique identifier for this component"
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth required>
-              <InputLabel>Component Type</InputLabel>
-              <Select
-                value={formData.component_type}
-                onChange={(e) => handleFieldChange('component_type', e.target.value)}
-                label="Component Type"
-              >
-                {componentTypes.map((type) => (
-                  <MenuItem key={type.value} value={type.value}>
-                    {type.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
+          {!quickMode && (
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth required>
+                <InputLabel>Component Type</InputLabel>
+                <Select
+                  value={formData.component_type}
+                  onChange={(e) => handleFieldChange('component_type', e.target.value)}
+                  label="Component Type"
+                >
+                  {componentTypes.map((type) => (
+                    <MenuItem key={type.value} value={type.value}>
+                      {type.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          )}
 
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Description"
-              value={formData.description}
-              onChange={(e) => handleFieldChange('description', e.target.value)}
-              multiline
-              rows={2}
-              placeholder="Optional description of the component..."
-            />
-          </Grid>
+          {quickMode && (
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Component Type (Optional)</InputLabel>
+                <Select
+                  value={formData.component_type}
+                  onChange={(e) => handleFieldChange('component_type', e.target.value)}
+                  label="Component Type (Optional)"
+                >
+                  {componentTypes.map((type) => (
+                    <MenuItem key={type.value} value={type.value}>
+                      {type.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          )}
 
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Quantity"
-              type="number"
-              value={formData.quantity}
-              onChange={(e) => handleFieldChange('quantity', parseInt(e.target.value) || 1)}
-              inputProps={{ min: 1 }}
-              required
-            />
-          </Grid>
+          {!quickMode && (
+            <>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Description"
+                  value={formData.description}
+                  onChange={(e) => handleFieldChange('description', e.target.value)}
+                  multiline
+                  rows={2}
+                  placeholder="Optional description of the component..."
+                />
+              </Grid>
 
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Material Type"
-              value={formData.material_type}
-              onChange={(e) => handleFieldChange('material_type', e.target.value)}
-              placeholder="e.g., A36, A572 Gr50, A992"
-              helperText="Steel grade or material specification"
-            />
-          </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Quantity"
+                  type="number"
+                  value={formData.quantity}
+                  onChange={(e) => handleFieldChange('quantity', parseInt(e.target.value) || 1)}
+                  inputProps={{ min: 1 }}
+                  required
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Material Type"
+                  value={formData.material_type}
+                  onChange={(e) => handleFieldChange('material_type', e.target.value)}
+                  placeholder="e.g., A36, A572 Gr50, A992"
+                  helperText="Steel grade or material specification"
+                />
+              </Grid>
+            </>
+          )}
 
           <Grid item xs={12}>
             <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
               <Typography variant="subtitle2" gutterBottom>
-                Manual Creation Notes:
+                {quickMode ? 'Quick Marker Notes:' : 'Manual Creation Notes:'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                • This component will be marked as manually created
-                • It will receive a confidence score of 100%
-                • Review status will be set to "pending"
-                • You can add dimensions and specifications after creation
+                {quickMode ? (
+                  <>
+                    • This marker will be marked for review
+                    • Type defaults to "Generic" if not specified
+                    • You can edit and add details later
+                    • Quantity defaults to 1
+                  </>
+                ) : (
+                  <>
+                    • This component will be marked as manually created
+                    • It will receive a confidence score of 100%
+                    • Review status will be set to "pending"
+                    • You can add dimensions and specifications after creation
+                  </>
+                )}
               </Typography>
             </Box>
           </Grid>
@@ -277,10 +318,15 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={createMutation.isLoading || !formData.piece_mark.trim() || !formData.component_type}
+          disabled={createMutation.isLoading || !formData.piece_mark.trim() || (!quickMode && !formData.component_type)}
           startIcon={createMutation.isLoading ? <CircularProgress size={20} /> : <SaveIcon />}
         >
-          {createMutation.isLoading ? 'Creating...' : 'Create Component'}
+          {createMutation.isLoading 
+            ? 'Creating...' 
+            : quickMode 
+              ? 'Create Marker' 
+              : 'Create Component'
+          }
         </Button>
       </DialogActions>
     </Dialog>
