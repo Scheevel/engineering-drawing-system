@@ -13,7 +13,7 @@ The **Engineering Drawing Index System** is an AI-powered tool for railroad brid
 
 ### System Components
 - **Frontend**: React 18 + TypeScript + Material-UI (port 3000)
-- **Backend API**: FastAPI + Python 3.11 with async support (port 8001)
+- **Backend API**: FastAPI + Python 3.11 with async support (port 8000 internally, exposed as 8001)
 - **Database**: PostgreSQL 14 with PostGIS for spatial data
 - **Search Engine**: Elasticsearch 8.11 for fast component search
 - **Cache/Queue**: Redis 7 for caching and Celery message broker
@@ -42,9 +42,7 @@ The **Engineering Drawing Index System** is an AI-powered tool for railroad brid
 
 ### Quick Start (Docker Compose)
 ```bash
-cd engineering-drawing-system
-
-# Start all services
+# Start all services (from project root)
 docker-compose up -d
 
 # View logs
@@ -56,19 +54,19 @@ docker-compose down
 # Light version (without Elasticsearch)
 docker-compose -f docker-compose-lite.yml up -d
 
-# Monitor Celery tasks with Flower
+# Monitor Celery tasks with Flower (real-time task monitoring)
 open http://localhost:5555
 ```
 
 ### Backend Development
 ```bash
-cd engineering-drawing-system/backend
+cd backend
 
 # Install dependencies
 pip install -r requirements.txt
 
 # Run development server
-uvicorn app.main:app --reload --port 8001
+uvicorn app.main:app --reload --port 8000  # Internal port, exposed as 8001 via Docker
 
 # Run tests
 pytest
@@ -89,7 +87,7 @@ celery -A app.core.celery_app worker --loglevel=info
 
 ### Frontend Development
 ```bash
-cd engineering-drawing-system/frontend
+cd frontend
 
 # Install dependencies
 npm install
@@ -116,7 +114,16 @@ npm run lint:fix
 2. Implement business logic in `backend/app/services/`
 3. Add Pydantic models in `backend/app/models/`
 4. Add API client method in `frontend/src/services/api.ts`
-5. FastAPI automatically generates OpenAPI docs at `/api/v1/docs`
+5. FastAPI automatically generates OpenAPI docs at `/docs` and OpenAPI schema at `/openapi.json`
+
+### Available API Endpoints
+- **Drawings**: Upload, retrieve, status tracking, component listing
+- **Components**: CRUD operations, history tracking, validation, duplicate detection
+- **Dimensions**: Manage component dimensions
+- **Specifications**: Manage component specifications  
+- **Search**: Component search, advanced search, suggestions, recent searches
+- **Export**: Excel, CSV, PDF reports, templates
+- **System**: Health checks, statistics
 
 ### Adding a New React Component
 1. Create component in `frontend/src/components/`
@@ -185,8 +192,16 @@ frontend/
 - Filters: component type, project, drawing type
 - Results include drawing preview and location coordinates
 
+### Component Management Features
+- **Validation**: Check component data integrity and completeness
+- **Duplicate Detection**: Identify potential duplicate components across drawings
+- **History Tracking**: Audit log of all component modifications
+- **Dimension Management**: CRUD operations for component dimensions
+- **Specification Management**: CRUD operations for component specifications
+- **Bulk Operations**: Export/import templates for batch updates
+
 ### Authentication & Security
-- JWT tokens prepared (not fully implemented)
+- JWT tokens prepared (not fully implemented - authentication endpoints not active)
 - CORS configured for frontend origin
 - File upload validation (size, type)
 - SQL injection protection via SQLAlchemy ORM
@@ -214,6 +229,12 @@ frontend/
 ## Common Tasks
 **remind me to git commit often, as I tend to overlook this important step**
 
+### Access Points
+- **Frontend**: http://localhost:3000
+- **API Documentation**: http://localhost:8001/docs
+- **OpenAPI Schema**: http://localhost:8001/openapi.json
+- **Celery Flower Monitor**: http://localhost:5555
+
 ### Debug Drawing Processing
 ```bash
 # Check Celery task status
@@ -229,6 +250,9 @@ open http://localhost:5555
 
 # Check processing errors
 docker-compose exec backend python -c "from app.core.database import SessionLocal; db = SessionLocal(); from app.models.database import ProcessingTask; tasks = db.query(ProcessingTask).filter_by(status='failed').all(); print([(t.id, t.error_message) for t in tasks])"
+
+# Access PostgreSQL database (user: 'user', database: 'drawing_index')
+docker exec drawing_postgres psql -U user -d drawing_index
 ```
 
 ### Clear Development Data
