@@ -42,6 +42,41 @@ export interface Drawing {
   is_duplicate?: boolean;
 }
 
+export interface ProjectResponse {
+  id: string;
+  name: string;
+  client?: string;
+  location?: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+  drawing_count: number;
+}
+
+export interface ProjectCreate {
+  name: string;
+  client?: string;
+  location?: string;
+  description?: string;
+}
+
+export interface ProjectUpdate {
+  name?: string;
+  client?: string;
+  location?: string;
+  description?: string;
+}
+
+export interface DrawingResponse {
+  id: string;
+  file_name: string;
+  original_name?: string;
+  file_size?: number;
+  upload_date: string;
+  processing_status: string;
+  components_extracted: number;
+}
+
 export interface Component {
   id: string;
   piece_mark: string;
@@ -416,6 +451,39 @@ export const createComponent = async (componentData: ComponentCreateRequest): Pr
 // Delete component
 export const deleteComponent = async (componentId: string): Promise<void> => {
   await api.delete(`/components/${componentId}`);
+};
+
+// Project API functions
+export const getProjects = async (): Promise<ProjectResponse[]> => {
+  const response = await api.get('/projects');
+  return response.data;
+};
+
+export const getProject = async (projectId: string): Promise<ProjectResponse> => {
+  const response = await api.get(`/projects/${projectId}`);
+  return response.data;
+};
+
+export const createProject = async (projectData: ProjectCreate): Promise<ProjectResponse> => {
+  const response = await api.post('/projects', projectData);
+  return response.data;
+};
+
+export const updateProject = async (projectId: string, projectData: ProjectUpdate): Promise<ProjectResponse> => {
+  const response = await api.put(`/projects/${projectId}`, projectData);
+  return response.data;
+};
+
+export const deleteProject = async (projectId: string): Promise<void> => {
+  await api.delete(`/projects/${projectId}`);
+};
+
+export const assignDrawingsToProject = async (drawingIds: string[], projectId?: string): Promise<any> => {
+  const response = await api.post('/projects/assign-drawings', {
+    drawing_ids: drawingIds,
+    project_id: projectId
+  });
+  return response.data;
 };
 
 export default api;
