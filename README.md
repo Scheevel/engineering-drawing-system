@@ -7,7 +7,7 @@ An AI-powered system for indexing and analyzing engineering drawings for railroa
 - 🔍 **Automated Drawing Indexing**: OCR and component detection across PDF/image drawings
 - 🚀 **Fast Component Search**: Find piece marks and components instantly across thousands of drawings
 - 📊 **Data Extraction**: Automated extraction of dimensions and specifications
-- 📁 **Excel/CSV/PDF Export**: Export search results, component data, and reports
+- 📁 **Excel/CSV/PDF Export**: Export search results, component data, and reports (API available, frontend page pending)
 - 🔄 **Component Management**: History tracking, validation, and duplicate detection
 - 📏 **Dimension & Specification Management**: CRUD operations for component properties
 - 📈 **Real-time Monitoring**: Celery Flower for task monitoring and debugging

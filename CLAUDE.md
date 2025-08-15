@@ -118,12 +118,12 @@ npm run lint:fix
 
 ### Available API Endpoints
 - **Drawings**: Upload, retrieve, status tracking, component listing
-- **Components**: CRUD operations, history tracking, validation, duplicate detection
-- **Dimensions**: Manage component dimensions
-- **Specifications**: Manage component specifications  
+- **Components**: CRUD operations, history tracking, validation, duplicate detection (includes dimensions and specifications management)
 - **Search**: Component search, advanced search, suggestions, recent searches
 - **Export**: Excel, CSV, PDF reports, templates
 - **System**: Health checks, statistics
+
+**Note**: The frontend Navigation references an Export page at `/export`, but this page is not yet implemented. The export functionality exists in the backend API only.
 
 ### Adding a New React Component
 1. Create component in `frontend/src/components/`
