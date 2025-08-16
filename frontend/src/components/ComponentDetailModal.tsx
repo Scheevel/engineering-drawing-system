@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -11,22 +11,30 @@ import {
   CardContent,
   Chip,
   Box,
-  Divider,
   List,
   ListItem,
   ListItemText,
   CircularProgress,
   Alert,
   IconButton,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  Autocomplete,
 } from '@mui/material';
 import {
   Close as CloseIcon,
   Download as DownloadIcon,
   Visibility as ViewIcon,
+  Edit as EditIcon,
+  Save as SaveIcon,
+  Cancel as CancelIcon,
 } from '@mui/icons-material';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
-import { getComponentBasicInfo } from '../services/api.ts';
+import { useForm, Controller } from 'react-hook-form';
+import { getComponentBasicInfo, updateComponent, ComponentUpdateRequest } from '../services/api.ts';
 
 interface ComponentDetailModalProps {
   componentId: string;
@@ -34,18 +42,114 @@ interface ComponentDetailModalProps {
   onClose: () => void;
 }
 
+interface ComponentFormData {
+  piece_mark: string;
+  component_type: string;
+  description: string;
+  quantity: number;
+  material_type: string;
+  review_status: string;
+}
+
+// Component type options
+const COMPONENT_TYPES = [
+  { value: 'wide_flange', label: 'Wide Flange' },
+  { value: 'hss', label: 'HSS' },
+  { value: 'angle', label: 'Angle' },
+  { value: 'channel', label: 'Channel' },
+  { value: 'plate', label: 'Plate' },
+  { value: 'tube', label: 'Tube' },
+  { value: 'beam', label: 'Beam' },
+  { value: 'column', label: 'Column' },
+  { value: 'brace', label: 'Brace' },
+  { value: 'girder', label: 'Girder' },
+  { value: 'truss', label: 'Truss' },
+  { value: 'generic', label: 'Generic' },
+];
+
+// Review status options
+const REVIEW_STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending', color: 'warning' as const },
+  { value: 'reviewed', label: 'Reviewed', color: 'info' as const },
+  { value: 'approved', label: 'Approved', color: 'success' as const },
+];
+
+// Common material types for autocomplete
+const MATERIAL_TYPES = [
+  'A36 Steel',
+  'A572 Grade 50',
+  'A992 Steel',
+  'A500 Grade B',
+  'Aluminum',
+  'Stainless Steel',
+  'Galvanized Steel',
+];
+
 const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({ 
   componentId, 
   open, 
   onClose 
 }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   
   const { data: component, isLoading, error } = useQuery(
     ['component', componentId],
     () => getComponentBasicInfo(componentId),
     {
       enabled: open && !!componentId,
+    }
+  );
+
+  const form = useForm<ComponentFormData>({
+    defaultValues: {
+      piece_mark: '',
+      component_type: '',
+      description: '',
+      quantity: 1,
+      material_type: '',
+      review_status: 'pending',
+    },
+  });
+
+  const { control, handleSubmit, reset, formState: { isDirty } } = form;
+
+  // Update form when component data loads
+  useEffect(() => {
+    if (component) {
+      reset({
+        piece_mark: component.piece_mark || '',
+        component_type: component.component_type || '',
+        description: component.description || '',
+        quantity: component.quantity || 1,
+        material_type: component.material_type || '',
+        review_status: component.review_status || 'pending',
+      });
+    }
+  }, [component, reset]);
+
+  // Reset edit mode when modal closes
+  useEffect(() => {
+    if (!open) {
+      setIsEditMode(false);
+      setShowUnsavedWarning(false);
+    }
+  }, [open]);
+
+  const updateMutation = useMutation(
+    (updateData: ComponentUpdateRequest) => updateComponent(componentId, updateData),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['component', componentId]);
+        setIsEditMode(false);
+        // You could add a success toast here
+      },
+      onError: (error) => {
+        console.error('Failed to update component:', error);
+        // You could add an error toast here
+      },
     }
   );
 
@@ -57,18 +161,93 @@ const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
     onClose(); // Close modal after navigation
   };
 
+  const handleEditToggle = () => {
+    if (isEditMode && isDirty) {
+      setShowUnsavedWarning(true);
+    } else {
+      setIsEditMode(!isEditMode);
+      if (!isEditMode && component) {
+        // Reset form to current component values when entering edit mode
+        reset({
+          piece_mark: component.piece_mark || '',
+          component_type: component.component_type || '',
+          description: component.description || '',
+          quantity: component.quantity || 1,
+          material_type: component.material_type || '',
+          review_status: component.review_status || 'pending',
+        });
+      }
+    }
+  };
+
+  const handleSave = handleSubmit((data) => {
+    const updateData: ComponentUpdateRequest = {};
+    
+    // Only include changed fields
+    if (data.piece_mark !== component?.piece_mark) updateData.piece_mark = data.piece_mark;
+    if (data.component_type !== component?.component_type) updateData.component_type = data.component_type;
+    if (data.description !== component?.description) updateData.description = data.description;
+    if (data.quantity !== component?.quantity) updateData.quantity = data.quantity;
+    if (data.material_type !== component?.material_type) updateData.material_type = data.material_type;
+    if (data.review_status !== component?.review_status) updateData.review_status = data.review_status;
+
+    updateMutation.mutate(updateData);
+  });
+
+  const handleCancel = () => {
+    if (isDirty) {
+      setShowUnsavedWarning(true);
+    } else {
+      setIsEditMode(false);
+    }
+  };
+
+  const handleConfirmCancel = () => {
+    setIsEditMode(false);
+    setShowUnsavedWarning(false);
+    if (component) {
+      reset({
+        piece_mark: component.piece_mark || '',
+        component_type: component.component_type || '',
+        description: component.description || '',
+        quantity: component.quantity || 1,
+        material_type: component.material_type || '',
+        review_status: component.review_status || 'pending',
+      });
+    }
+  };
+
+  const handleCloseModal = () => {
+    if (isEditMode && isDirty) {
+      setShowUnsavedWarning(true);
+    } else {
+      onClose();
+    }
+  };
+
   if (!open) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography variant="h6">
-          Component Details: {component?.piece_mark || componentId}
-        </Typography>
-        <IconButton onClick={onClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+    <>
+      <Dialog open={open} onClose={handleCloseModal} maxWidth="lg" fullWidth>
+        <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="h6">
+              Component Details: {component?.piece_mark || componentId}
+            </Typography>
+            {isEditMode && (
+              <Chip 
+                label="Editing" 
+                color="primary" 
+                size="small" 
+                icon={<EditIcon />}
+              />
+            )}
+          </Box>
+          <IconButton onClick={handleCloseModal} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
       
       <DialogContent dividers>
         {isLoading && (
@@ -94,40 +273,120 @@ const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                   </Typography>
                   <Grid container spacing={2}>
                     <Grid item xs={6}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
                         Piece Mark
                       </Typography>
-                      <Typography variant="body1" fontWeight="bold">
-                        {component.piece_mark}
-                      </Typography>
+                      {isEditMode ? (
+                        <Controller
+                          name="piece_mark"
+                          control={control}
+                          rules={{ required: 'Piece mark is required' }}
+                          render={({ field, fieldState: { error } }) => (
+                            <TextField
+                              {...field}
+                              size="small"
+                              fullWidth
+                              error={!!error}
+                              helperText={error?.message}
+                              placeholder="Enter piece mark"
+                            />
+                          )}
+                        />
+                      ) : (
+                        <Typography variant="body1" fontWeight="bold">
+                          {component.piece_mark}
+                        </Typography>
+                      )}
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
                         Type
                       </Typography>
-                      <Typography variant="body1">
-                        {component.component_type || 'N/A'}
-                      </Typography>
+                      {isEditMode ? (
+                        <Controller
+                          name="component_type"
+                          control={control}
+                          render={({ field }) => (
+                            <FormControl size="small" fullWidth>
+                              <Select {...field} displayEmpty>
+                                <MenuItem value="">
+                                  <em>Select type</em>
+                                </MenuItem>
+                                {COMPONENT_TYPES.map((type) => (
+                                  <MenuItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          )}
+                        />
+                      ) : (
+                        <Typography variant="body1">
+                          {COMPONENT_TYPES.find(t => t.value === component.component_type)?.label || component.component_type || 'N/A'}
+                        </Typography>
+                      )}
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
                         Quantity
                       </Typography>
-                      <Typography variant="body1">
-                        {component.quantity}
-                      </Typography>
+                      {isEditMode ? (
+                        <Controller
+                          name="quantity"
+                          control={control}
+                          rules={{ required: 'Quantity is required', min: { value: 1, message: 'Quantity must be at least 1' } }}
+                          render={({ field, fieldState: { error } }) => (
+                            <TextField
+                              {...field}
+                              type="number"
+                              size="small"
+                              fullWidth
+                              error={!!error}
+                              helperText={error?.message}
+                              inputProps={{ min: 1 }}
+                            />
+                          )}
+                        />
+                      ) : (
+                        <Typography variant="body1">
+                          {component.quantity}
+                        </Typography>
+                      )}
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
                         Material
                       </Typography>
-                      <Typography variant="body1">
-                        {component.material_type || 'N/A'}
-                      </Typography>
+                      {isEditMode ? (
+                        <Controller
+                          name="material_type"
+                          control={control}
+                          render={({ field }) => (
+                            <Autocomplete
+                              {...field}
+                              options={MATERIAL_TYPES}
+                              freeSolo
+                              size="small"
+                              onChange={(_, value) => field.onChange(value || '')}
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  placeholder="Enter or select material"
+                                />
+                              )}
+                            />
+                          )}
+                        />
+                      ) : (
+                        <Typography variant="body1">
+                          {component.material_type || 'N/A'}
+                        </Typography>
+                      )}
                     </Grid>
                     {component.confidence_score !== null && component.confidence_score !== undefined && (
                       <Grid item xs={6}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
                           Confidence
                         </Typography>
                         <Chip
@@ -137,18 +396,61 @@ const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                         />
                       </Grid>
                     )}
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Review Status
+                      </Typography>
+                      {isEditMode ? (
+                        <Controller
+                          name="review_status"
+                          control={control}
+                          render={({ field }) => (
+                            <FormControl size="small" fullWidth>
+                              <Select {...field}>
+                                {REVIEW_STATUS_OPTIONS.map((status) => (
+                                  <MenuItem key={status.value} value={status.value}>
+                                    {status.label}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          )}
+                        />
+                      ) : (
+                        <Chip
+                          label={REVIEW_STATUS_OPTIONS.find(s => s.value === component.review_status)?.label || component.review_status}
+                          size="small"
+                          color={REVIEW_STATUS_OPTIONS.find(s => s.value === component.review_status)?.color || 'default'}
+                        />
+                      )}
+                    </Grid>
                   </Grid>
                   
-                  {component.description && (
-                    <Box sx={{ mt: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Description
-                      </Typography>
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Description
+                    </Typography>
+                    {isEditMode ? (
+                      <Controller
+                        name="description"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            multiline
+                            rows={3}
+                            size="small"
+                            fullWidth
+                            placeholder="Enter description"
+                          />
+                        )}
+                      />
+                    ) : (
                       <Typography variant="body1">
-                        {component.description}
+                        {component.description || 'No description'}
                       </Typography>
-                    </Box>
-                  )}
+                    )}
+                  </Box>
                 </CardContent>
               </Card>
             </Grid>
@@ -292,42 +594,89 @@ const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
         )}
       </DialogContent>
 
-      <DialogActions>
-        <Button
-          startIcon={<ViewIcon />}
-          onClick={handleViewDrawing}
-          disabled={!component}
-          variant="outlined"
-        >
-          View Drawing
-        </Button>
-        <Button
-          onClick={() => {
-            if (component) {
-              navigate(`/component/${component.id}`);
+        <DialogActions>
+          {isEditMode ? (
+            <>
+              <Button
+                startIcon={<SaveIcon />}
+                onClick={handleSave}
+                disabled={!component || updateMutation.isLoading}
+                variant="contained"
+                color="primary"
+              >
+                {updateMutation.isLoading ? 'Saving...' : 'Save Changes'}
+              </Button>
+              <Button
+                startIcon={<CancelIcon />}
+                onClick={handleCancel}
+                disabled={updateMutation.isLoading}
+                variant="outlined"
+              >
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                startIcon={<ViewIcon />}
+                onClick={handleViewDrawing}
+                disabled={!component}
+                variant="outlined"
+              >
+                View Drawing
+              </Button>
+              <Button
+                startIcon={<EditIcon />}
+                onClick={handleEditToggle}
+                disabled={!component}
+                variant="outlined"
+                color="primary"
+              >
+                Edit Details
+              </Button>
+              <Button
+                startIcon={<DownloadIcon />}
+                onClick={() => {
+                  // TODO: Export component data
+                  console.log('Export component:', component?.id);
+                }}
+                disabled={!component}
+              >
+                Export Data
+              </Button>
+              <Button onClick={handleCloseModal} variant="contained">
+                Close
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Unsaved Changes Warning Dialog */}
+      <Dialog open={showUnsavedWarning} onClose={() => setShowUnsavedWarning(false)}>
+        <DialogTitle>Unsaved Changes</DialogTitle>
+        <DialogContent>
+          <Typography>
+            You have unsaved changes. Are you sure you want to discard them?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowUnsavedWarning(false)}>
+            Continue Editing
+          </Button>
+          <Button 
+            onClick={() => {
+              handleConfirmCancel();
               onClose();
-            }
-          }}
-          disabled={!component}
-          variant="outlined"
-        >
-          Open in Editor
-        </Button>
-        <Button
-          startIcon={<DownloadIcon />}
-          onClick={() => {
-            // TODO: Export component data
-            console.log('Export component:', component?.id);
-          }}
-          disabled={!component}
-        >
-          Export Data
-        </Button>
-        <Button onClick={onClose} variant="contained">
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
+            }} 
+            color="error" 
+            variant="contained"
+          >
+            Discard Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 
