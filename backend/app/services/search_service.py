@@ -39,23 +39,18 @@ class SearchService:
             # Build base query with joins
             query = db.query(Component).join(Drawing).outerjoin(Project)
             
-            # Apply text search
-            if request.fuzzy:
-                # Fuzzy search using ILIKE
+            # Apply text search (skip if query is wildcard for filter-only searches)
+            if request.query and request.query != "*":
+                # Standard search with exact match, prefix match, and substring match
                 text_filter = or_(
+                    Component.piece_mark == request.query,
+                    Component.piece_mark.ilike(f"{request.query}%"),
                     Component.piece_mark.ilike(f"%{request.query}%"),
                     Component.component_type.ilike(f"%{request.query}%"),
                     Component.description.ilike(f"%{request.query}%")
                 )
-            else:
-                # Exact match search
-                text_filter = or_(
-                    Component.piece_mark == request.query,
-                    Component.piece_mark.ilike(f"{request.query}%"),
-                    Component.component_type.ilike(f"%{request.query}%")
-                )
-            
-            query = query.filter(text_filter)
+                
+                query = query.filter(text_filter)
             
             # Apply filters
             if request.component_type:
@@ -78,12 +73,16 @@ class SearchService:
             elif request.sort_by == "name":
                 query = query.order_by(desc(Component.piece_mark) if request.sort_order == "desc" else Component.piece_mark)
             else:  # relevance
-                # Simple relevance: exact matches first, then partial matches
-                from sqlalchemy import case
-                query = query.order_by(
-                    desc(case((Component.piece_mark == request.query, 1), else_=0)),
-                    Component.piece_mark
-                )
+                if request.query and request.query != "*":
+                    # Simple relevance: exact matches first, then partial matches
+                    from sqlalchemy import case
+                    query = query.order_by(
+                        desc(case((Component.piece_mark == request.query, 1), else_=0)),
+                        Component.piece_mark
+                    )
+                else:
+                    # For filter-only searches, order by created date (newest first)
+                    query = query.order_by(desc(Component.created_at))
             
             # Execute query with eager loading
             components = query.options(
@@ -142,8 +141,7 @@ class SearchService:
                 filters_applied={
                     "component_type": request.component_type,
                     "project_id": request.project_id,
-                    "drawing_type": request.drawing_type,
-                    "fuzzy": request.fuzzy
+                    "drawing_type": request.drawing_type
                 }
             )
             
@@ -227,7 +225,7 @@ class SearchService:
             logger.error(f"Error getting suggestions for '{prefix}': {str(e)}")
             return []
     
-    async def get_recent_components(self, limit: int, db: Session) -> List[ComponentSearchResult]:
+    async def get_recent_components(self, limit: int, db: Session, offset: int = 0) -> List[ComponentSearchResult]:
         """Get recently added components for search page preview"""
         try:
             # Get recent components with drawing and project info
@@ -235,7 +233,7 @@ class SearchService:
                 joinedload(Component.drawing).joinedload(Drawing.project),
                 joinedload(Component.dimensions),
                 joinedload(Component.specifications)
-            ).order_by(desc(Component.created_at)).limit(limit).all()
+            ).order_by(desc(Component.created_at)).offset(offset).limit(limit).all()
             
             # Convert to response format
             results = []

@@ -187,12 +187,15 @@ export const getSearchSuggestions = async (prefix: string, limit: number = 10): 
   return response.data.suggestions;
 };
 
-export const getRecentComponents = async (limit: number = 6): Promise<{
+export const getRecentComponents = async (limit: number = 25, page: number = 1): Promise<{
   recent_components: Component[];
   total_available: number;
+  page: number;
+  limit: number;
+  has_more: boolean;
 }> => {
   const response = await api.get('/search/recent', {
-    params: { limit },
+    params: { limit, page },
   });
   return response.data;
 };
