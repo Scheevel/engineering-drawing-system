@@ -25,7 +25,6 @@ import {
 } from '@mui/material';
 import {
   Close as CloseIcon,
-  Download as DownloadIcon,
   Visibility as ViewIcon,
   Edit as EditIcon,
   Save as SaveIcon,
@@ -633,16 +632,6 @@ const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                 color="primary"
               >
                 Edit Details
-              </Button>
-              <Button
-                startIcon={<DownloadIcon />}
-                onClick={() => {
-                  // TODO: Export component data
-                  console.log('Export component:', component?.id);
-                }}
-                disabled={!component}
-              >
-                Export Data
               </Button>
               <Button onClick={handleCloseModal} variant="contained">
                 Close
