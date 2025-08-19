@@ -26,15 +26,18 @@ import {
   Search as SearchIcon,
   Visibility as ViewIcon,
   Clear as ClearIcon,
+  Folder,
+  FolderOpen,
 } from '@mui/icons-material';
 import { useQuery } from 'react-query';
-import { searchComponents, getSearchSuggestions, getRecentComponents, getComponentTypes } from '../services/api.ts';
+import { searchComponents, getSearchSuggestions, getRecentComponents, getComponentTypes, getProjects, type ProjectResponse } from '../services/api.ts';
 import ComponentDetailModal from '../components/ComponentDetailModal.tsx';
 import SearchResultRow from '../components/SearchResultRow.tsx';
 import { useDebounce } from '../hooks/useDebounce.ts';
 
 interface SearchFilters {
   componentType: string;
+  projectId: string;
 }
 
 interface SortOption {
@@ -76,6 +79,7 @@ const SearchPage: React.FC = () => {
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<SearchFilters>({
     componentType: '',
+    projectId: 'all',
   });
   const [sortBy, setSortBy] = useState('relevance');
   const [page, setPage] = useState(1);
@@ -116,6 +120,15 @@ const SearchPage: React.FC = () => {
     }
   );
 
+  // Fetch projects for filter dropdown
+  const { data: projects = [] } = useQuery<ProjectResponse[]>(
+    'projects',
+    getProjects,
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    }
+  );
+
   const {
     data: searchResults,
     isLoading,
@@ -124,12 +137,15 @@ const SearchPage: React.FC = () => {
     ['search', debouncedQuery, filters, page],
     () => searchComponents({
       query: debouncedQuery || '*', // Use wildcard when no query but filters are applied
-      ...filters,
+      component_type: filters.componentType || undefined,
+      project_id: filters.projectId === 'all' ? undefined :
+                  filters.projectId === 'unassigned' ? null :
+                  filters.projectId || undefined,
       page,
       limit: 25,
     }),
     {
-      enabled: Boolean(debouncedQuery.length > 0 || filters.componentType), // Enable when query OR filters are present
+      enabled: Boolean(debouncedQuery.length > 0 || filters.componentType || filters.projectId !== 'all'), // Enable when query OR filters are present
       keepPreviousData: false,
       onSuccess: (data) => {
         if (page === 1) {
@@ -207,11 +223,11 @@ const SearchPage: React.FC = () => {
 
   // Reset page and results when search query or filters change
   useEffect(() => {
-    if (debouncedQuery.trim() || filters.componentType) {
+    if (debouncedQuery.trim() || filters.componentType || filters.projectId !== 'all') {
       setPage(1);
       setAllResults([]);
     }
-  }, [debouncedQuery, filters.componentType]);
+  }, [debouncedQuery, filters.componentType, filters.projectId]);
 
   // Don't reset recent components - let React Query handle the data
 
@@ -231,7 +247,7 @@ const SearchPage: React.FC = () => {
           <LinearProgress sx={{ mb: 2 }} />
         )}
         <Grid container spacing={3} alignItems="center">
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <Autocomplete
               freeSolo
               options={suggestions}
@@ -284,11 +300,39 @@ const SearchPage: React.FC = () => {
           </Grid>
 
           <Grid item xs={12} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Project</InputLabel>
+              <Select
+                value={filters.projectId}
+                onChange={(e) => handleFilterChange('projectId', e.target.value)}
+                label="Project"
+              >
+                <MenuItem value="all">All Projects</MenuItem>
+                <MenuItem value="unassigned">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <FolderOpen sx={{ color: 'text.secondary', fontSize: 'small' }} />
+                    Unassigned
+                  </Box>
+                </MenuItem>
+                {projects.map((project) => (
+                  <MenuItem key={project.id} value={project.id}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Folder sx={{ color: 'primary.main', fontSize: 'small' }} />
+                      {project.name}
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={2}>
             <Button
               variant="outlined"
               startIcon={<ClearIcon />}
               onClick={() => setFilters({
                 componentType: '',
+                projectId: 'all',
               })}
               disabled={activeFiltersCount === 0}
               fullWidth
@@ -301,17 +345,27 @@ const SearchPage: React.FC = () => {
 
 
         {/* Active Filters */}
-        {filters.componentType && (
+        {(filters.componentType || filters.projectId !== 'all') && (
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle2" gutterBottom>
               Active Filters:
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Chip
-                label={`Type: ${getComponentTypeLabel(filters.componentType)}`}
-                onDelete={() => handleFilterChange('componentType', '')}
-                size="small"
-              />
+              {filters.componentType && (
+                <Chip
+                  label={`Type: ${getComponentTypeLabel(filters.componentType)}`}
+                  onDelete={() => handleFilterChange('componentType', '')}
+                  size="small"
+                />
+              )}
+              {filters.projectId !== 'all' && (
+                <Chip
+                  label={`Project: ${filters.projectId === 'unassigned' ? 'Unassigned' : 
+                    projects.find(p => p.id === filters.projectId)?.name || 'Unknown'}`}
+                  onDelete={() => handleFilterChange('projectId', 'all')}
+                  size="small"
+                />
+              )}
             </Box>
           </Box>
         )}

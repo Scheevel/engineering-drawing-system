@@ -15,7 +15,6 @@ import {
   Assessment as StatsIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import DrawingUpload from '../components/DrawingUpload.tsx';
 import RecentActivity from '../components/RecentActivity.tsx';
 import SystemStats from '../components/SystemStats.tsx';
 
@@ -106,15 +105,6 @@ const Dashboard: React.FC = () => {
           <RecentActivity />
         </Grid>
 
-        {/* Quick Upload */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Quick Upload
-            </Typography>
-            <DrawingUpload />
-          </Paper>
-        </Grid>
       </Grid>
     </Box>
   );

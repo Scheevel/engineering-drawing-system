@@ -64,7 +64,7 @@ class ExportService:
                     "material_type": component.material_type,
                     "drawing_file": component.drawing.file_name,
                     "sheet_number": component.drawing.sheet_number,
-                    "project_name": component.drawing.project.name if component.drawing.project else "N/A",
+                    "project_name": component.drawing.project.name if component.drawing.project else "Unassigned",
                     "confidence_score": component.confidence_score,
                     "created_at": component.created_at.isoformat() if component.created_at else None
                 }

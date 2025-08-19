@@ -481,6 +481,8 @@ class ComponentService:
             # Add project context
             if hasattr(drawing, 'project') and drawing.project:
                 response_data["project_name"] = drawing.project.name
+            else:
+                response_data["project_name"] = "Unassigned"
         
         return ComponentResponse(**response_data)
     

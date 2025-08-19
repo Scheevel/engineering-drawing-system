@@ -19,7 +19,6 @@ import {
   Search as SearchIcon,
   Description as DrawingIcon,
   Upload as UploadIcon,
-  GetApp as ExportIcon,
   Folder as FolderIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
@@ -52,7 +51,6 @@ const Navigation: React.FC<NavigationProps> = ({ onDrawerToggle }) => {
     { text: 'Projects', icon: <FolderIcon />, path: '/projects' },
     { text: 'Search Components', icon: <SearchIcon />, path: '/search' },
     { text: 'Upload Drawings', icon: <UploadIcon />, path: '/upload' },
-    { text: 'Export Data', icon: <ExportIcon />, path: '/export' },
   ];
 
   useEffect(() => {
@@ -126,18 +124,22 @@ const Navigation: React.FC<NavigationProps> = ({ onDrawerToggle }) => {
         )}
       </Toolbar>
       <Divider />
-      <List>
+      <List sx={{ py: 0 }}>
         {menuItems.map((item) => {
           const isSelected = location.pathname === item.path;
           const listItem = (
-            <ListItem key={item.text} disablePadding>
+            <ListItem key={item.text} disablePadding sx={{ display: 'block', m: 0, p: 0 }}>
               <ListItemButton
                 selected={isSelected}
                 onClick={() => navigate(item.path)}
                 sx={{
+                  height: 48,
                   minHeight: 48,
+                  maxHeight: 48,
                   justifyContent: effectiveExpanded ? 'initial' : 'center',
                   px: 2.5,
+                  my: 0,
+                  py: 0,
                 }}
               >
                 <ListItemIcon
@@ -145,6 +147,20 @@ const Navigation: React.FC<NavigationProps> = ({ onDrawerToggle }) => {
                     minWidth: 0,
                     mr: effectiveExpanded ? 3 : 'auto',
                     justifyContent: 'center',
+                    height: 24,
+                    width: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    // Fix icon alignment issues in collapsed state
+                    '& .MuiSvgIcon-root': {
+                      // Apply specific adjustments for misaligned icons
+                      ...(item.text === 'Search Components' && {
+                        transform: 'translateY(-1px)',
+                      }),
+                      ...(item.text === 'Upload Drawings' && {
+                        transform: 'translateY(1px)',
+                      }),
+                    },
                   }}
                 >
                   {item.icon}

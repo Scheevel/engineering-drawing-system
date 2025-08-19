@@ -13,6 +13,16 @@ import {
   ListItemSecondaryAction,
   Chip,
   Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  CircularProgress,
 } from '@mui/material';
 import {
   CloudUpload as CloudUploadIcon,
@@ -20,9 +30,15 @@ import {
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Description as FileIcon,
+  Folder as FolderIcon,
+  Add as AddIcon,
+  FolderOpen,
+  AccountTree as OrganizeIcon,
 } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
-import { uploadDrawing } from '../services/api.ts';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { uploadDrawing, getProjects, createProject, type ProjectResponse, type ProjectCreate } from '../services/api.ts';
+import ProjectOrganizationDialog from './ProjectOrganizationDialog.tsx';
 
 interface UploadFile {
   file: File;
@@ -35,8 +51,31 @@ interface UploadFile {
 }
 
 const DrawingUpload: React.FC = () => {
+  const queryClient = useQueryClient();
   const [files, setFiles] = useState<UploadFile[]>([]);
-  const [projectId, setProjectId] = useState<string | undefined>();
+  const [projectId, setProjectId] = useState<string>('unassigned');
+  const [createProjectDialogOpen, setCreateProjectDialogOpen] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [showOrganizeDialog, setShowOrganizeDialog] = useState(false);
+  
+  // Fetch projects for dropdown
+  const { data: projects = [], isLoading: loadingProjects } = useQuery<ProjectResponse[]>(
+    'projects',
+    getProjects,
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    }
+  );
+  
+  // Create project mutation
+  const createProjectMutation = useMutation(createProject, {
+    onSuccess: (newProject) => {
+      queryClient.invalidateQueries('projects');
+      setProjectId(newProject.id);
+      setCreateProjectDialogOpen(false);
+      setNewProjectName('');
+    },
+  });
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles.map((file) => ({
@@ -77,7 +116,7 @@ const DrawingUpload: React.FC = () => {
         );
       }, 200);
 
-      const result = await uploadDrawing(uploadFile.file, projectId);
+      const result = await uploadDrawing(uploadFile.file, projectId === 'unassigned' ? undefined : projectId);
 
       clearInterval(progressInterval);
 
@@ -125,6 +164,42 @@ const DrawingUpload: React.FC = () => {
   const clearCompleted = () => {
     setFiles((prev) => prev.filter((f) => f.status !== 'success'));
   };
+  
+  const handleCreateNewProject = () => {
+    if (newProjectName.trim()) {
+      createProjectMutation.mutate({ name: newProjectName.trim() });
+    }
+  };
+  
+  const handleProjectChange = (value: string) => {
+    if (value === 'create-new') {
+      setCreateProjectDialogOpen(true);
+    } else {
+      setProjectId(value);
+    }
+  };
+  
+  const handleOrganizeDrawings = () => {
+    setShowOrganizeDialog(true);
+  };
+  
+  const handleOrganizeComplete = () => {
+    setShowOrganizeDialog(false);
+    // Optionally clear completed files after organization
+    clearCompleted();
+  };
+  
+  const getSuccessfulDrawingNames = () => {
+    return files
+      .filter(f => f.status === 'success')
+      .map(f => f.file.name);
+  };
+  
+  const getProjectDisplayName = (projectId: string) => {
+    if (projectId === 'unassigned') return 'Unassigned';
+    const project = projects.find(p => p.id === projectId);
+    return project ? project.name : 'Unknown Project';
+  };
 
   const getFileIcon = (status: UploadFile['status']) => {
     switch (status) {
@@ -160,9 +235,53 @@ const DrawingUpload: React.FC = () => {
 
   const pendingCount = files.filter((f) => f.status === 'pending').length;
   const uploadingCount = files.filter((f) => f.status === 'uploading').length;
+  const successCount = files.filter((f) => f.status === 'success').length;
+  const successfulDrawingIds = files.filter((f) => f.status === 'success' && f.drawingId).map(f => f.drawingId!);
 
   return (
     <Box>
+      {/* Project Selection */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Project Assignment
+        </Typography>
+        <FormControl fullWidth size="medium">
+          <InputLabel>Assign drawings to project</InputLabel>
+          <Select
+            value={projectId}
+            label="Assign drawings to project"
+            onChange={(e) => handleProjectChange(e.target.value)}
+            startAdornment={<FolderIcon sx={{ mr: 1, color: 'action.active' }} />}
+          >
+            <MenuItem value="unassigned">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <FolderOpen sx={{ color: 'text.secondary' }} />
+                Unassigned
+              </Box>
+            </MenuItem>
+            {projects.map((project) => (
+              <MenuItem key={project.id} value={project.id}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <FolderIcon color="primary" />
+                  {project.name}
+                  <Chip size="small" label={project.drawing_count} sx={{ ml: 'auto' }} />
+                </Box>
+              </MenuItem>
+            ))}
+            <MenuItem value="create-new">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main' }}>
+                <AddIcon />
+                Create New Project...
+              </Box>
+            </MenuItem>
+          </Select>
+        </FormControl>
+        {projectId !== 'unassigned' && (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            All uploaded drawings will be assigned to: <strong>{getProjectDisplayName(projectId)}</strong>
+          </Alert>
+        )}
+      </Paper>
       <Paper
         {...getRootProps()}
         sx={{
@@ -219,6 +338,17 @@ const DrawingUpload: React.FC = () => {
                   startIcon={<CloudUploadIcon />}
                 >
                   Upload All ({pendingCount})
+                </Button>
+              )}
+              {successCount > 0 && (
+                <Button 
+                  size="small" 
+                  onClick={handleOrganizeDrawings}
+                  startIcon={<OrganizeIcon />}
+                  variant="outlined"
+                  color="primary"
+                >
+                  Organize Drawings ({successCount})
                 </Button>
               )}
               {files.some((f) => f.status === 'success') && (
@@ -283,6 +413,55 @@ const DrawingUpload: React.FC = () => {
           No files selected. Drag and drop drawing files or click the area above to select.
         </Alert>
       )}
+      
+      {/* Create New Project Dialog */}
+      <Dialog 
+        open={createProjectDialogOpen} 
+        onClose={() => setCreateProjectDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Create New Project</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 1 }}>
+            <TextField
+              label="Project Name"
+              value={newProjectName}
+              onChange={(e) => setNewProjectName(e.target.value)}
+              fullWidth
+              required
+              placeholder="Enter project name"
+              error={!newProjectName.trim() && createProjectMutation.isError}
+              helperText={!newProjectName.trim() && createProjectMutation.isError ? 'Project name is required' : ''}
+            />
+          </Box>
+          
+          {createProjectMutation.isError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {createProjectMutation.error?.message || 'Failed to create project'}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateProjectDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleCreateNewProject}
+            variant="contained"
+            disabled={!newProjectName.trim() || createProjectMutation.isLoading}
+            startIcon={createProjectMutation.isLoading ? <CircularProgress size={16} /> : <AddIcon />}
+          >
+            {createProjectMutation.isLoading ? 'Creating...' : 'Create Project'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Project Organization Dialog */}
+      <ProjectOrganizationDialog
+        open={showOrganizeDialog}
+        onClose={handleOrganizeComplete}
+        drawingIds={successfulDrawingIds}
+        drawingNames={getSuccessfulDrawingNames()}
+      />
     </Box>
   );
 };

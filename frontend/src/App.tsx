@@ -7,6 +7,7 @@ import DrawingViewer from './pages/DrawingViewer.tsx';
 import UploadPage from './pages/UploadPage.tsx';
 import ComponentEditor from './pages/ComponentEditor.tsx';
 import ProjectsPage from './pages/ProjectsPage.tsx';
+import DrawingsListPage from './pages/DrawingsListPage.tsx';
 import Navigation from './components/Navigation.tsx';
 
 const App: React.FC = () => {
@@ -52,6 +53,7 @@ const App: React.FC = () => {
             <Route path="/search" element={<SearchPage />} />
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/drawings" element={<DrawingsListPage />} />
             <Route path="/drawings/:id" element={<DrawingViewer />} />
             <Route path="/drawing-viewer/:id" element={<DrawingViewer />} />
             <Route path="/component/:id" element={<ComponentEditor />} />
