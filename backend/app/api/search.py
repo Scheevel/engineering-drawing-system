@@ -10,13 +10,12 @@ search_service = SearchService()
 
 @router.get("/components", response_model=SearchResponse)
 async def search_components(
-    query: str = Query(..., min_length=1),
+    query: str = Query("*", min_length=1),
     component_type: Optional[str] = None,
     project_id: Optional[str] = None,
     drawing_type: Optional[str] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    fuzzy: bool = Query(False),
     db: Session = Depends(get_db)
 ):
     """Search for components across all drawings"""
@@ -27,8 +26,7 @@ async def search_components(
             project_id=project_id,
             drawing_type=drawing_type,
             page=page,
-            limit=limit,
-            fuzzy=fuzzy
+            limit=limit
         )
         
         results = await search_service.search_components(search_request, db)
@@ -71,15 +69,21 @@ async def get_search_suggestions(
 
 @router.get("/recent")
 async def get_recent_components(
-    limit: int = Query(6, ge=1, le=20),
+    limit: int = Query(25, ge=1, le=100),
+    page: int = Query(1, ge=1),
     db: Session = Depends(get_db)
 ):
     """Get recently added components for search page preview"""
     try:
-        recent_components = await search_service.get_recent_components(limit, db)
+        offset = (page - 1) * limit
+        recent_components = await search_service.get_recent_components(limit, db, offset)
+        total_count = await search_service.get_total_components_count(db)
         return {
             "recent_components": recent_components,
-            "total_available": await search_service.get_total_components_count(db)
+            "total_available": total_count,
+            "page": page,
+            "limit": limit,
+            "has_more": offset + len(recent_components) < total_count
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

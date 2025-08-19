@@ -22,7 +22,6 @@ class SearchRequest(BaseModel):
     drawing_type: Optional[str] = None
     page: int = Field(1, ge=1)
     limit: int = Field(20, ge=1, le=100)
-    fuzzy: bool = False
     sort_by: str = "relevance"  # relevance, date, name
     sort_order: str = "desc"  # asc, desc
 

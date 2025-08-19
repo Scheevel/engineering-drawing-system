@@ -105,7 +105,6 @@ export interface SearchRequest {
   drawing_type?: string;
   page?: number;
   limit?: number;
-  fuzzy?: boolean;
 }
 
 export interface SearchResponse {
@@ -187,15 +186,12 @@ export const getSearchSuggestions = async (prefix: string, limit: number = 10): 
   return response.data.suggestions;
 };
 
-export const getRecentComponents = async (limit: number = 25, page: number = 1): Promise<{
+export const getRecentComponents = async (limit: number = 20): Promise<{
   recent_components: Component[];
   total_available: number;
-  page: number;
-  limit: number;
-  has_more: boolean;
 }> => {
   const response = await api.get('/search/recent', {
-    params: { limit, page },
+    params: { limit },
   });
   return response.data;
 };
@@ -276,6 +272,11 @@ export interface SystemStats {
 
 export const getSystemStats = async (): Promise<SystemStats> => {
   const response = await api.get('/system/stats');
+  return response.data;
+};
+
+export const getComponentTypes = async (): Promise<{component_types: string[]}> => {
+  const response = await api.get('/system/component-types');
   return response.data;
 };
 

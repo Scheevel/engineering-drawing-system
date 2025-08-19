@@ -59,3 +59,22 @@ async def get_system_stats(db: Session = Depends(get_db)):
 async def health_check():
     """Basic health check endpoint"""
     return {"status": "healthy", "service": "Engineering Drawing Index System"}
+
+@router.get("/component-types")
+async def get_component_types(db: Session = Depends(get_db)):
+    """Get all distinct component types that exist in the database"""
+    try:
+        # Query for distinct component types, excluding None/null values
+        component_types = db.query(Component.component_type).distinct().filter(
+            Component.component_type.isnot(None)
+        ).filter(
+            Component.component_type != ''
+        ).all()
+        
+        # Extract values and sort them
+        types = sorted([ct[0] for ct in component_types if ct[0]])
+        
+        return {"component_types": types}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
