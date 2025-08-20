@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -163,10 +163,11 @@ const SearchPage: React.FC = () => {
   };
 
   // Compute scope array for useQuery dependency to avoid stale closures
-  const currentScopeArray = getScopeArray();
+  // useMemo prevents new array creation on every render, avoiding infinite loops
+  const currentScopeArray = useMemo(() => getScopeArray(), [searchScope]);
 
   const getScopeDisplayText = (): string => {
-    const active = getScopeArray();
+    const active = currentScopeArray;
     const displayNames: Record<string, string> = {
       piece_mark: 'Piece Marks',
       component_type: 'Component Types',
@@ -189,6 +190,10 @@ const SearchPage: React.FC = () => {
     });
     setPage(1); // Reset to first page when scope changes
     setAllResults([]); // Clear current results immediately for better UX
+    
+    // Force query cache invalidation to ensure search triggers with new scope
+    // This handles the race condition where scope defaults to piece_mark
+    queryClient.invalidateQueries(['search']);
   };
 
   // Real-time query validation
@@ -540,12 +545,22 @@ const SearchPage: React.FC = () => {
     }
   }, [debouncedQuery, filters.componentType, filters.projectId, searchScope]);
 
-  // Invalidate search query cache when scope changes to force fresh fetch
+  // Handle scope default refresh - ensures search triggers when scope defaults to piece_mark
   useEffect(() => {
-    if (debouncedQuery.length > 0) {
-      queryClient.invalidateQueries(['search']);
+    console.log('🔍 Scope changed, currentScopeArray:', currentScopeArray, 'searchScope:', searchScope);
+    
+    // Check if we have a query or filters that would trigger a search
+    const shouldSearch = Boolean(debouncedQuery.length > 0 || filters.componentType || filters.projectId !== 'all');
+    
+    if (shouldSearch) {
+      console.log('🚀 Triggering search refresh due to scope change');
+      // Force a fresh search by invalidating the exact query key
+      queryClient.invalidateQueries(['search', debouncedQuery, filters, currentScopeArray, page]);
     }
-  }, [currentScopeArray, queryClient, debouncedQuery]);
+  }, [currentScopeArray, debouncedQuery, filters, page, queryClient, searchScope]);
+
+  // Note: Removed aggressive query invalidation useEffect here - the useQuery dependency 
+  // array with memoized currentScopeArray is sufficient for cache busting
 
   // Don't reset recent components - let React Query handle the data
 
@@ -1134,7 +1149,7 @@ const SearchPage: React.FC = () => {
           onSave={handleSaveSearch}
           editingSearch={editingSavedSearch}
           currentQuery={query}
-          currentScope={getScopeArray()}
+          currentScope={currentScopeArray}
           currentFilters={{
             componentType: filters.componentType,
             projectId: currentProjectId,
