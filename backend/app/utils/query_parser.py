@@ -91,7 +91,15 @@ class SearchQueryParser:
         r'--.*$',
         r"'\s*or\s+.*=.*",
         r'exec\s*\(',
-        r'xp_cmdshell'
+        r'xp_cmdshell',
+        r'<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>',  # XSS script tags
+        r'javascript:',  # JavaScript protocol
+        r'on\w+\s*=',  # HTML event handlers (onclick, onload, etc.)
+        r'<[^>]*\bon\w+\s*=',  # Event handlers in HTML tags
+        r'expression\s*\(',  # CSS expression
+        r'eval\s*\(',  # JavaScript eval
+        r'document\s*\.',  # DOM manipulation
+        r'window\s*\.',  # Window object access
     ]
     
     # Boolean operators (case insensitive)

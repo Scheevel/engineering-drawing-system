@@ -1,5 +1,5 @@
 import pytest
-from app.services.search import SearchService
+from app.services.search_service import SearchService
 
 class TestSearchService:
     def test_search_components(self):

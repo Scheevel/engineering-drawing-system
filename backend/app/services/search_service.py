@@ -6,8 +6,10 @@ from datetime import datetime
 import json
 
 from app.models.database import Component, Drawing, Project, Dimension, Specification
-from app.models.search import SearchRequest, SearchResponse, ComponentSearchResult
+from app.models.search import SearchRequest, SearchResponse, ComponentSearchResult, SearchScope, SearchQueryType
 from app.core.config import settings
+from app.utils.search_errors import validate_search_query
+from app.utils.query_parser import parse_search_query, build_search_filter
 
 logger = logging.getLogger(__name__)
 
@@ -32,27 +34,70 @@ class SearchService:
                 self.es = None
     
     async def search_components(self, request: SearchRequest, db: Session) -> SearchResponse:
-        """Search for components across all drawings"""
+        """Search for components across all drawings with enhanced query parsing"""
         start_time = datetime.now()
         
         try:
+            # Validate and parse the search query
+            validation_result = validate_search_query(request.query, request.scope)
+            
+            if not validation_result.is_valid:
+                # Return error response with validation details
+                return SearchResponse(
+                    query=request.query,
+                    scope=request.scope,
+                    query_type=SearchQueryType.SIMPLE,
+                    results=[],
+                    total=0,
+                    page=request.page,
+                    limit=request.limit,
+                    has_next=False,
+                    has_prev=False,
+                    search_time_ms=0,
+                    complexity_score=0,
+                    filters_applied={
+                        "component_type": request.component_type,
+                        "project_id": request.project_id,
+                        "drawing_type": request.drawing_type
+                    },
+                    warnings=[validation_result.error.message] if validation_result.error else []
+                )
+            
+            # Parse query for enhanced search capabilities
+            parsed_query = parse_search_query(request.query)
+            
             # Build base query with joins
             query = db.query(Component).join(Drawing).outerjoin(Project)
             
-            # Apply text search (skip if query is wildcard for filter-only searches)
+            # Apply scope-based text search (skip if query is wildcard for filter-only searches)
             if request.query and request.query != "*":
-                # Standard search with exact match, prefix match, and substring match
-                text_filter = or_(
-                    Component.piece_mark == request.query,
-                    Component.piece_mark.ilike(f"{request.query}%"),
-                    Component.piece_mark.ilike(f"%{request.query}%"),
-                    Component.component_type.ilike(f"%{request.query}%"),
-                    Component.description.ilike(f"%{request.query}%")
-                )
+                # Determine which fields to search based on scope
+                search_fields = []
+                for scope in request.scope:
+                    if scope == SearchScope.PIECE_MARK:
+                        search_fields.append(Component.piece_mark)
+                    elif scope == SearchScope.COMPONENT_TYPE:
+                        search_fields.append(Component.component_type)
+                    elif scope == SearchScope.DESCRIPTION:
+                        search_fields.append(Component.description)
                 
-                query = query.filter(text_filter)
+                # Build enhanced search filter
+                if search_fields:
+                    try:
+                        text_filter = build_search_filter(parsed_query, search_fields)
+                        if text_filter is not None:
+                            query = query.filter(text_filter)
+                    except Exception as e:
+                        logger.warning(f"Enhanced search failed, falling back to simple search: {e}")
+                        # Fallback to simple search across all fields if enhanced parsing fails
+                        text_filter = or_(
+                            Component.piece_mark.ilike(f"%{request.query}%"),
+                            Component.component_type.ilike(f"%{request.query}%"),
+                            Component.description.ilike(f"%{request.query}%")
+                        )
+                        query = query.filter(text_filter)
             
-            # Apply filters
+            # Apply additional filters
             if request.component_type:
                 query = query.filter(Component.component_type == request.component_type)
             
@@ -74,7 +119,7 @@ class SearchService:
                 query = query.order_by(desc(Component.piece_mark) if request.sort_order == "desc" else Component.piece_mark)
             else:  # relevance
                 if request.query and request.query != "*":
-                    # Simple relevance: exact matches first, then partial matches
+                    # Enhanced relevance: exact matches first, then partial matches
                     from sqlalchemy import case
                     query = query.order_by(
                         desc(case((Component.piece_mark == request.query, 1), else_=0)),
@@ -131,6 +176,8 @@ class SearchService:
             
             return SearchResponse(
                 query=request.query,
+                scope=request.scope,
+                query_type=validation_result.query_type,
                 results=results,
                 total=total,
                 page=request.page,
@@ -138,11 +185,13 @@ class SearchService:
                 has_next=(request.page * request.limit) < total,
                 has_prev=request.page > 1,
                 search_time_ms=search_time,
+                complexity_score=validation_result.complexity_score,
                 filters_applied={
                     "component_type": request.component_type,
                     "project_id": request.project_id,
                     "drawing_type": request.drawing_type
-                }
+                },
+                warnings=validation_result.warnings
             )
             
         except Exception as e:
