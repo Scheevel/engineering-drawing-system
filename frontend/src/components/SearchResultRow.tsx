@@ -23,15 +23,25 @@ import HighlightedText from './HighlightedText.tsx';
 interface SearchResultRowProps {
   component: any;
   searchTerm: string;
+  searchScope?: string[]; // Array of scope fields that should be highlighted
   onViewDetails: (componentId: string) => void;
 }
 
 const SearchResultRow: React.FC<SearchResultRowProps> = ({
   component,
   searchTerm,
+  searchScope = ['piece_mark'], // Default to piece_mark scope if not specified
   onViewDetails,
 }) => {
   const [expanded, setExpanded] = useState(false);
+
+  // Helper function to determine if a field should be highlighted based on search scope
+  const getHighlightTerm = (fieldName: string): string => {
+    if (!searchScope || searchScope.length === 0) {
+      return fieldName === 'piece_mark' ? searchTerm : ''; // Default to piece_mark only
+    }
+    return searchScope.includes(fieldName) ? searchTerm : '';
+  };
 
   const handleExpandClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -48,18 +58,24 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({
             </IconButton>
             <HighlightedText
               text={component.piece_mark}
-              searchTerm={searchTerm}
+              searchTerm={getHighlightTerm('piece_mark')}
               variant="body2"
               fontWeight="bold"
             />
           </Box>
         </TableCell>
-        <TableCell>{component.component_type}</TableCell>
+        <TableCell>
+          <HighlightedText
+            text={component.component_type}
+            searchTerm={getHighlightTerm('component_type')}
+            variant="body2"
+          />
+        </TableCell>
         <TableCell>{component.quantity}</TableCell>
         <TableCell>
           <HighlightedText
             text={component.drawing_file_name}
-            searchTerm={searchTerm}
+            searchTerm={getHighlightTerm('drawing_file_name')}
             variant="body2"
           />
           {component.sheet_number && (
@@ -114,7 +130,7 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({
                         </Typography>
                         <HighlightedText
                           text={component.description}
-                          searchTerm={searchTerm}
+                          searchTerm={getHighlightTerm('description')}
                           variant="body2"
                           display="block"
                         />

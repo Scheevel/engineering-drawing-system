@@ -960,6 +960,7 @@ const SearchPage: React.FC = () => {
                         key={component.id}
                         component={component}
                         searchTerm={debouncedQuery}
+                        searchScope={getScopeArray()}
                         onViewDetails={setSelectedComponent}
                       />
                     ))}
