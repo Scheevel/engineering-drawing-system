@@ -73,13 +73,19 @@ class SearchService:
             if request.query and request.query != "*":
                 # Determine which fields to search based on scope
                 search_fields = []
+                scope_field_names = []
                 for scope in request.scope:
                     if scope == SearchScope.PIECE_MARK:
                         search_fields.append(Component.piece_mark)
+                        scope_field_names.append("piece_mark")
                     elif scope == SearchScope.COMPONENT_TYPE:
                         search_fields.append(Component.component_type)
+                        scope_field_names.append("component_type")
                     elif scope == SearchScope.DESCRIPTION:
                         search_fields.append(Component.description)
+                        scope_field_names.append("description")
+                
+                logger.info(f"Searching query '{request.query}' in scope fields: {scope_field_names}")
                 
                 # Build enhanced search filter
                 if search_fields:
@@ -89,13 +95,14 @@ class SearchService:
                             query = query.filter(text_filter)
                     except Exception as e:
                         logger.warning(f"Enhanced search failed, falling back to simple search: {e}")
-                        # Fallback to simple search across all fields if enhanced parsing fails
-                        text_filter = or_(
-                            Component.piece_mark.ilike(f"%{request.query}%"),
-                            Component.component_type.ilike(f"%{request.query}%"),
-                            Component.description.ilike(f"%{request.query}%")
-                        )
-                        query = query.filter(text_filter)
+                        # Fallback to simple search ONLY within the specified scope fields
+                        scope_filters = []
+                        for field in search_fields:
+                            scope_filters.append(field.ilike(f"%{request.query}%"))
+                        
+                        if scope_filters:
+                            text_filter = or_(*scope_filters)
+                            query = query.filter(text_filter)
             
             # Apply additional filters
             if request.component_type:

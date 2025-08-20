@@ -20,6 +20,7 @@ class Project(Base):
     
     # Relationships
     drawings = relationship("Drawing", back_populates="project", cascade="all, delete-orphan")
+    saved_searches = relationship("SavedSearch", back_populates="project", cascade="all, delete-orphan")
 
 class Drawing(Base):
     __tablename__ = "drawings"
@@ -166,3 +167,35 @@ class ComponentVersion(Base):
     
     # Relationships
     component = relationship("Component")
+
+class SavedSearch(Base):
+    __tablename__ = "saved_searches"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    
+    # Search configuration
+    query = Column(String(500), nullable=False)
+    scope = Column(JSON, nullable=False)  # Array of search scopes
+    component_type = Column(String(100))
+    drawing_type = Column(String(50))
+    sort_by = Column(String(50), default="relevance")
+    sort_order = Column(String(10), default="desc")
+    
+    # Metadata
+    display_order = Column(Integer, default=0)  # For user-defined ordering
+    last_executed = Column(DateTime)
+    execution_count = Column(Integer, default=0)
+    created_by = Column(String(100))  # User ID who created the search
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    project = relationship("Project")
+    
+    # Indexes for performance
+    __table_args__ = (
+        {"schema": None}
+    )

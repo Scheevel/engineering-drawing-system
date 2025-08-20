@@ -153,3 +153,60 @@ class AdvancedSearchRequest(BaseModel):
     limit: int = Field(20, ge=1, le=100)
     sort_by: str = "relevance"
     sort_order: str = "desc"
+
+# Saved Search Models
+class SavedSearchCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    query: str = Field(..., min_length=1, max_length=500)
+    scope: List[SearchScope] = Field(default=[SearchScope.PIECE_MARK])
+    component_type: Optional[str] = None
+    drawing_type: Optional[str] = None
+    sort_by: str = "relevance"
+    sort_order: str = "desc"
+    project_id: str = Field(..., description="Project ID to associate search with")
+
+class SavedSearchUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = None
+    query: Optional[str] = Field(None, min_length=1, max_length=500)
+    scope: Optional[List[SearchScope]] = None
+    component_type: Optional[str] = None
+    drawing_type: Optional[str] = None
+    sort_by: Optional[str] = None
+    sort_order: Optional[str] = None
+    display_order: Optional[int] = None
+
+class SavedSearchResponse(BaseModel):
+    id: str
+    project_id: str
+    name: str
+    description: Optional[str] = None
+    query: str
+    scope: List[SearchScope]
+    component_type: Optional[str] = None
+    drawing_type: Optional[str] = None
+    sort_by: str
+    sort_order: str
+    display_order: int
+    last_executed: Optional[datetime] = None
+    execution_count: int
+    created_by: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    
+    # Execution preview
+    preview_query_type: Optional[SearchQueryType] = None
+    
+    class Config:
+        from_attributes = True
+
+class SavedSearchListResponse(BaseModel):
+    searches: List[SavedSearchResponse]
+    total: int
+    project_id: str
+    max_searches_per_project: int = 50
+
+class SavedSearchExecutionRequest(BaseModel):
+    page: int = Field(1, ge=1)
+    limit: int = Field(20, ge=1, le=100)

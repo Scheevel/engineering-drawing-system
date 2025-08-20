@@ -11,6 +11,7 @@ search_service = SearchService()
 @router.get("/components", response_model=SearchResponse)
 async def search_components(
     query: str = Query("*", min_length=1),
+    scope: Optional[List[str]] = Query(None),
     component_type: Optional[str] = None,
     project_id: Optional[str] = None,
     drawing_type: Optional[str] = None,
@@ -20,8 +21,21 @@ async def search_components(
 ):
     """Search for components across all drawings"""
     try:
+        # Convert scope strings to SearchScope enums if provided
+        from app.models.search import SearchScope
+        parsed_scope = None
+        if scope:
+            parsed_scope = []
+            for s in scope:
+                try:
+                    parsed_scope.append(SearchScope(s))
+                except ValueError:
+                    # Invalid scope value, skip it
+                    continue
+        
         search_request = SearchRequest(
             query=query,
+            scope=parsed_scope if parsed_scope else [SearchScope.PIECE_MARK],
             component_type=component_type,
             project_id=project_id,
             drawing_type=drawing_type,

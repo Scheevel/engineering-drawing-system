@@ -1,7 +1,7 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.api import drawings, search, export, system, components, projects
+from app.api import drawings, search, export, system, components, projects, saved_searches
 from app.core.config import settings
 import os
 
@@ -29,6 +29,7 @@ app.include_router(drawings.router, prefix="/api/v1/drawings", tags=["drawings"]
 app.include_router(components.router, prefix="/api/v1/components", tags=["components"])
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["projects"])
 app.include_router(search.router, prefix="/api/v1/search", tags=["search"])
+app.include_router(saved_searches.router, prefix="/api/v1/saved-searches", tags=["saved-searches"])
 app.include_router(export.router, prefix="/api/v1/export", tags=["export"])
 app.include_router(system.router, prefix="/api/v1/system", tags=["system"])
 
