@@ -43,11 +43,30 @@ import {
   Help as HelpIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
+  BookmarkBorder as BookmarkBorderIcon,
+  Bookmark as BookmarkIcon,
+  Delete as DeleteIcon,
+  PlayArrow as PlayArrowIcon,
 } from '@mui/icons-material';
-import { useQuery } from 'react-query';
-import { searchComponents, getSearchSuggestions, getRecentComponents, getComponentTypes, getProjects, type ProjectResponse } from '../services/api.ts';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { 
+  searchComponents, 
+  getSearchSuggestions, 
+  getRecentComponents, 
+  getComponentTypes, 
+  getProjects, 
+  getSavedSearchesForProject,
+  createSavedSearch,
+  deleteSavedSearch,
+  executeSavedSearch,
+  getSavedSearchCount,
+  type ProjectResponse,
+  type SavedSearchCreate,
+  type SavedSearch 
+} from '../services/api.ts';
 import ComponentDetailModal from '../components/ComponentDetailModal.tsx';
 import SearchResultRow from '../components/SearchResultRow.tsx';
+import SavedSearchDialog from '../components/SavedSearchDialog.tsx';
 import { useDebounce } from '../hooks/useDebounce.ts';
 
 interface SearchFilters {
@@ -124,8 +143,15 @@ const SearchPage: React.FC = () => {
     queryType?: string;
   }>({ isValid: true });
   
+  // Saved search state
+  const [savedSearchDialogOpen, setSavedSearchDialogOpen] = useState(false);
+  const [savedSearchesExpanded, setSavedSearchesExpanded] = useState(false);
+  const [editingSavedSearch, setEditingSavedSearch] = useState<SavedSearch | null>(null);
+  
   // Debounce search query to avoid excessive API calls
   const debouncedQuery = useDebounce(query, 300);
+  
+  const queryClient = useQueryClient();
 
   // Helper functions for scope management
   const getScopeArray = (): string[] => {
@@ -316,6 +342,46 @@ const SearchPage: React.FC = () => {
     }
   );
 
+  // Get current project for saved searches
+  const currentProjectId = filters.projectId !== 'all' && filters.projectId !== 'unassigned' ? filters.projectId : null;
+  const currentProject = projects.find(p => p.id === currentProjectId);
+
+  // Fetch saved searches for current project
+  const { data: savedSearchesData, refetch: refetchSavedSearches } = useQuery(
+    ['saved-searches', currentProjectId],
+    () => currentProjectId ? getSavedSearchesForProject(currentProjectId) : Promise.resolve(null),
+    {
+      enabled: !!currentProjectId,
+      staleTime: 2 * 60 * 1000, // 2 minutes
+    }
+  );
+
+  // Get saved search count for limits checking
+  const { data: savedSearchCountData } = useQuery(
+    ['saved-search-count', currentProjectId],
+    () => currentProjectId ? getSavedSearchCount(currentProjectId) : Promise.resolve(null),
+    {
+      enabled: !!currentProjectId,
+      staleTime: 2 * 60 * 1000, // 2 minutes
+    }
+  );
+
+  // Mutations for saved search operations
+  const createSavedSearchMutation = useMutation(createSavedSearch, {
+    onSuccess: () => {
+      queryClient.invalidateQueries(['saved-searches', currentProjectId]);
+      queryClient.invalidateQueries(['saved-search-count', currentProjectId]);
+      setSavedSearchDialogOpen(false);
+    },
+  });
+
+  const deleteSavedSearchMutation = useMutation(deleteSavedSearch, {
+    onSuccess: () => {
+      queryClient.invalidateQueries(['saved-searches', currentProjectId]);
+      queryClient.invalidateQueries(['saved-search-count', currentProjectId]);
+    },
+  });
+
   const {
     data: searchResults,
     isLoading,
@@ -395,6 +461,54 @@ const SearchPage: React.FC = () => {
       } finally {
         setIsLoadingMoreRecent(false);
       }
+    }
+  };
+
+  // Saved search handlers
+  const handleOpenSaveSearchDialog = () => {
+    setEditingSavedSearch(null);
+    setSavedSearchDialogOpen(true);
+  };
+
+  const handleSaveSearch = async (searchData: SavedSearchCreate) => {
+    try {
+      await createSavedSearchMutation.mutateAsync(searchData);
+    } catch (error) {
+      console.error('Failed to save search:', error);
+      throw error;
+    }
+  };
+
+  const handleExecuteSavedSearch = async (savedSearch: SavedSearch) => {
+    try {
+      // Update search state to match the saved search
+      setQuery(savedSearch.query);
+      setFilters({
+        componentType: savedSearch.component_type || '',
+        projectId: savedSearch.project_id,
+      });
+      setSearchScope({
+        piece_mark: savedSearch.scope.includes('piece_mark'),
+        component_type: savedSearch.scope.includes('component_type'),
+        description: savedSearch.scope.includes('description'),
+      });
+      setSortBy(savedSearch.sort_by);
+      setPage(1);
+      setAllResults([]);
+
+      // Execute the search via the API (this also updates usage statistics)
+      const results = await executeSavedSearch(savedSearch.id);
+      console.log('Executed saved search:', results);
+    } catch (error) {
+      console.error('Failed to execute saved search:', error);
+    }
+  };
+
+  const handleDeleteSavedSearch = async (searchId: string) => {
+    try {
+      await deleteSavedSearchMutation.mutateAsync(searchId);
+    } catch (error) {
+      console.error('Failed to delete saved search:', error);
     }
   };
 
@@ -623,6 +737,94 @@ const SearchPage: React.FC = () => {
           </Box>
         </Collapse>
 
+        {/* Saved Searches Panel */}
+        {currentProjectId && savedSearchesData && savedSearchesData.searches.length > 0 && (
+          <Box sx={{ mt: 2 }}>
+            <Button
+              variant="text"
+              startIcon={<BookmarkIcon />}
+              endIcon={savedSearchesExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              onClick={() => setSavedSearchesExpanded(!savedSearchesExpanded)}
+              sx={{ mb: savedSearchesExpanded ? 1 : 0 }}
+              size="small"
+            >
+              Saved Searches ({savedSearchesData.searches.length})
+              {currentProject && (
+                <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>
+                  - {currentProject.name}
+                </Typography>
+              )}
+            </Button>
+            
+            <Collapse in={savedSearchesExpanded} timeout="auto" unmountOnExit>
+              <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                <Grid container spacing={1}>
+                  {savedSearchesData.searches.map((savedSearch) => (
+                    <Grid item xs={12} sm={6} md={4} key={savedSearch.id}>
+                      <Paper 
+                        variant="outlined" 
+                        sx={{ 
+                          p: 1.5, 
+                          cursor: 'pointer',
+                          '&:hover': { bgcolor: 'action.hover' },
+                          display: 'flex',
+                          flexDirection: 'column',
+                          height: '100%'
+                        }}
+                        onClick={() => handleExecuteSavedSearch(savedSearch)}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                          <Typography variant="subtitle2" noWrap sx={{ fontWeight: 600 }}>
+                            {savedSearch.name}
+                          </Typography>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSavedSearch(savedSearch.id);
+                            }}
+                            disabled={deleteSavedSearchMutation.isLoading}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                        
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, flexGrow: 1 }}>
+                          {savedSearch.query}
+                        </Typography>
+                        
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Used {savedSearch.execution_count} times
+                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            {savedSearch.preview_query_type && savedSearch.preview_query_type !== 'simple' && (
+                              <Chip 
+                                label={savedSearch.preview_query_type} 
+                                size="small" 
+                                variant="outlined" 
+                                sx={{ height: 16, fontSize: '0.65rem', mr: 0.5 }} 
+                              />
+                            )}
+                            <PlayArrowIcon fontSize="small" color="primary" />
+                          </Box>
+                        </Box>
+                      </Paper>
+                    </Grid>
+                  ))}
+                </Grid>
+                
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+                  Click a saved search to execute it. 
+                  {savedSearchCountData && (
+                    <> {savedSearchCountData.remaining} of {savedSearchCountData.max_allowed} slots remaining.</>
+                  )}
+                </Typography>
+              </Box>
+            </Collapse>
+          </Box>
+        )}
+
         {/* Active Filters */}
         {(filters.componentType || filters.projectId !== 'all') && (
           <Box sx={{ mt: 2 }}>
@@ -687,6 +889,19 @@ const SearchPage: React.FC = () => {
                 </Typography>
               </Grid>
               <Grid item xs={12} md={3}>
+                {/* Save Search Button - only show when there are results and a project is selected */}
+                {allResults.length > 0 && currentProjectId && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<BookmarkBorderIcon />}
+                    onClick={handleOpenSaveSearchDialog}
+                    disabled={createSavedSearchMutation.isLoading}
+                    sx={{ mb: 1, mr: 1, minWidth: 120 }}
+                    size="small"
+                  >
+                    Save Search
+                  </Button>
+                )}
                 <FormControl size="small" fullWidth>
                   <InputLabel>Sort By</InputLabel>
                   <Select
@@ -897,6 +1112,30 @@ const SearchPage: React.FC = () => {
             )}
           </Box>
         </Paper>
+      )}
+
+      {/* Saved Search Dialog */}
+      {currentProjectId && (
+        <SavedSearchDialog
+          open={savedSearchDialogOpen}
+          onClose={() => setSavedSearchDialogOpen(false)}
+          onSave={handleSaveSearch}
+          editingSearch={editingSavedSearch}
+          currentQuery={query}
+          currentScope={getScopeArray()}
+          currentFilters={{
+            componentType: filters.componentType,
+            projectId: currentProjectId,
+            drawingType: undefined, // Not currently supported in SearchPage filters
+          }}
+          currentSort={{
+            sortBy: sortBy,
+            sortOrder: 'desc', // Default since we don't track order separately
+          }}
+          projectId={currentProjectId}
+          isAtLimit={savedSearchCountData?.remaining === 0}
+          maxSearches={savedSearchCountData?.max_allowed}
+        />
       )}
 
       {/* Component Detail Modal */}

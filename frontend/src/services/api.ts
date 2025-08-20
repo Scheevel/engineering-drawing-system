@@ -124,6 +124,58 @@ export interface SearchResponse {
   warnings?: string[];
 }
 
+// Saved Search interfaces
+export interface SavedSearch {
+  id: string;
+  project_id: string;
+  name: string;
+  description?: string;
+  query: string;
+  scope: string[];
+  component_type?: string;
+  drawing_type?: string;
+  sort_by: string;
+  sort_order: string;
+  display_order: number;
+  last_executed?: string;
+  execution_count: number;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  preview_query_type?: string;
+}
+
+export interface SavedSearchCreate {
+  name: string;
+  description?: string;
+  query: string;
+  scope: string[];
+  component_type?: string;
+  drawing_type?: string;
+  sort_by: string;
+  sort_order: string;
+  project_id: string;
+}
+
+export interface SavedSearchUpdate {
+  name?: string;
+  description?: string;
+  query?: string;
+  scope?: string[];
+  component_type?: string;
+  drawing_type?: string;
+  sort_by?: string;
+  sort_order?: string;
+  display_order?: number;
+}
+
+export interface SavedSearchListResponse {
+  searches: SavedSearch[];
+  total: number;
+  project_id: string;
+  max_searches_per_project: number;
+}
+
 // Drawing API
 export const uploadDrawing = async (file: File, projectId?: string): Promise<Drawing> => {
   const formData = new FormData();
@@ -492,6 +544,45 @@ export const assignDrawingsToProject = async (drawingIds: string[], projectId?: 
     drawing_ids: drawingIds,
     project_id: projectId
   });
+  return response.data;
+};
+
+// Saved Search API functions
+export const createSavedSearch = async (searchData: SavedSearchCreate): Promise<SavedSearch> => {
+  const response = await api.post('/saved-searches', searchData);
+  return response.data;
+};
+
+export const getSavedSearchesForProject = async (projectId: string): Promise<SavedSearchListResponse> => {
+  const response = await api.get(`/saved-searches/project/${projectId}`);
+  return response.data;
+};
+
+export const getSavedSearch = async (searchId: string): Promise<SavedSearch> => {
+  const response = await api.get(`/saved-searches/${searchId}`);
+  return response.data;
+};
+
+export const updateSavedSearch = async (searchId: string, updateData: SavedSearchUpdate): Promise<SavedSearch> => {
+  const response = await api.put(`/saved-searches/${searchId}`, updateData);
+  return response.data;
+};
+
+export const deleteSavedSearch = async (searchId: string): Promise<void> => {
+  await api.delete(`/saved-searches/${searchId}`);
+};
+
+export const executeSavedSearch = async (searchId: string, page: number = 1, limit: number = 20): Promise<SearchResponse> => {
+  const response = await api.post(`/saved-searches/${searchId}/execute`, { page, limit });
+  return response.data;
+};
+
+export const reorderSavedSearches = async (projectId: string, searchOrder: string[]): Promise<void> => {
+  await api.put(`/saved-searches/project/${projectId}/reorder`, searchOrder);
+};
+
+export const getSavedSearchCount = async (projectId: string): Promise<{count: number, max_allowed: number, remaining: number}> => {
+  const response = await api.get(`/saved-searches/project/${projectId}/count`);
   return response.data;
 };
 
