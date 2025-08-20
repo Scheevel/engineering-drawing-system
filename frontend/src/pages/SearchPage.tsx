@@ -25,6 +25,11 @@ import {
   Checkbox,
   FormGroup,
   Collapse,
+  Tooltip,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -35,6 +40,9 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Tune as TuneIcon,
+  Help as HelpIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
 } from '@mui/icons-material';
 import { useQuery } from 'react-query';
 import { searchComponents, getSearchSuggestions, getRecentComponents, getComponentTypes, getProjects, type ProjectResponse } from '../services/api.ts';
@@ -110,6 +118,11 @@ const SearchPage: React.FC = () => {
   const [allRecentResults, setAllRecentResults] = useState<any[]>([]);
   const [hasMoreRecent, setHasMoreRecent] = useState(false);
   const [isLoadingMoreRecent, setIsLoadingMoreRecent] = useState(false);
+  const [queryValidation, setQueryValidation] = useState<{
+    isValid: boolean;
+    error?: string;
+    queryType?: string;
+  }>({ isValid: true });
   
   // Debounce search query to avoid excessive API calls
   const debouncedQuery = useDebounce(query, 300);
@@ -147,6 +160,127 @@ const SearchPage: React.FC = () => {
     });
     setPage(1); // Reset to first page when scope changes
   };
+
+  // Real-time query validation
+  const validateQuery = (queryText: string) => {
+    if (!queryText.trim()) {
+      setQueryValidation({ isValid: true });
+      return;
+    }
+
+    // Simple client-side validation patterns
+    const errors = [];
+    
+    // Check for unmatched parentheses
+    const openParens = (queryText.match(/\(/g) || []).length;
+    const closeParens = (queryText.match(/\)/g) || []).length;
+    if (openParens !== closeParens) {
+      errors.push('Unmatched parentheses');
+    }
+
+    // Check for incomplete boolean operators
+    if (queryText.match(/\b(AND|OR|NOT)\s*$/i)) {
+      errors.push('Boolean operator needs a term after it');
+    }
+
+    // Check for leading boolean operators
+    if (queryText.match(/^\s*(AND|OR)\b/i)) {
+      errors.push('Search cannot start with AND/OR');
+    }
+
+    // Detect query features for feedback
+    let queryType = 'simple';
+    if (queryText.match(/\b(AND|OR|NOT)\b/i)) queryType = 'boolean';
+    if (queryText.match(/[*?]/)) queryType = queryType === 'boolean' ? 'complex' : 'wildcard';
+    if (queryText.match(/"/)) queryType = queryType !== 'simple' ? 'complex' : 'quoted';
+
+    setQueryValidation({
+      isValid: errors.length === 0,
+      error: errors[0],
+      queryType: queryType
+    });
+  };
+
+  // Search syntax help content
+  const getSearchHelpContent = () => (
+    <Box sx={{ maxWidth: 400 }}>
+      <Typography variant="subtitle2" gutterBottom>
+        Advanced Search Syntax
+      </Typography>
+      
+      <List dense>
+        <ListItem>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <Typography variant="body2" fontWeight="bold">AND</Typography>
+          </ListItemIcon>
+          <ListItemText 
+            primary="steel AND beam" 
+            secondary="Find components containing both terms"
+            primaryTypographyProps={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+          />
+        </ListItem>
+        
+        <ListItem>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <Typography variant="body2" fontWeight="bold">OR</Typography>
+          </ListItemIcon>
+          <ListItemText 
+            primary="plate OR angle" 
+            secondary="Find components containing either term"
+            primaryTypographyProps={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+          />
+        </ListItem>
+        
+        <ListItem>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <Typography variant="body2" fontWeight="bold">NOT</Typography>
+          </ListItemIcon>
+          <ListItemText 
+            primary="girder NOT aluminum" 
+            secondary="Exclude components containing 'aluminum'"
+            primaryTypographyProps={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+          />
+        </ListItem>
+        
+        <ListItem>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <Typography variant="body2" fontWeight="bold">*</Typography>
+          </ListItemIcon>
+          <ListItemText 
+            primary="C6*" 
+            secondary="Wildcard - matches C6, C63, C64, etc."
+            primaryTypographyProps={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+          />
+        </ListItem>
+        
+        <ListItem>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <Typography variant="body2" fontWeight="bold">( )</Typography>
+          </ListItemIcon>
+          <ListItemText 
+            primary="(beam OR girder) AND steel" 
+            secondary="Group terms for complex logic"
+            primaryTypographyProps={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+          />
+        </ListItem>
+
+        <ListItem>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <Typography variant="body2" fontWeight="bold">" "</Typography>
+          </ListItemIcon>
+          <ListItemText 
+            primary='"wide flange beam"' 
+            secondary="Exact phrase matching"
+            primaryTypographyProps={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+          />
+        </ListItem>
+      </List>
+      
+      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+        Tip: Use scope selection to limit search to specific fields for better precision.
+      </Typography>
+    </Box>
+  );
 
   // Fetch recent components when page loads
   const { data: recentComponentsData, isLoading: recentLoading } = useQuery(
@@ -275,6 +409,11 @@ const SearchPage: React.FC = () => {
     }
   }, [query]);
 
+  // Validate query in real-time
+  useEffect(() => {
+    validateQuery(query);
+  }, [query]);
+
   // Reset page and results when search query, filters, or scope change
   useEffect(() => {
     if (debouncedQuery.trim() || filters.componentType || filters.projectId !== 'all') {
@@ -302,37 +441,67 @@ const SearchPage: React.FC = () => {
         )}
         <Grid container spacing={3} alignItems="center">
           <Grid item xs={12} md={4}>
-            <Autocomplete
-              freeSolo
-              options={suggestions}
-              value={query}
-              onInputChange={(_, newValue) => setQuery(newValue || '')}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  fullWidth
-                  label="Search piece marks, components, or descriptions"
-                  InputProps={{
-                    ...params.InputProps,
-                    startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1 }} />,
-                    endAdornment: (
-                      <>
-                        {query && (
-                          <IconButton 
-                            onClick={handleClearSearch} 
-                            size="small"
-                            sx={{ mr: 1 }}
+            <Box sx={{ position: 'relative' }}>
+              <Autocomplete
+                freeSolo
+                options={suggestions}
+                value={query}
+                onInputChange={(_, newValue) => setQuery(newValue || '')}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    fullWidth
+                    label="Search piece marks, components, or descriptions"
+                    error={!queryValidation.isValid}
+                    helperText={queryValidation.error || (queryValidation.queryType !== 'simple' ? `${queryValidation.queryType} query` : '')}
+                    InputProps={{
+                      ...params.InputProps,
+                      startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1 }} />,
+                      endAdornment: (
+                        <>
+                          {/* Query validation indicator */}
+                          {query && (
+                            queryValidation.isValid ? (
+                              <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20, mr: 1 }} />
+                            ) : (
+                              <ErrorIcon sx={{ color: 'error.main', fontSize: 20, mr: 1 }} />
+                            )
+                          )}
+                          
+                          {/* Help tooltip */}
+                          <Tooltip
+                            title={getSearchHelpContent()}
+                            placement="bottom-end"
+                            arrow
+                            componentsProps={{
+                              tooltip: {
+                                sx: { maxWidth: 'none' }
+                              }
+                            }}
                           >
-                            <ClearIcon />
-                          </IconButton>
-                        )}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  }}
-                />
-              )}
-            />
+                            <IconButton size="small" sx={{ mr: 1 }}>
+                              <HelpIcon sx={{ fontSize: 20 }} />
+                            </IconButton>
+                          </Tooltip>
+                          
+                          {/* Clear button */}
+                          {query && (
+                            <IconButton 
+                              onClick={handleClearSearch} 
+                              size="small"
+                              sx={{ mr: 1 }}
+                            >
+                              <ClearIcon />
+                            </IconButton>
+                          )}
+                          {params.InputProps.endAdornment}
+                        </>
+                      ),
+                    }}
+                  />
+                )}
+              />
+            </Box>
           </Grid>
 
           <Grid item xs={12} md={2}>
@@ -503,6 +672,15 @@ const SearchPage: React.FC = () => {
                       label={searchResults.query_type} 
                       size="small" 
                       variant="outlined" 
+                      sx={{ ml: 1, height: 20 }} 
+                    />
+                  )}
+                  {queryValidation.queryType && queryValidation.queryType !== 'simple' && (
+                    <Chip 
+                      label={`client: ${queryValidation.queryType}`} 
+                      size="small" 
+                      variant="outlined" 
+                      color="primary"
                       sx={{ ml: 1, height: 20 }} 
                     />
                   )}
