@@ -162,6 +162,9 @@ const SearchPage: React.FC = () => {
     return scope.length > 0 ? scope : ['piece_mark']; // Default fallback
   };
 
+  // Compute scope array for useQuery dependency to avoid stale closures
+  const currentScopeArray = getScopeArray();
+
   const getScopeDisplayText = (): string => {
     const active = getScopeArray();
     const displayNames: Record<string, string> = {
@@ -185,6 +188,7 @@ const SearchPage: React.FC = () => {
       return newScope;
     });
     setPage(1); // Reset to first page when scope changes
+    setAllResults([]); // Clear current results immediately for better UX
   };
 
   // Real-time query validation
@@ -387,10 +391,10 @@ const SearchPage: React.FC = () => {
     isLoading,
     isFetching,
   } = useQuery(
-    ['search', debouncedQuery, filters, searchScope, page],
+    ['search', debouncedQuery, filters, currentScopeArray, page],
     () => searchComponents({
       query: debouncedQuery || '*', // Use wildcard when no query but filters are applied
-      scope: getScopeArray(),
+      scope: currentScopeArray,
       component_type: filters.componentType || undefined,
       project_id: filters.projectId === 'all' ? undefined :
                   filters.projectId === 'unassigned' ? null :
@@ -535,6 +539,13 @@ const SearchPage: React.FC = () => {
       setAllResults([]);
     }
   }, [debouncedQuery, filters.componentType, filters.projectId, searchScope]);
+
+  // Invalidate search query cache when scope changes to force fresh fetch
+  useEffect(() => {
+    if (debouncedQuery.length > 0) {
+      queryClient.invalidateQueries(['search']);
+    }
+  }, [currentScopeArray, queryClient, debouncedQuery]);
 
   // Don't reset recent components - let React Query handle the data
 
@@ -960,7 +971,7 @@ const SearchPage: React.FC = () => {
                         key={component.id}
                         component={component}
                         searchTerm={debouncedQuery}
-                        searchScope={getScopeArray()}
+                        searchScope={currentScopeArray}
                         onViewDetails={setSelectedComponent}
                       />
                     ))}
