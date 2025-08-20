@@ -100,6 +100,7 @@ export interface Component {
 
 export interface SearchRequest {
   query: string;
+  scope?: string[];
   component_type?: string;
   project_id?: string;
   drawing_type?: string;
@@ -109,6 +110,8 @@ export interface SearchRequest {
 
 export interface SearchResponse {
   query: string;
+  scope?: string[];
+  query_type?: string;
   results: Component[];
   total: number;
   page: number;
@@ -116,7 +119,9 @@ export interface SearchResponse {
   has_next: boolean;
   has_prev: boolean;
   search_time_ms: number;
+  complexity_score?: number;
   filters_applied: any;
+  warnings?: string[];
 }
 
 // Drawing API

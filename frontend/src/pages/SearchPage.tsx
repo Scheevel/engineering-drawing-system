@@ -21,6 +21,10 @@ import {
   IconButton,
   Autocomplete,
   LinearProgress,
+  FormControlLabel,
+  Checkbox,
+  FormGroup,
+  Collapse,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -28,6 +32,9 @@ import {
   Clear as ClearIcon,
   Folder,
   FolderOpen,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  Tune as TuneIcon,
 } from '@mui/icons-material';
 import { useQuery } from 'react-query';
 import { searchComponents, getSearchSuggestions, getRecentComponents, getComponentTypes, getProjects, type ProjectResponse } from '../services/api.ts';
@@ -38,6 +45,12 @@ import { useDebounce } from '../hooks/useDebounce.ts';
 interface SearchFilters {
   componentType: string;
   projectId: string;
+}
+
+interface SearchScope {
+  piece_mark: boolean;
+  component_type: boolean;
+  description: boolean;
 }
 
 interface SortOption {
@@ -81,6 +94,12 @@ const SearchPage: React.FC = () => {
     componentType: '',
     projectId: 'all',
   });
+  const [searchScope, setSearchScope] = useState<SearchScope>({
+    piece_mark: true,   // Default to piece marks for precision
+    component_type: false,
+    description: false,
+  });
+  const [scopeExpanded, setScopeExpanded] = useState(false);
   const [sortBy, setSortBy] = useState('relevance');
   const [page, setPage] = useState(1);
   const [allResults, setAllResults] = useState<any[]>([]);
@@ -94,6 +113,40 @@ const SearchPage: React.FC = () => {
   
   // Debounce search query to avoid excessive API calls
   const debouncedQuery = useDebounce(query, 300);
+
+  // Helper functions for scope management
+  const getScopeArray = (): string[] => {
+    const scope: string[] = [];
+    if (searchScope.piece_mark) scope.push('piece_mark');
+    if (searchScope.component_type) scope.push('component_type');
+    if (searchScope.description) scope.push('description');
+    return scope.length > 0 ? scope : ['piece_mark']; // Default fallback
+  };
+
+  const getScopeDisplayText = (): string => {
+    const active = getScopeArray();
+    const displayNames: Record<string, string> = {
+      piece_mark: 'Piece Marks',
+      component_type: 'Component Types',
+      description: 'Descriptions'
+    };
+    return active.map(s => displayNames[s]).join(', ');
+  };
+
+  const handleScopeChange = (field: keyof SearchScope, checked: boolean) => {
+    setSearchScope(prev => {
+      const newScope = { ...prev, [field]: checked };
+      
+      // Ensure at least one scope is always selected
+      const hasAnySelected = Object.values(newScope).some(value => value);
+      if (!hasAnySelected) {
+        newScope.piece_mark = true; // Force piece_mark if nothing selected
+      }
+      
+      return newScope;
+    });
+    setPage(1); // Reset to first page when scope changes
+  };
 
   // Fetch recent components when page loads
   const { data: recentComponentsData, isLoading: recentLoading } = useQuery(
@@ -134,9 +187,10 @@ const SearchPage: React.FC = () => {
     isLoading,
     isFetching,
   } = useQuery(
-    ['search', debouncedQuery, filters, page],
+    ['search', debouncedQuery, filters, searchScope, page],
     () => searchComponents({
       query: debouncedQuery || '*', // Use wildcard when no query but filters are applied
+      scope: getScopeArray(),
       component_type: filters.componentType || undefined,
       project_id: filters.projectId === 'all' ? undefined :
                   filters.projectId === 'unassigned' ? null :
@@ -221,13 +275,13 @@ const SearchPage: React.FC = () => {
     }
   }, [query]);
 
-  // Reset page and results when search query or filters change
+  // Reset page and results when search query, filters, or scope change
   useEffect(() => {
     if (debouncedQuery.trim() || filters.componentType || filters.projectId !== 'all') {
       setPage(1);
       setAllResults([]);
     }
-  }, [debouncedQuery, filters.componentType, filters.projectId]);
+  }, [debouncedQuery, filters.componentType, filters.projectId, searchScope]);
 
   // Don't reset recent components - let React Query handle the data
 
@@ -279,6 +333,19 @@ const SearchPage: React.FC = () => {
                 />
               )}
             />
+          </Grid>
+
+          <Grid item xs={12} md={2}>
+            <Button
+              variant="outlined"
+              startIcon={<TuneIcon />}
+              endIcon={scopeExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              onClick={() => setScopeExpanded(!scopeExpanded)}
+              fullWidth
+              size="medium"
+            >
+              Search Scope
+            </Button>
           </Grid>
 
           <Grid item xs={12} md={2}>
@@ -343,6 +410,49 @@ const SearchPage: React.FC = () => {
 
         </Grid>
 
+        {/* Scope Selection */}
+        <Collapse in={scopeExpanded} timeout="auto" unmountOnExit>
+          <Box sx={{ mt: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Search in these fields:
+            </Typography>
+            <FormGroup row>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={searchScope.piece_mark}
+                    onChange={(e) => handleScopeChange('piece_mark', e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Piece Marks"
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={searchScope.component_type}
+                    onChange={(e) => handleScopeChange('component_type', e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Component Types"
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={searchScope.description}
+                    onChange={(e) => handleScopeChange('description', e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Descriptions"
+              />
+            </FormGroup>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              Select at least one field to search in. Piece Marks are recommended for precise results.
+            </Typography>
+          </Box>
+        </Collapse>
 
         {/* Active Filters */}
         {(filters.componentType || filters.projectId !== 'all') && (
@@ -386,6 +496,17 @@ const SearchPage: React.FC = () => {
                     </Typography>
                   )}
                 </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  Searching in: {getScopeDisplayText()}
+                  {searchResults?.query_type && searchResults.query_type !== 'simple' && (
+                    <Chip 
+                      label={searchResults.query_type} 
+                      size="small" 
+                      variant="outlined" 
+                      sx={{ ml: 1, height: 20 }} 
+                    />
+                  )}
+                </Typography>
               </Grid>
               <Grid item xs={12} md={3}>
                 <FormControl size="small" fullWidth>
@@ -405,6 +526,17 @@ const SearchPage: React.FC = () => {
               </Grid>
             </Grid>
           </Box>
+
+          {/* Warnings */}
+          {searchResults?.warnings && searchResults.warnings.length > 0 && (
+            <Box sx={{ p: 2, bgcolor: 'warning.light', borderBottom: 1, borderColor: 'divider' }}>
+              {searchResults.warnings.map((warning, index) => (
+                <Typography key={index} variant="body2" color="warning.dark">
+                  ⚠️ {warning}
+                </Typography>
+              ))}
+            </Box>
+          )}
 
           {/* Loading State */}
           {isLoading && (
