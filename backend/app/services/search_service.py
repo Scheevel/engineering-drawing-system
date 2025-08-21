@@ -181,6 +181,15 @@ class SearchService:
             # Calculate search time
             search_time = int((datetime.now() - start_time).total_seconds() * 1000)
             
+            # Calculate scope effectiveness metrics (Story 1.2)
+            scope_counts = None
+            try:
+                scope_counts = self._calculate_scope_counts(request.query, request, db)
+                logger.info(f"Calculated scope counts for query '{request.query}': {scope_counts}")
+            except Exception as e:
+                logger.warning(f"Failed to calculate scope counts: {e}")
+                # Continue without scope counts rather than failing the entire search
+            
             return SearchResponse(
                 query=request.query,
                 scope=request.scope,
@@ -198,12 +207,102 @@ class SearchService:
                     "project_id": request.project_id,
                     "drawing_type": request.drawing_type
                 },
-                warnings=validation_result.warnings
+                warnings=validation_result.warnings,
+                scope_counts=scope_counts  # New field for Story 1.2
             )
             
         except Exception as e:
             logger.error(f"Error searching components: {str(e)}")
             raise
+    
+    def _calculate_scope_counts(self, query_text: str, request: SearchRequest, db: Session) -> Dict[str, int]:
+        """
+        Calculate count of matching components for each scope field.
+        This helps users understand scope effectiveness per Story 1.2.
+        """
+        if not query_text or query_text == "*":
+            # For wildcard queries, count all components (respecting filters)
+            base_query = db.query(Component).join(Drawing).outerjoin(Project)
+            
+            # Apply the same filters as main search
+            if request.component_type:
+                base_query = base_query.filter(Component.component_type == request.component_type.value)
+            
+            if request.project_id:
+                base_query = base_query.filter(Drawing.project_id == request.project_id)
+            elif request.project_id is None:  # Explicitly filter for unassigned
+                base_query = base_query.filter(Drawing.project_id.is_(None))
+            
+            if request.drawing_type:
+                base_query = base_query.filter(Drawing.drawing_type == request.drawing_type)
+            
+            total_count = base_query.count()
+            return {
+                "piece_mark": total_count,
+                "component_type": total_count,
+                "description": total_count
+            }
+        
+        scope_counts = {}
+        
+        # Calculate count for each possible scope field
+        for scope_field in ["piece_mark", "component_type", "description"]:
+            # Build query for this specific scope
+            scope_query = db.query(Component).join(Drawing).outerjoin(Project)
+            
+            # Apply the same filters as main search
+            if request.component_type:
+                scope_query = scope_query.filter(Component.component_type == request.component_type.value)
+            
+            if request.project_id:
+                scope_query = scope_query.filter(Drawing.project_id == request.project_id)
+            elif request.project_id is None:
+                scope_query = scope_query.filter(Drawing.project_id.is_(None))
+            
+            if request.drawing_type:
+                scope_query = scope_query.filter(Drawing.drawing_type == request.drawing_type)
+            
+            # Apply field-specific text search
+            try:
+                from app.utils.query_parser import parse_search_query, build_search_filter
+                parsed_query = parse_search_query(query_text)
+                
+                # Get the appropriate field for this scope
+                if scope_field == "piece_mark":
+                    search_field = Component.piece_mark
+                elif scope_field == "component_type":
+                    search_field = Component.component_type
+                elif scope_field == "description":
+                    search_field = Component.description
+                else:
+                    continue
+                
+                # Build search filter for this field only
+                text_filter = build_search_filter(parsed_query, [search_field])
+                if text_filter is not None:
+                    scope_query = scope_query.filter(text_filter)
+                    scope_counts[scope_field] = scope_query.count()
+                else:
+                    scope_counts[scope_field] = 0
+                    
+            except Exception as e:
+                logger.warning(f"Error calculating scope count for {scope_field}: {e}")
+                # Fallback to simple ilike search
+                try:
+                    simple_pattern = f"%{query_text}%"
+                    if scope_field == "piece_mark":
+                        count = scope_query.filter(Component.piece_mark.ilike(simple_pattern)).count()
+                    elif scope_field == "component_type":
+                        count = scope_query.filter(Component.component_type.ilike(simple_pattern)).count()
+                    elif scope_field == "description":
+                        count = scope_query.filter(Component.description.ilike(simple_pattern)).count()
+                    else:
+                        count = 0
+                    scope_counts[scope_field] = count
+                except Exception:
+                    scope_counts[scope_field] = 0
+        
+        return scope_counts
     
     async def get_component_details(self, component_id: str, db: Session) -> Optional[ComponentSearchResult]:
         """Get detailed information about a specific component"""

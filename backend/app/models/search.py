@@ -117,6 +117,7 @@ class SearchResponse(BaseModel):
     filters_applied: Dict[str, Any]
     suggestions: Optional[List[str]] = []
     warnings: Optional[List[str]] = []
+    scope_counts: Optional[Dict[str, int]] = None  # New field for scope effectiveness metrics
     
 class SearchError(BaseModel):
     """Structured error response for search failures"""

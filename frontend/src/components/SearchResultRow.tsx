@@ -43,6 +43,52 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({
     return searchScope.includes(fieldName) ? searchTerm : '';
   };
 
+  // Helper function to check if a field contains the search term (case-insensitive)
+  const fieldContainsSearchTerm = (fieldValue: string | null | undefined, searchTerm: string): boolean => {
+    if (!fieldValue || !searchTerm || searchTerm.trim() === '') {
+      return false;
+    }
+    return fieldValue.toLowerCase().includes(searchTerm.toLowerCase());
+  };
+
+  // Get field match indicators for fields that contain the search term and are in scope
+  const getFieldMatchIndicators = () => {
+    if (!searchTerm || searchTerm.trim() === '' || !searchScope || searchScope.length === 0) {
+      return [];
+    }
+
+    const indicators = [];
+    const fieldMappings = {
+      piece_mark: { value: component.piece_mark, label: 'Piece Mark' },
+      component_type: { value: component.component_type, label: 'Type' },
+      description: { value: component.description, label: 'Description' }
+    };
+
+    // Only show indicators for fields that are in search scope AND contain the search term
+    for (const [fieldKey, fieldData] of Object.entries(fieldMappings)) {
+      if (searchScope.includes(fieldKey) && fieldContainsSearchTerm(fieldData.value, searchTerm)) {
+        indicators.push(
+          <Chip
+            key={fieldKey}
+            label={fieldData.label}
+            size="small"
+            variant="filled"
+            color="primary"
+            aria-label={`Field contains search match: ${fieldData.label}`}
+            sx={{
+              fontSize: '0.65rem',
+              height: 18,
+              mr: 0.5,
+              mb: 0.5,
+            }}
+          />
+        );
+      }
+    }
+
+    return indicators;
+  };
+
   const handleExpandClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setExpanded(!expanded);
@@ -52,16 +98,24 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({
     <>
       <TableRow hover sx={{ cursor: 'pointer' }} onClick={handleExpandClick}>
         <TableCell>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton size="small" onClick={handleExpandClick}>
-              {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            </IconButton>
-            <HighlightedText
-              text={component.piece_mark}
-              searchTerm={getHighlightTerm('piece_mark')}
-              variant="body2"
-              fontWeight="bold"
-            />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <IconButton size="small" onClick={handleExpandClick}>
+                {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </IconButton>
+              <HighlightedText
+                text={component.piece_mark}
+                searchTerm={getHighlightTerm('piece_mark')}
+                variant="body2"
+                fontWeight="bold"
+              />
+            </Box>
+            {/* Field Match Indicators - Story 1.1 */}
+            {getFieldMatchIndicators().length > 0 && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', ml: 5 }}>
+                {getFieldMatchIndicators()}
+              </Box>
+            )}
           </Box>
         </TableCell>
         <TableCell>

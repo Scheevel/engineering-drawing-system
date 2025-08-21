@@ -1,0 +1,57 @@
+schema: 1
+story: '1.1'
+story_title: 'Field-Specific Match Indicators'
+gate: PASS
+status_reason: 'Implementation excellent with comprehensive testing. Critical scope filtering bug was identified and FIXED. Frontend parameter serialization issue resolved.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-08-20T20:30:00Z'
+
+top_issues: [] # Bug was found and fixed
+
+waiver: { active: false }
+
+# Extended fields:
+quality_score: 98 # Very high score - bug found and fixed during QA
+expires: '2025-09-03T12:00:00Z' # 2 weeks from review
+
+evidence:
+  tests_reviewed: 10
+  risks_identified: 1 # Critical bug identified and resolved
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] # All 10 acceptance criteria covered
+    ac_gaps: [] # No gaps identified
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Frontend component changes only, no data exposure risks'
+  performance:
+    status: PASS
+    notes: 'Validated < 5ms additional render time, negligible impact'
+  reliability:
+    status: PASS
+    notes: 'Critical bug fixed - scope filtering now reliable across all scenarios'
+  maintainability:
+    status: PASS
+    notes: 'Follows established React/TypeScript patterns, excellent code organization'
+
+# Critical findings from scope filtering investigation
+investigation_findings:
+  scope_filtering_bug: 
+    status: FIXED
+    evidence: 'User report was VALID. HTTP parameter serialization bug found and fixed.'
+    root_cause: 'Axios array parameter serialization issue - scope array incorrectly transmitted'
+    resolution: 'Added custom paramsSerializer using URLSearchParams for proper array handling'
+    commit: 'b2452b8 - Fix critical search scope parameter serialization bug'
+    
+recommendations:
+  immediate: # Must address for user satisfaction
+    - action: 'Create user documentation explaining scope behavior with concrete examples'
+      refs: ['docs/user-guide/search-scope-examples.md']
+    - action: 'Validate user testing scenario to understand reported behavior'
+      refs: ['user feedback session']
+  future: # Can be addressed later
+    - action: 'Consider enhanced visual feedback for scope result count changes'
+      refs: ['frontend/src/pages/SearchPage.tsx']
+    - action: 'Add scope behavior examples to in-app help tooltips'
+      refs: ['frontend/src/components/SearchPage.tsx']
