@@ -35,6 +35,7 @@ class SearchRequest(BaseModel):
     component_type: Optional[ComponentType] = None
     project_id: Optional[str] = None
     drawing_type: Optional[str] = None
+    instance_identifier: Optional[str] = Field(None, max_length=10, description="Filter by instance identifier")
     page: int = Field(1, ge=1)
     limit: int = Field(20, ge=1, le=100)
     sort_by: str = "relevance"  # relevance, date, name
@@ -73,6 +74,7 @@ class SearchRequest(BaseModel):
 class ComponentSearchResult(BaseModel):
     id: str
     piece_mark: str
+    instance_identifier: Optional[str] = None
     component_type: Optional[str] = None
     description: Optional[str] = None
     quantity: int = 1

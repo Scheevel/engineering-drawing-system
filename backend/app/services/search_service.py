@@ -58,7 +58,8 @@ class SearchService:
                     filters_applied={
                         "component_type": request.component_type,
                         "project_id": request.project_id,
-                        "drawing_type": request.drawing_type
+                        "drawing_type": request.drawing_type,
+                        "instance_identifier": request.instance_identifier
                     },
                     warnings=[validation_result.error.message] if validation_result.error else []
                 )
@@ -114,6 +115,14 @@ class SearchService:
             if request.drawing_type:
                 query = query.filter(Drawing.drawing_type == request.drawing_type)
             
+            if request.instance_identifier is not None:
+                # Filter by instance_identifier (support both string values and None for backward compatibility)
+                if request.instance_identifier == "":
+                    # Empty string treated as no filter
+                    pass
+                else:
+                    query = query.filter(Component.instance_identifier == request.instance_identifier)
+            
             # Get total count
             total = query.count()
             
@@ -149,6 +158,7 @@ class SearchService:
                 result = ComponentSearchResult(
                     id=str(component.id),
                     piece_mark=component.piece_mark,
+                    instance_identifier=component.instance_identifier,
                     component_type=component.component_type,
                     description=component.description,
                     quantity=component.quantity,
@@ -205,7 +215,8 @@ class SearchService:
                 filters_applied={
                     "component_type": request.component_type,
                     "project_id": request.project_id,
-                    "drawing_type": request.drawing_type
+                    "drawing_type": request.drawing_type,
+                    "instance_identifier": request.instance_identifier
                 },
                 warnings=validation_result.warnings,
                 scope_counts=scope_counts  # New field for Story 1.2
@@ -319,6 +330,7 @@ class SearchService:
             return ComponentSearchResult(
                 id=str(component.id),
                 piece_mark=component.piece_mark,
+                instance_identifier=component.instance_identifier,
                 component_type=component.component_type,
                 description=component.description,
                 quantity=component.quantity,
@@ -396,6 +408,7 @@ class SearchService:
                 result = ComponentSearchResult(
                     id=str(component.id),
                     piece_mark=component.piece_mark,
+                    instance_identifier=component.instance_identifier,
                     component_type=component.component_type,
                     description=component.description,
                     quantity=component.quantity,
@@ -487,9 +500,23 @@ class SearchService:
             
             # Index each component
             for component in components:
+                # Create display_identifier based on instance_identifier presence
+                display_identifier = f"{component.piece_mark}-{component.instance_identifier}" if component.instance_identifier else component.piece_mark
+                
+                # Enhanced full_text search including display_identifier
+                full_text_parts = [
+                    component.piece_mark,
+                    component.component_type or '',
+                    component.description or '',
+                    display_identifier  # Include display identifier for comprehensive search
+                ]
+                full_text = ' '.join(filter(None, full_text_parts))
+                
                 doc = {
                     "id": str(component.id),
                     "piece_mark": component.piece_mark,
+                    "instance_identifier": component.instance_identifier,
+                    "display_identifier": display_identifier,
                     "component_type": component.component_type,
                     "description": component.description,
                     "quantity": component.quantity,
@@ -516,7 +543,7 @@ class SearchService:
                         "description": spec.description
                     } for spec in component.specifications],
                     "indexed_at": datetime.utcnow().isoformat(),
-                    "full_text": f"{component.piece_mark} {component.component_type or ''} {component.description or ''}"
+                    "full_text": full_text
                 }
                 
                 # Index the document
@@ -554,4 +581,72 @@ class SearchService:
             
         except Exception as e:
             logger.error(f"Error indexing drawing {drawing.id}: {str(e)}")
+            return False
+    
+    def reindex_existing_components(self, db: Session) -> bool:
+        """Re-index existing components with NULL instance_identifier for backward compatibility"""
+        if not self.es:
+            logger.info("Elasticsearch not available, skipping reindexing")
+            return False
+        
+        try:
+            # Get all drawings to reindex their components
+            from app.models.database import Drawing
+            drawings = db.query(Drawing).all()
+            
+            successful_count = 0
+            failed_count = 0
+            
+            logger.info(f"Starting reindexing of {len(drawings)} drawings for instance_identifier support")
+            
+            for drawing in drawings:
+                try:
+                    if self.index_drawing(drawing, db):
+                        successful_count += 1
+                    else:
+                        failed_count += 1
+                except Exception as e:
+                    logger.error(f"Failed to reindex drawing {drawing.id}: {str(e)}")
+                    failed_count += 1
+            
+            logger.info(f"Reindexing completed: {successful_count} successful, {failed_count} failed")
+            return failed_count == 0
+            
+        except Exception as e:
+            logger.error(f"Error during reindexing: {str(e)}")
+            return False
+    
+    def update_elasticsearch_mapping_for_instance_identifier(self) -> bool:
+        """Update Elasticsearch mapping to include instance_identifier field"""
+        if not self.es:
+            logger.info("Elasticsearch not available, skipping mapping update")
+            return False
+        
+        try:
+            # Define the mapping update for instance_identifier support
+            mapping_update = {
+                "properties": {
+                    "instance_identifier": {
+                        "type": "keyword",
+                        "index": True
+                    },
+                    "display_identifier": {
+                        "type": "keyword", 
+                        "index": True
+                    }
+                }
+            }
+            
+            # Update the components index mapping
+            # Note: In production, you'd want to handle mapping conflicts carefully
+            self.es.indices.put_mapping(
+                index="components",
+                body=mapping_update
+            )
+            
+            logger.info("Successfully updated Elasticsearch mapping for instance_identifier support")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error updating Elasticsearch mapping: {str(e)}")
             return False

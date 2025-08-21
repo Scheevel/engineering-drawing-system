@@ -15,6 +15,7 @@ async def search_components(
     component_type: Optional[str] = None,
     project_id: Optional[str] = None,
     drawing_type: Optional[str] = None,
+    instance_identifier: Optional[str] = Query(None, max_length=10, description="Filter by instance identifier"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db)
@@ -39,6 +40,7 @@ async def search_components(
             component_type=component_type,
             project_id=project_id,
             drawing_type=drawing_type,
+            instance_identifier=instance_identifier,
             page=page,
             limit=limit
         )
