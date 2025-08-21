@@ -67,6 +67,7 @@ import {
 import ComponentDetailModal from '../components/ComponentDetailModal.tsx';
 import SearchResultRow from '../components/SearchResultRow.tsx';
 import SavedSearchDialog from '../components/SavedSearchDialog.tsx';
+import ScopeEffectivenessMetrics from '../components/ScopeEffectivenessMetrics.tsx';
 import { useDebounce } from '../hooks/useDebounce.ts';
 
 interface SearchFilters {
@@ -324,7 +325,6 @@ const SearchPage: React.FC = () => {
     {
       enabled: !debouncedQuery.trim(), // Only fetch when not searching
       onSuccess: (data) => {
-        console.log('Recent components fetched:', data);
         setAllRecentResults(data.recent_components || []);
         // Show load more if we have more components available than what we're displaying
         setHasMoreRecent((data.recent_components?.length === 20) && (data.total_available > 20));
@@ -507,7 +507,6 @@ const SearchPage: React.FC = () => {
 
       // Execute the search via the API (this also updates usage statistics)
       const results = await executeSavedSearch(savedSearch.id);
-      console.log('Executed saved search:', results);
     } catch (error) {
       console.error('Failed to execute saved search:', error);
     }
@@ -547,13 +546,10 @@ const SearchPage: React.FC = () => {
 
   // Handle scope default refresh - ensures search triggers when scope defaults to piece_mark
   useEffect(() => {
-    console.log('🔍 Scope changed, currentScopeArray:', currentScopeArray, 'searchScope:', searchScope);
-    
     // Check if we have a query or filters that would trigger a search
     const shouldSearch = Boolean(debouncedQuery.length > 0 || filters.componentType || filters.projectId !== 'all');
     
     if (shouldSearch) {
-      console.log('🚀 Triggering search refresh due to scope change');
       // Force a fresh search by invalidating the exact query key
       queryClient.invalidateQueries(['search', debouncedQuery, filters, currentScopeArray, page]);
     }
@@ -946,6 +942,15 @@ const SearchPage: React.FC = () => {
             </Grid>
           </Box>
 
+          {/* Scope Effectiveness Metrics - Story 1.2 */}
+          {searchResults?.scope_counts && (
+            <ScopeEffectivenessMetrics
+              scopeCounts={searchResults.scope_counts}
+              currentScope={currentScopeArray}
+              query={debouncedQuery}
+            />
+          )}
+
           {/* Warnings */}
           {searchResults?.warnings && searchResults.warnings.length > 0 && (
             <Box sx={{ p: 2, bgcolor: 'warning.light', borderBottom: 1, borderColor: 'divider' }}>
@@ -1051,7 +1056,6 @@ const SearchPage: React.FC = () => {
               </Box>
             )}
 
-            {console.log('Rendering recent components, allRecentResults:', allRecentResults)}
             {(allRecentResults.length > 0 || recentComponentsData?.recent_components?.length > 0) && (
               <>
                 <TableContainer>

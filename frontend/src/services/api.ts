@@ -122,6 +122,11 @@ export interface SearchResponse {
   complexity_score?: number;
   filters_applied: any;
   warnings?: string[];
+  scope_counts?: {
+    piece_mark: number;
+    component_type: number;
+    description: number;
+  }; // Story 1.2: Scope effectiveness metrics
 }
 
 // Saved Search interfaces
@@ -227,7 +232,23 @@ export const getProcessingStatus = async (id: string): Promise<any> => {
 export const searchComponents = async (request: SearchRequest): Promise<SearchResponse> => {
   const response = await api.get('/search/components', {
     params: request,
+    paramsSerializer: (params) => {
+      // Custom serialization to handle scope array properly
+      const searchParams = new URLSearchParams();
+      
+      Object.entries(params).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          // Handle array parameters - append each value separately  
+          value.forEach(item => searchParams.append(key, item));
+        } else if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+      
+      return searchParams.toString();
+    }
   });
+  
   return response.data;
 };
 
