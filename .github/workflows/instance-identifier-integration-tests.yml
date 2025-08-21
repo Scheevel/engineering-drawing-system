@@ -1,0 +1,313 @@
+name: Instance Identifier Integration Tests
+
+# CI/CD workflow for Story 1.3: Integration Testing Multiple Piece Mark Instances
+# Ensures all integration tests pass consistently in automated pipeline
+
+on:
+  push:
+    branches: [ main, develop, feature/instance-identifier-* ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/**'
+      - 'docker-compose*.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/**'
+      - 'docker-compose*.yml'
+
+env:
+  PYTHON_VERSION: '3.11'
+  POSTGRES_DB: drawing_index_test
+  POSTGRES_USER: test_user
+  POSTGRES_PASSWORD: test_password
+
+jobs:
+  # Unit Tests - Fast feedback
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: Unit Tests (Models & Validation)
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest-cov pytest-xdist
+    
+    - name: Run unit tests
+      run: |
+        cd backend
+        python -m pytest tests/test_component_models.py -v -m "not integration" \
+          --cov=app/models --cov-report=term-missing --cov-report=xml:unit-coverage.xml
+    
+    - name: Upload unit test coverage
+      uses: codecov/codecov-action@v3
+      if: always()
+      with:
+        file: backend/unit-coverage.xml
+        flags: unit-tests
+        name: unit-test-coverage
+
+  # Integration Tests - Requires database
+  integration-tests:
+    runs-on: ubuntu-latest
+    name: Integration Tests (API & Service Layer)
+    needs: unit-tests
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest-cov pytest-xdist pytest-asyncio
+    
+    - name: Set up test database
+      env:
+        DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
+        REDIS_URL: redis://localhost:6379
+        UPLOAD_DIR: /tmp/test_uploads
+      run: |
+        cd backend
+        # Create test upload directory
+        mkdir -p /tmp/test_uploads
+        # Run database migrations
+        alembic upgrade head
+    
+    - name: Run API Integration Tests
+      env:
+        DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
+        REDIS_URL: redis://localhost:6379
+        UPLOAD_DIR: /tmp/test_uploads
+        ENVIRONMENT: test
+      run: |
+        cd backend
+        python -m pytest tests/test_component_api_integration.py -v \
+          --cov=app/api --cov-append --cov-report=term-missing
+    
+    - name: Run Service Layer Integration Tests
+      env:
+        DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
+        REDIS_URL: redis://localhost:6379
+        UPLOAD_DIR: /tmp/test_uploads
+        ENVIRONMENT: test
+      run: |
+        cd backend
+        python -m pytest tests/test_component_service_integration.py -v \
+          --cov=app/services --cov-append --cov-report=term-missing
+    
+    - name: Run Constraint Validation Tests
+      env:
+        DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
+        REDIS_URL: redis://localhost:6379
+        UPLOAD_DIR: /tmp/test_uploads
+        ENVIRONMENT: test
+      run: |
+        cd backend
+        python -m pytest tests/test_instance_identifier_constraints.py -v \
+          --cov=app --cov-append --cov-report=term-missing --cov-report=xml:integration-coverage.xml
+    
+    - name: Upload integration test coverage
+      uses: codecov/codecov-action@v3
+      if: always()
+      with:
+        file: backend/integration-coverage.xml
+        flags: integration-tests
+        name: integration-test-coverage
+
+  # End-to-End Workflow Tests
+  e2e-workflow-tests:
+    runs-on: ubuntu-latest
+    name: End-to-End Workflow Tests
+    needs: integration-tests
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest-cov pytest-xdist pytest-asyncio
+    
+    - name: Set up test environment
+      env:
+        DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
+        REDIS_URL: redis://localhost:6379
+        UPLOAD_DIR: /tmp/test_uploads
+      run: |
+        cd backend
+        mkdir -p /tmp/test_uploads
+        alembic upgrade head
+    
+    - name: Run End-to-End Workflow Tests
+      env:
+        DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
+        REDIS_URL: redis://localhost:6379
+        UPLOAD_DIR: /tmp/test_uploads
+        ENVIRONMENT: test
+      run: |
+        cd backend
+        python -m pytest tests/test_instance_identifier_workflows.py -v \
+          --cov=app --cov-append --cov-report=term-missing --cov-report=xml:e2e-coverage.xml
+    
+    - name: Upload E2E test coverage
+      uses: codecov/codecov-action@v3
+      if: always()
+      with:
+        file: backend/e2e-coverage.xml
+        flags: e2e-tests
+        name: e2e-test-coverage
+
+  # Test Results Summary
+  test-results:
+    runs-on: ubuntu-latest
+    name: Test Results Summary
+    needs: [unit-tests, integration-tests, e2e-workflow-tests]
+    if: always()
+    
+    steps:
+    - name: Check test results
+      run: |
+        echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Unit Tests | ${{ needs.unit-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Integration Tests | ${{ needs.integration-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| E2E Workflow Tests | ${{ needs.e2e-workflow-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [[ "${{ needs.unit-tests.result }}" == "success" && "${{ needs.integration-tests.result }}" == "success" && "${{ needs.e2e-workflow-tests.result }}" == "success" ]]; then
+          echo "✅ All tests passed! Story 1.3 acceptance criteria validated." >> $GITHUB_STEP_SUMMARY
+          exit 0
+        else
+          echo "❌ Some tests failed. Please review the results above." >> $GITHUB_STEP_SUMMARY
+          exit 1
+        fi
+
+  # Docker Integration Test (Alternative to direct testing)
+  docker-integration-test:
+    runs-on: ubuntu-latest
+    name: Docker Integration Test (Fallback)
+    needs: unit-tests
+    if: failure() # Run if direct integration tests fail
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create test environment file
+      run: |
+        cat > .env.test << EOF
+        DATABASE_URL=postgresql://user:password@postgres:5432/drawing_index_test
+        REDIS_URL=redis://redis:6379
+        ENVIRONMENT=test
+        DEBUG=true
+        UPLOAD_DIR=/app/test_uploads
+        EOF
+    
+    - name: Run tests in Docker
+      run: |
+        # Use docker-compose to run integration tests
+        docker-compose -f docker-compose.yml run --rm \
+          -e DATABASE_URL=postgresql://user:password@postgres:5432/drawing_index_test \
+          -e ENVIRONMENT=test \
+          backend python -m pytest tests/test_component_models.py -v
+    
+    - name: Cleanup Docker
+      if: always()
+      run: |
+        docker-compose down -v || true

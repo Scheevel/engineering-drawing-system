@@ -63,6 +63,7 @@ class ComponentCreateRequest(BaseModel):
     manual_creation: Optional[bool] = Field(True, description="Whether this component was manually created")
     confidence_score: Optional[float] = Field(1.0, ge=0, le=1, description="Confidence score for manual creation")
     review_status: Optional[str] = Field("pending", pattern=r'^(pending|reviewed|approved)$')
+    instance_identifier: Optional[str] = Field(None, max_length=10, description="Instance identifier for multiple instances of same piece mark")
     
     @validator('piece_mark')
     def validate_piece_mark(cls, v):
@@ -100,6 +101,7 @@ class ComponentUpdateRequest(BaseModel):
     location_y: Optional[float] = None
     bounding_box: Optional[Dict[str, Any]] = None
     review_status: Optional[str] = Field(None, pattern=r'^(pending|reviewed|approved)$')
+    instance_identifier: Optional[str] = Field(None, max_length=10)
     
     @validator('piece_mark')
     def validate_piece_mark(cls, v):
@@ -153,6 +155,7 @@ class ComponentResponse(BaseModel):
     review_status: str
     created_at: datetime
     updated_at: datetime
+    instance_identifier: Optional[str] = None
     
     # Related data
     dimensions: List[DimensionResponse] = []

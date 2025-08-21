@@ -66,6 +66,7 @@ class ComponentService:
                 bounding_box=create_data.bounding_box,
                 confidence_score=create_data.confidence_score,
                 review_status=create_data.review_status or "pending",
+                instance_identifier=create_data.instance_identifier,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow()
             )
@@ -184,19 +185,26 @@ class ComponentService:
             
             update_dict = update_data.dict(exclude_unset=True)
             
-            # Validate piece mark uniqueness within drawing
-            if 'piece_mark' in update_dict:
-                new_piece_mark = update_dict['piece_mark']
+            # Validate piece mark uniqueness within drawing considering instance_identifier
+            if 'piece_mark' in update_dict or 'instance_identifier' in update_dict:
+                # Get the values that will be used after update
+                new_piece_mark = update_dict.get('piece_mark', component.piece_mark)
+                new_instance_identifier = update_dict.get('instance_identifier', component.instance_identifier)
+                
                 existing = db.query(Component).filter(
                     and_(
                         Component.drawing_id == component.drawing_id,
                         Component.piece_mark == new_piece_mark,
+                        Component.instance_identifier == new_instance_identifier,
                         Component.id != component_id
                     )
                 ).first()
                 
                 if existing:
-                    errors.append(f"Piece mark '{new_piece_mark}' already exists in this drawing")
+                    if new_instance_identifier:
+                        errors.append(f"Component with piece mark '{new_piece_mark}' and instance identifier '{new_instance_identifier}' already exists in this drawing")
+                    else:
+                        errors.append(f"Component with piece mark '{new_piece_mark}' already exists in this drawing")
             
             # Validate component type specific rules
             if 'component_type' in update_dict:
@@ -455,6 +463,7 @@ class ComponentService:
             "review_status": component.review_status,
             "created_at": component.created_at,
             "updated_at": component.updated_at,
+            "instance_identifier": component.instance_identifier,
         }
         
         # Add dimensions

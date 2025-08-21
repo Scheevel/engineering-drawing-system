@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, Text, ForeignKey, JSON
+from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, Text, ForeignKey, JSON, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -55,6 +55,7 @@ class Component(Base):
     description = Column(Text)
     quantity = Column(Integer, default=1)
     material_type = Column(String(100))
+    instance_identifier = Column(String(10), nullable=True)  # Support multiple instances of same piece mark
     
     # Location within drawing
     location_x = Column(Float)
@@ -69,6 +70,12 @@ class Component(Base):
     extracted_data = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Composite unique constraint for piece mark instances
+    __table_args__ = (
+        UniqueConstraint('drawing_id', 'piece_mark', 'instance_identifier', 
+                        name='unique_piece_mark_instance_per_drawing'),
+    )
     
     # Relationships
     drawing = relationship("Drawing", back_populates="components")

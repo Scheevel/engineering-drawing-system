@@ -37,18 +37,23 @@ async def create_component(
     if not drawing:
         raise HTTPException(status_code=404, detail="Drawing not found")
     
-    # Check for duplicate piece marks in the same drawing
+    # Check for duplicate piece marks in the same drawing with same instance_identifier
     existing_component = db.query(Component).filter(
         and_(
             Component.drawing_id == component_data.drawing_id,
-            Component.piece_mark == component_data.piece_mark.upper()
+            Component.piece_mark == component_data.piece_mark.upper(),
+            Component.instance_identifier == component_data.instance_identifier
         )
     ).first()
     
     if existing_component:
+        if component_data.instance_identifier:
+            detail = f"Component with piece mark '{component_data.piece_mark}' and instance identifier '{component_data.instance_identifier}' already exists in this drawing"
+        else:
+            detail = f"Component with piece mark '{component_data.piece_mark}' already exists in this drawing"
         raise HTTPException(
             status_code=400, 
-            detail=f"Component with piece mark '{component_data.piece_mark}' already exists in this drawing"
+            detail=detail
         )
     
     # Create the component

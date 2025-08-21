@@ -84,6 +84,7 @@ export interface Component {
   description?: string;
   quantity: number;
   material_type?: string;
+  instance_identifier?: string; // Support multiple instances of same piece mark
   confidence_score?: number;
   drawing_id: string;
   drawing_file_name: string;
