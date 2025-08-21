@@ -35,6 +35,14 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({
 }) => {
   const [expanded, setExpanded] = useState(false);
 
+  // Helper function to format piece mark with instance identifier (G1-A format)
+  const getDisplayIdentifier = (): string => {
+    if (component.instance_identifier) {
+      return `${component.piece_mark}-${component.instance_identifier}`;
+    }
+    return component.piece_mark;
+  };
+
   // Helper function to determine if a field should be highlighted based on search scope
   const getHighlightTerm = (fieldName: string): string => {
     if (!searchScope || searchScope.length === 0) {
@@ -59,7 +67,7 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({
 
     const indicators = [];
     const fieldMappings = {
-      piece_mark: { value: component.piece_mark, label: 'Piece Mark' },
+      piece_mark: { value: getDisplayIdentifier(), label: 'Piece Mark' },
       component_type: { value: component.component_type, label: 'Type' },
       description: { value: component.description, label: 'Description' }
     };
@@ -104,7 +112,7 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({
                 {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
               </IconButton>
               <HighlightedText
-                text={component.piece_mark}
+                text={getDisplayIdentifier()}
                 searchTerm={getHighlightTerm('piece_mark')}
                 variant="body2"
                 fontWeight="bold"

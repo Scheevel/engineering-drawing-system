@@ -73,6 +73,7 @@ import { useDebounce } from '../hooks/useDebounce.ts';
 interface SearchFilters {
   componentType: string;
   projectId: string;
+  instanceIdentifier: string;
 }
 
 interface SearchScope {
@@ -121,6 +122,7 @@ const SearchPage: React.FC = () => {
   const [filters, setFilters] = useState<SearchFilters>({
     componentType: '',
     projectId: 'all',
+    instanceIdentifier: '',
   });
   const [searchScope, setSearchScope] = useState<SearchScope>({
     piece_mark: true,   // Default to piece marks for precision
@@ -404,11 +406,12 @@ const SearchPage: React.FC = () => {
       project_id: filters.projectId === 'all' ? undefined :
                   filters.projectId === 'unassigned' ? null :
                   filters.projectId || undefined,
+      instance_identifier: filters.instanceIdentifier || undefined,
       page,
       limit: 25,
     }),
     {
-      enabled: Boolean(debouncedQuery.length > 0 || filters.componentType || filters.projectId !== 'all'), // Enable when query OR filters are present
+      enabled: Boolean(debouncedQuery.length > 0 || filters.componentType || filters.projectId !== 'all' || filters.instanceIdentifier), // Enable when query OR filters are present
       keepPreviousData: false,
       onSuccess: (data) => {
         if (page === 1) {
@@ -560,9 +563,11 @@ const SearchPage: React.FC = () => {
 
   // Don't reset recent components - let React Query handle the data
 
-  const activeFiltersCount = Object.values(filters).filter(value => 
-    typeof value === 'string' ? value : false
-  ).length;
+  const activeFiltersCount = [
+    filters.componentType,
+    filters.projectId !== 'all' ? filters.projectId : '',
+    filters.instanceIdentifier
+  ].filter(value => value && value.trim() !== '').length;
 
   return (
     <Box>
@@ -699,12 +704,25 @@ const SearchPage: React.FC = () => {
           </Grid>
 
           <Grid item xs={12} md={2}>
+            <TextField
+              fullWidth
+              label="Instance Identifier"
+              value={filters.instanceIdentifier}
+              onChange={(e) => handleFilterChange('instanceIdentifier', e.target.value)}
+              placeholder="e.g., A, B, C"
+              inputProps={{ maxLength: 10 }}
+              helperText="Filter by specific instance (optional)"
+            />
+          </Grid>
+
+          <Grid item xs={12} md={2}>
             <Button
               variant="outlined"
               startIcon={<ClearIcon />}
               onClick={() => setFilters({
                 componentType: '',
                 projectId: 'all',
+                instanceIdentifier: '',
               })}
               disabled={activeFiltersCount === 0}
               fullWidth
@@ -1157,6 +1175,7 @@ const SearchPage: React.FC = () => {
           currentFilters={{
             componentType: filters.componentType,
             projectId: currentProjectId,
+            instanceIdentifier: filters.instanceIdentifier,
             drawingType: undefined, // Not currently supported in SearchPage filters
           }}
           currentSort={{

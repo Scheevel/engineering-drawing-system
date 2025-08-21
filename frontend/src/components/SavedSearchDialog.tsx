@@ -30,6 +30,7 @@ interface SavedSearchDialogProps {
   currentFilters: {
     componentType?: string;
     projectId?: string;
+    instanceIdentifier?: string;
     drawingType?: string;
   };
   currentSort: {
@@ -59,6 +60,7 @@ const SavedSearchDialog: React.FC<SavedSearchDialogProps> = ({
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<string[]>([]);
   const [componentType, setComponentType] = useState('');
+  const [instanceIdentifier, setInstanceIdentifier] = useState('');
   const [drawingType, setDrawingType] = useState('');
   const [sortBy, setSortBy] = useState('relevance');
   const [sortOrder, setSortOrder] = useState('desc');
@@ -75,6 +77,7 @@ const SavedSearchDialog: React.FC<SavedSearchDialogProps> = ({
         setQuery(editingSearch.query);
         setScope(editingSearch.scope);
         setComponentType(editingSearch.component_type || '');
+        setInstanceIdentifier(editingSearch.instance_identifier || '');
         setDrawingType(editingSearch.drawing_type || '');
         setSortBy(editingSearch.sort_by);
         setSortOrder(editingSearch.sort_order);
@@ -85,6 +88,7 @@ const SavedSearchDialog: React.FC<SavedSearchDialogProps> = ({
         setQuery(currentQuery);
         setScope(currentScope);
         setComponentType(currentFilters.componentType || '');
+        setInstanceIdentifier(currentFilters.instanceIdentifier || '');
         setDrawingType(currentFilters.drawingType || '');
         setSortBy(currentSort.sortBy);
         setSortOrder(currentSort.sortOrder);
@@ -129,6 +133,7 @@ const SavedSearchDialog: React.FC<SavedSearchDialogProps> = ({
             query: query.trim(),
             scope,
             component_type: componentType || undefined,
+            instance_identifier: instanceIdentifier || undefined,
             drawing_type: drawingType || undefined,
             sort_by: sortBy,
             sort_order: sortOrder,
@@ -139,6 +144,7 @@ const SavedSearchDialog: React.FC<SavedSearchDialogProps> = ({
             query: query.trim(),
             scope,
             component_type: componentType || undefined,
+            instance_identifier: instanceIdentifier || undefined,
             drawing_type: drawingType || undefined,
             sort_by: sortBy,
             sort_order: sortOrder,
@@ -257,6 +263,15 @@ const SavedSearchDialog: React.FC<SavedSearchDialogProps> = ({
               onChange={(e) => setComponentType(e.target.value)}
               fullWidth
               placeholder="Optional filter..."
+            />
+
+            <TextField
+              label="Instance Identifier"
+              value={instanceIdentifier}
+              onChange={(e) => setInstanceIdentifier(e.target.value)}
+              fullWidth
+              placeholder="e.g., A, B, C"
+              inputProps={{ maxLength: 10 }}
             />
 
             <TextField

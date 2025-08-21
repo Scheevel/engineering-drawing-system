@@ -139,6 +139,7 @@ export interface SavedSearch {
   query: string;
   scope: string[];
   component_type?: string;
+  instance_identifier?: string;
   drawing_type?: string;
   sort_by: string;
   sort_order: string;
@@ -157,6 +158,7 @@ export interface SavedSearchCreate {
   query: string;
   scope: string[];
   component_type?: string;
+  instance_identifier?: string;
   drawing_type?: string;
   sort_by: string;
   sort_order: string;
@@ -169,6 +171,7 @@ export interface SavedSearchUpdate {
   query?: string;
   scope?: string[];
   component_type?: string;
+  instance_identifier?: string;
   drawing_type?: string;
   sort_by?: string;
   sort_order?: string;
@@ -405,6 +408,7 @@ export interface ComponentUpdateRequest {
   description?: string;
   quantity?: number;
   material_type?: string;
+  instance_identifier?: string;
   review_status?: string;
 }
 
@@ -415,6 +419,7 @@ export interface ComponentCreateRequest {
   description?: string;
   quantity: number;
   material_type?: string;
+  instance_identifier?: string;
   location_x: number;
   location_y: number;
   manual_creation?: boolean;
