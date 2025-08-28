@@ -20,8 +20,8 @@ import {
   Close as CloseIcon,
   Save as SaveIcon,
 } from '@mui/icons-material';
-import { useMutation, useQueryClient } from 'react-query';
-import { createComponent, ComponentCreateRequest } from '../../services/api.ts';
+import { useMutation, useQueryClient, useQuery } from 'react-query';
+import { createComponent, ComponentCreateRequest, getDrawingComponents } from '../../services/api.ts';
 
 interface ComponentCreationDialogProps {
   open: boolean;
@@ -38,6 +38,7 @@ interface ComponentFormData {
   description: string;
   quantity: number;
   material_type: string;
+  instance_identifier?: string; // New field for multiple instances
 }
 
 const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
@@ -56,9 +57,20 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
     description: '',
     quantity: 1,
     material_type: '',
+    instance_identifier: '',
   });
   
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  
+  // Get existing components for validation
+  const { data: drawingComponentsResponse } = useQuery(
+    ['drawing-components', drawingId],
+    () => getDrawingComponents(drawingId),
+    { enabled: open } // Only fetch when dialog is open
+  );
+  
+  // Extract components array from response
+  const existingComponents = drawingComponentsResponse?.components || [];
 
   const componentTypes = [
     { value: 'wide_flange', label: 'Wide Flange (W)' },
@@ -110,6 +122,36 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
     }
   };
 
+  // Instance identifier validation function
+  const validateInstanceIdentifier = (
+    pieceMark: string, 
+    instanceIdentifier: string,
+    drawingId: string
+  ) => {
+    // Format validation: alphanumeric, max 10 characters
+    if (instanceIdentifier && !/^[a-zA-Z0-9]+$/.test(instanceIdentifier)) {
+      return 'Instance identifier must contain only letters and numbers';
+    }
+    
+    if (instanceIdentifier && instanceIdentifier.length > 10) {
+      return 'Instance identifier must be 10 characters or less';
+    }
+    
+    // Check for duplicate instance within same drawing
+    if (instanceIdentifier && Array.isArray(existingComponents) && existingComponents.length > 0) {
+      const duplicate = existingComponents.find(c => 
+        c.piece_mark === pieceMark &&
+        c.instance_identifier === instanceIdentifier
+      );
+      
+      if (duplicate) {
+        return `Instance "${instanceIdentifier}" already exists for piece mark "${pieceMark}" in this drawing`;
+      }
+    }
+    
+    return null; // Valid
+  };
+
   const handleSubmit = () => {
     // Basic client-side validation
     const errors: string[] = [];
@@ -125,6 +167,18 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
     
     if (formData.quantity < 1) {
       errors.push('Quantity must be at least 1');
+    }
+    
+    // Validate instance identifier
+    if (formData.instance_identifier?.trim()) {
+      const instanceError = validateInstanceIdentifier(
+        formData.piece_mark.trim().toUpperCase(),
+        formData.instance_identifier.trim(),
+        drawingId
+      );
+      if (instanceError) {
+        errors.push(instanceError);
+      }
     }
     
     if (errors.length > 0) {
@@ -145,6 +199,7 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
       description: formData.description.trim() || undefined,
       quantity: formData.quantity,
       material_type: formData.material_type.trim() || undefined,
+      instance_identifier: formData.instance_identifier?.trim() || undefined,
       location_x: position.x,
       location_y: position.y,
       manual_creation: true,
@@ -162,6 +217,7 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
       description: '',
       quantity: 1,
       material_type: '',
+      instance_identifier: '',
     });
     setValidationErrors([]);
     onClose();
@@ -194,7 +250,7 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
         )}
 
         <Grid container spacing={3}>
-          <Grid item xs={12} md={quickMode ? 12 : 6}>
+          <Grid item xs={12} md={quickMode ? 6 : 4}>
             <TextField
               fullWidth
               label="Piece Mark"
@@ -204,6 +260,18 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
               autoFocus
               placeholder="e.g., W21x68, HSS12x12x1/2, CG3"
               helperText="Unique identifier for this component"
+            />
+          </Grid>
+          
+          <Grid item xs={12} md={quickMode ? 6 : 2}>
+            <TextField
+              fullWidth
+              label="Instance Identifier"
+              value={formData.instance_identifier || ''}
+              onChange={(e) => handleFieldChange('instance_identifier', e.target.value)}
+              placeholder="e.g., A, B, C"
+              inputProps={{ maxLength: 10 }}
+              helperText="Optional. Use to differentiate multiple instances of the same piece mark."
             />
           </Grid>
 
