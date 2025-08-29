@@ -48,6 +48,7 @@ interface ComponentFormData {
   quantity: number;
   material_type: string;
   review_status: string;
+  instance_identifier: string;
 }
 
 // Component type options
@@ -110,6 +111,7 @@ const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
       quantity: 1,
       material_type: '',
       review_status: 'pending',
+      instance_identifier: '',
     },
   });
 
@@ -125,6 +127,7 @@ const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
         quantity: component.quantity || 1,
         material_type: component.material_type || '',
         review_status: component.review_status || 'pending',
+        instance_identifier: component.instance_identifier || '',
       });
     }
   }, [component, reset]);
@@ -174,6 +177,7 @@ const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
           quantity: component.quantity || 1,
           material_type: component.material_type || '',
           review_status: component.review_status || 'pending',
+          instance_identifier: component.instance_identifier || '',
         });
       }
     }
@@ -189,6 +193,7 @@ const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
     if (data.quantity !== component?.quantity) updateData.quantity = data.quantity;
     if (data.material_type !== component?.material_type) updateData.material_type = data.material_type;
     if (data.review_status !== component?.review_status) updateData.review_status = data.review_status;
+    if (data.instance_identifier !== component?.instance_identifier) updateData.instance_identifier = data.instance_identifier;
 
     updateMutation.mutate(updateData);
   });
@@ -212,6 +217,7 @@ const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
         quantity: component.quantity || 1,
         material_type: component.material_type || '',
         review_status: component.review_status || 'pending',
+        instance_identifier: component.instance_identifier || '',
       });
     }
   };
@@ -232,7 +238,11 @@ const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
         <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography variant="h6">
-              Component Details: {component?.piece_mark || componentId}
+              Component Details: {component ? (
+                component.instance_identifier ? 
+                  `${component.piece_mark}-${component.instance_identifier}` : 
+                  component.piece_mark
+              ) : componentId}
             </Typography>
             {isEditMode && (
               <Chip 
@@ -271,7 +281,7 @@ const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                     Basic Information
                   </Typography>
                   <Grid container spacing={2}>
-                    <Grid item xs={6}>
+                    <Grid item xs={4}>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
                         Piece Mark
                       </Typography>
@@ -297,7 +307,32 @@ const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                         </Typography>
                       )}
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={4}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Instance Identifier
+                      </Typography>
+                      {isEditMode ? (
+                        <Controller
+                          name="instance_identifier"
+                          control={control}
+                          render={({ field }) => (
+                            <TextField
+                              {...field}
+                              size="small"
+                              fullWidth
+                              placeholder="e.g., A, B, C"
+                              helperText="Optional identifier"
+                              inputProps={{ maxLength: 10 }}
+                            />
+                          )}
+                        />
+                      ) : (
+                        <Typography variant="body1" fontWeight="bold">
+                          {component.instance_identifier || '—'}
+                        </Typography>
+                      )}
+                    </Grid>
+                    <Grid item xs={4}>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
                         Type
                       </Typography>

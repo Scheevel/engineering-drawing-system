@@ -80,7 +80,7 @@ const ComponentBasicInfo: React.FC<ComponentBasicInfoProps> = ({
               </Typography>
               
               <Grid container spacing={2}>
-                <Grid item xs={12}>
+                <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
                     label="Piece Mark"
@@ -90,6 +90,19 @@ const ComponentBasicInfo: React.FC<ComponentBasicInfoProps> = ({
                     required
                     error={!component.piece_mark?.trim()}
                     helperText={!component.piece_mark?.trim() && editMode ? 'Piece mark is required' : ''}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Instance Identifier"
+                    value={component.instance_identifier || ''}
+                    onChange={(e) => handleFieldChange('instance_identifier', e.target.value)}
+                    disabled={!editMode}
+                    placeholder="e.g., A, B, C"
+                    inputProps={{ maxLength: 10 }}
+                    helperText="Optional. Use to differentiate multiple instances of the same piece mark."
                   />
                 </Grid>
 

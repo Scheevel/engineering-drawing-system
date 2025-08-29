@@ -25,6 +25,7 @@ interface DrawingContextMenuProps {
   clickedComponent?: {
     id: string;
     piece_mark: string;
+    instance_identifier?: string;
     manual_creation?: boolean;
   } | null;
   onCreateComponent: () => void;
@@ -73,7 +74,9 @@ const DrawingContextMenu: React.FC<DrawingContextMenuProps> = ({
         <>
           <MenuItem disabled>
             <Typography variant="subtitle2" color="text.secondary">
-              {clickedComponent.piece_mark}
+              {clickedComponent.instance_identifier ? 
+                `${clickedComponent.piece_mark}-${clickedComponent.instance_identifier}` : 
+                clickedComponent.piece_mark}
               {clickedComponent.manual_creation && ' (Manual)'}
             </Typography>
           </MenuItem>
