@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, Text, ForeignKey, JSON, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
@@ -21,6 +21,54 @@ class Project(Base):
     # Relationships
     drawings = relationship("Drawing", back_populates="project", cascade="all, delete-orphan")
     saved_searches = relationship("SavedSearch", back_populates="project", cascade="all, delete-orphan")
+    schemas = relationship("ComponentSchema", back_populates="project", cascade="all, delete-orphan")
+
+class ComponentSchema(Base):
+    __tablename__ = "component_schemas"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=True)  # Nullable for global schemas
+    name = Column(String(100), nullable=False)
+    description = Column(Text)
+    version = Column(Integer, default=1)
+    is_default = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    created_by = Column(String(100))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Unique constraint for schema names within project (or global)
+    __table_args__ = (
+        UniqueConstraint('project_id', 'name', name='unique_schema_name_per_project'),
+    )
+
+    # Relationships
+    project = relationship("Project", back_populates="schemas")
+    fields = relationship("ComponentSchemaField", back_populates="schema", cascade="all, delete-orphan")
+    components = relationship("Component", back_populates="schema")
+
+class ComponentSchemaField(Base):
+    __tablename__ = "component_schema_fields"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    schema_id = Column(UUID(as_uuid=True), ForeignKey("component_schemas.id"), nullable=False)
+    field_name = Column(String(100), nullable=False)
+    field_type = Column(String(50), nullable=False)  # text, number, select, checkbox, textarea, date
+    field_config = Column(JSONB, default=dict)  # Type-specific configuration (options, validation rules, etc.)
+    help_text = Column(Text)
+    display_order = Column(Integer, default=0)
+    is_required = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Unique constraint for field names within schema
+    __table_args__ = (
+        UniqueConstraint('schema_id', 'field_name', name='unique_field_name_per_schema'),
+    )
+
+    # Relationships
+    schema = relationship("ComponentSchema", back_populates="fields")
 
 class Drawing(Base):
     __tablename__ = "drawings"
@@ -47,15 +95,19 @@ class Drawing(Base):
 
 class Component(Base):
     __tablename__ = "components"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     drawing_id = Column(UUID(as_uuid=True), ForeignKey("drawings.id"), nullable=False)
+    schema_id = Column(UUID(as_uuid=True), ForeignKey("component_schemas.id"), nullable=True)  # Flexible schema support
     piece_mark = Column(String(100), nullable=False, index=True)
     component_type = Column(String(100))  # girder, brace, plate, angle, etc.
     description = Column(Text)
     quantity = Column(Integer, default=1)
     material_type = Column(String(100))
     instance_identifier = Column(String(10), nullable=True)  # Support multiple instances of same piece mark
+
+    # Flexible schema data
+    dynamic_data = Column(JSONB, default=dict)  # Schema-driven dynamic data storage
     
     # Location within drawing
     location_x = Column(Float)
@@ -79,6 +131,7 @@ class Component(Base):
     
     # Relationships
     drawing = relationship("Drawing", back_populates="components")
+    schema = relationship("ComponentSchema", back_populates="components")
     dimensions = relationship("Dimension", back_populates="component", cascade="all, delete-orphan")
     specifications = relationship("Specification", back_populates="component", cascade="all, delete-orphan")
 

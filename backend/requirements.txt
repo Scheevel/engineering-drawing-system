@@ -12,6 +12,7 @@ alembic==1.12.1
 
 # Async task processing
 celery==5.3.4
+flower==2.0.1
 redis==5.0.1
 
 # Image processing and OCR
