@@ -64,7 +64,7 @@ import {
   type SavedSearchCreate,
   type SavedSearch 
 } from '../services/api.ts';
-import ComponentDetailModal from '../components/ComponentDetailModal.tsx';
+import FlexibleComponentCard from '../components/flexible/FlexibleComponentCard.tsx';
 import SearchResultRow from '../components/SearchResultRow.tsx';
 import SavedSearchDialog from '../components/SavedSearchDialog.tsx';
 import ScopeEffectivenessMetrics from '../components/ScopeEffectivenessMetrics.tsx';
@@ -1190,10 +1190,11 @@ const SearchPage: React.FC = () => {
 
       {/* Component Detail Modal */}
       {selectedComponent && (
-        <ComponentDetailModal
+        <FlexibleComponentCard
           componentId={selectedComponent}
           open={!!selectedComponent}
           onClose={() => setSelectedComponent(null)}
+          mode="view"
         />
       )}
     </Box>

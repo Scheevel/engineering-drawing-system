@@ -33,7 +33,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useQueryClient } from 'react-query';
 import { getDrawing, getDrawingFile, getDrawingComponents, ComponentMarker, deleteComponent } from '../services/api.ts';
-import ComponentDetailModal from '../components/ComponentDetailModal.tsx';
+import FlexibleComponentCard from '../components/flexible/FlexibleComponentCard.tsx';
 import DrawingContextMenu from '../components/drawing/DrawingContextMenu.tsx';
 import ComponentCreationDialog from '../components/drawing/ComponentCreationDialog.tsx';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -978,13 +978,14 @@ const DrawingViewer: React.FC = () => {
 
       {/* Component Detail Modal */}
       {selectedComponentId && (
-        <ComponentDetailModal
+        <FlexibleComponentCard
           componentId={selectedComponentId}
           open={componentModalOpen}
           onClose={() => {
             setComponentModalOpen(false);
             setSelectedComponentId(null);
           }}
+          mode="view"
         />
       )}
       

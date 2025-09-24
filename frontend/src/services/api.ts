@@ -613,4 +613,267 @@ export const getSavedSearchCount = async (projectId: string): Promise<{count: nu
   return response.data;
 };
 
+// ========================================
+// FLEXIBLE COMPONENT SCHEMA SYSTEM
+// ========================================
+
+// Schema Types
+export type SchemaFieldType = 'text' | 'number' | 'select' | 'checkbox' | 'textarea' | 'date';
+
+export interface ComponentSchemaField {
+  id?: string;
+  field_name: string;
+  field_type: SchemaFieldType;
+  field_config: Record<string, any>;
+  help_text?: string;
+  display_order: number;
+  is_required: boolean;
+  is_active?: boolean;
+}
+
+export interface ComponentSchemaFieldCreate {
+  field_name: string;
+  field_type: SchemaFieldType;
+  field_config: Record<string, any>;
+  help_text?: string;
+  display_order: number;
+  is_required: boolean;
+}
+
+export interface ComponentSchemaFieldUpdate {
+  field_name?: string;
+  field_type?: SchemaFieldType;
+  field_config?: Record<string, any>;
+  help_text?: string;
+  display_order?: number;
+  is_required?: boolean;
+}
+
+export interface ComponentSchema {
+  id: string;
+  project_id?: string;
+  name: string;
+  description?: string;
+  version: number;
+  is_default: boolean;
+  is_active: boolean;
+  fields: ComponentSchemaField[];
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ComponentSchemaCreate {
+  project_id?: string;
+  name: string;
+  description?: string;
+  fields: ComponentSchemaFieldCreate[];
+  is_default?: boolean;
+}
+
+export interface ComponentSchemaUpdate {
+  name?: string;
+  description?: string;
+  is_default?: boolean;
+}
+
+export interface ComponentSchemaListResponse {
+  schemas: ComponentSchema[];
+  total: number;
+  project_id?: string;
+}
+
+export interface FlexibleComponent extends Component {
+  schema_id?: string;
+  schema_info?: ComponentSchema;
+  dynamic_data: Record<string, any>;
+  is_type_locked: boolean;
+}
+
+export interface FlexibleComponentCreate {
+  piece_mark: string;
+  drawing_id: string;
+  schema_id?: string;
+  dynamic_data?: Record<string, any>;
+  coordinates?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+export interface FlexibleComponentUpdate {
+  piece_mark?: string;
+  schema_id?: string;
+  dynamic_data?: Record<string, any>;
+  coordinates?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+export interface TypeLockStatus {
+  is_locked: boolean;
+  lock_reason?: string;
+  locked_fields: string[];
+  can_unlock: boolean;
+}
+
+export interface SchemaValidationResult {
+  is_valid: boolean;
+  errors: string[];
+  validated_data: Record<string, any>;
+}
+
+// Schema Management API
+export const getProjectSchemas = async (projectId: string, includeGlobal: boolean = true): Promise<ComponentSchemaListResponse> => {
+  const response = await api.get(`/schemas/projects/${projectId}?include_global=${includeGlobal}`);
+  return response.data;
+};
+
+export const getSchema = async (schemaId: string): Promise<ComponentSchema> => {
+  const response = await api.get(`/schemas/${schemaId}`);
+  return response.data;
+};
+
+export const createSchema = async (schemaData: ComponentSchemaCreate): Promise<ComponentSchema> => {
+  const response = await api.post('/schemas/', schemaData);
+  return response.data;
+};
+
+export const updateSchema = async (schemaId: string, updates: ComponentSchemaUpdate): Promise<ComponentSchema> => {
+  const response = await api.put(`/schemas/${schemaId}`, updates);
+  return response.data;
+};
+
+export const deactivateSchema = async (schemaId: string): Promise<void> => {
+  await api.delete(`/schemas/${schemaId}`);
+};
+
+export const getDefaultSchema = async (projectId: string): Promise<ComponentSchema> => {
+  const response = await api.get(`/schemas/projects/${projectId}/default`);
+  return response.data;
+};
+
+export const getGlobalDefaultSchema = async (): Promise<ComponentSchema> => {
+  const response = await api.get('/schemas/global/default');
+  return response.data;
+};
+
+// Schema Field Management API
+export const addSchemaField = async (schemaId: string, fieldData: ComponentSchemaFieldCreate): Promise<ComponentSchemaField> => {
+  const response = await api.post(`/schemas/${schemaId}/fields`, fieldData);
+  return response.data;
+};
+
+export const updateSchemaField = async (fieldId: string, updates: ComponentSchemaFieldUpdate): Promise<ComponentSchemaField> => {
+  const response = await api.put(`/schemas/fields/${fieldId}`, updates);
+  return response.data;
+};
+
+export const removeSchemaField = async (fieldId: string): Promise<void> => {
+  await api.delete(`/schemas/fields/${fieldId}`);
+};
+
+export const validateDataAgainstSchema = async (schemaId: string, data: Record<string, any>): Promise<SchemaValidationResult> => {
+  const response = await api.post(`/schemas/${schemaId}/validate`, data);
+  return response.data;
+};
+
+// Flexible Components API
+export const createFlexibleComponent = async (componentData: FlexibleComponentCreate): Promise<FlexibleComponent> => {
+  const response = await api.post('/flexible-components/', componentData);
+  return response.data;
+};
+
+export const getFlexibleComponent = async (componentId: string): Promise<FlexibleComponent> => {
+  const response = await api.get(`/flexible-components/${componentId}`);
+  return response.data;
+};
+
+export const updateFlexibleComponent = async (componentId: string, updateData: FlexibleComponentUpdate): Promise<FlexibleComponent> => {
+  const response = await api.put(`/flexible-components/${componentId}`, updateData);
+  return response.data;
+};
+
+export const getComponentTypeLockInfo = async (componentId: string): Promise<TypeLockStatus> => {
+  const response = await api.get(`/flexible-components/${componentId}/type-lock`);
+  return response.data;
+};
+
+export const unlockComponentType = async (componentId: string): Promise<FlexibleComponent> => {
+  const response = await api.post(`/flexible-components/${componentId}/unlock`);
+  return response.data;
+};
+
+export const migrateComponentSchema = async (componentId: string, targetSchemaId: string, force: boolean = false): Promise<FlexibleComponent> => {
+  const response = await api.post(`/flexible-components/${componentId}/migrate-schema`, null, {
+    params: { target_schema_id: targetSchemaId, force }
+  });
+  return response.data;
+};
+
+export const validateComponentAgainstSchema = async (componentId: string, schemaId?: string): Promise<SchemaValidationResult> => {
+  const response = await api.post(`/flexible-components/${componentId}/validate`, null, {
+    params: schemaId ? { schema_id: schemaId } : {}
+  });
+  return response.data;
+};
+
+export const getComponentsBySchema = async (schemaId: string, limit: number = 100): Promise<FlexibleComponent[]> => {
+  const response = await api.get(`/flexible-components/by-schema/${schemaId}?limit=${limit}`);
+  return response.data;
+};
+
+export const getAvailableSchemas = async (componentId: string): Promise<{
+  current_schema_id?: string;
+  is_type_locked: boolean;
+  lock_reason?: string;
+  available_schemas: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    is_default: boolean;
+    field_count: number;
+  }>;
+}> => {
+  const response = await api.get(`/flexible-components/${componentId}/available-schemas`);
+  return response.data;
+};
+
+export const searchComponentsByFieldValue = async (
+  fieldName: string,
+  fieldValue: string,
+  schemaId?: string,
+  projectId?: string,
+  limit: number = 50
+): Promise<{
+  field_name: string;
+  field_value: string;
+  total_found: number;
+  components: FlexibleComponent[];
+}> => {
+  const params = new URLSearchParams({
+    field_name: fieldName,
+    field_value: fieldValue,
+    limit: limit.toString()
+  });
+
+  if (schemaId) params.append('schema_id', schemaId);
+  if (projectId) params.append('project_id', projectId);
+
+  const response = await api.get(`/flexible-components/search/by-field-value?${params}`);
+  return response.data;
+};
+
+export const validateComponentData = async (schemaId: string, componentData: Record<string, any>): Promise<SchemaValidationResult> => {
+  const response = await api.post('/flexible-components/validate-data', componentData, {
+    params: { schema_id: schemaId }
+  });
+  return response.data;
+};
+
 export default api;
