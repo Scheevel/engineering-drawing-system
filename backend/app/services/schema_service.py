@@ -84,7 +84,7 @@ class SchemaService:
     async def get_schema_by_id(self, schema_id: UUID) -> Optional[ComponentSchemaResponse]:
         """Get a schema by ID with its fields"""
         schema = self.db.query(ComponentSchema)\
-            .options(joinedload(ComponentSchemaField))\
+            .options(joinedload(ComponentSchema.fields))\
             .filter(ComponentSchema.id == schema_id)\
             .first()
 
