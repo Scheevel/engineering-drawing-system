@@ -87,6 +87,46 @@ async def get_global_default_schema(
 
     return schema
 
+@router.post("/projects/{project_id}/default", response_model=ComponentSchemaResponse)
+async def set_project_default_schema(
+    project_id: UUID,
+    schema_id: UUID = Query(..., description="Schema ID to set as default"),
+    db: Session = Depends(get_db)
+):
+    """Set a schema as the default for a project"""
+    try:
+        schema_service = SchemaService(db)
+        updated_schema = await schema_service.set_default_schema(project_id, schema_id)
+
+        if not updated_schema:
+            raise HTTPException(status_code=404, detail="Schema not found or cannot be set as default")
+
+        return updated_schema
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to set default schema: {str(e)}")
+
+@router.delete("/projects/{project_id}/default")
+async def unset_project_default_schema(
+    project_id: UUID,
+    schema_id: UUID = Query(..., description="Schema ID to unset as default"),
+    db: Session = Depends(get_db)
+):
+    """Unset a schema as the default for a project"""
+    try:
+        schema_service = SchemaService(db)
+        success = await schema_service.unset_default_schema(project_id, schema_id)
+
+        if not success:
+            raise HTTPException(status_code=404, detail="Schema not found or not currently default")
+
+        return {"message": "Default schema unset successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to unset default schema: {str(e)}")
+
 @router.put("/{schema_id}", response_model=ComponentSchemaResponse)
 async def update_schema(
     schema_id: UUID,
@@ -180,6 +220,43 @@ async def remove_schema_field(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to remove schema field: {str(e)}")
+
+@router.put("/{schema_id}/fields/{field_id}/validation", response_model=SchemaValidationResult)
+async def validate_specific_field_data(
+    schema_id: UUID,
+    field_id: UUID,
+    field_data: Dict[str, Any],
+    db: Session = Depends(get_db)
+):
+    """Validate specific field data against schema field rules"""
+    try:
+        schema_service = SchemaService(db)
+        return await schema_service.validate_field_data(schema_id, field_id, field_data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Field validation failed: {str(e)}")
+
+@router.post("/{schema_id}/fields/{field_id}/duplicate", response_model=ComponentSchemaFieldResponse)
+async def duplicate_schema_field(
+    schema_id: UUID,
+    field_id: UUID,
+    name_suffix: str = Query(default=" Copy", description="Suffix to add to duplicated field name"),
+    db: Session = Depends(get_db)
+):
+    """Duplicate an existing schema field with new name"""
+    try:
+        schema_service = SchemaService(db)
+        duplicated_field = await schema_service.duplicate_schema_field(schema_id, field_id, name_suffix)
+
+        if not duplicated_field:
+            raise HTTPException(status_code=404, detail="Schema field not found")
+
+        return duplicated_field
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to duplicate schema field: {str(e)}")
 
 # Schema Validation Endpoints
 @router.post("/{schema_id}/validate", response_model=SchemaValidationResult)

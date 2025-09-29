@@ -463,3 +463,156 @@ class SchemaService:
             'errors': error_count,
             'total_processed': len(legacy_components)
         }
+
+    # Default Schema Management
+    async def set_default_schema(self, project_id: UUID, schema_id: UUID) -> Optional[ComponentSchemaResponse]:
+        """Set a schema as the default for a project"""
+        # Verify schema exists and belongs to project or is global
+        schema = self.db.query(ComponentSchema).filter(
+            and_(
+                ComponentSchema.id == schema_id,
+                ComponentSchema.is_active == True,
+                or_(
+                    ComponentSchema.project_id == project_id,
+                    ComponentSchema.project_id.is_(None)  # Global schema
+                )
+            )
+        ).first()
+
+        if not schema:
+            raise ValueError("Schema not found or not accessible for this project")
+
+        # Unset any existing default for this project
+        self.db.query(ComponentSchema).filter(
+            and_(
+                ComponentSchema.project_id == project_id,
+                ComponentSchema.is_default == True
+            )
+        ).update({"is_default": False})
+
+        # Set new default
+        schema.is_default = True
+        self.db.commit()
+        self.db.refresh(schema)
+
+        return await self._to_schema_response(schema)
+
+    async def unset_default_schema(self, project_id: UUID, schema_id: UUID) -> bool:
+        """Unset a schema as the default for a project"""
+        schema = self.db.query(ComponentSchema).filter(
+            and_(
+                ComponentSchema.id == schema_id,
+                ComponentSchema.project_id == project_id,
+                ComponentSchema.is_default == True,
+                ComponentSchema.is_active == True
+            )
+        ).first()
+
+        if not schema:
+            return False
+
+        schema.is_default = False
+        self.db.commit()
+        return True
+
+    # Field-Specific Operations
+    async def validate_field_data(self, schema_id: UUID, field_id: UUID, field_data: Dict[str, Any]) -> SchemaValidationResult:
+        """Validate specific field data against schema field rules"""
+        schema = await self.get_schema_by_id(schema_id)
+        if not schema:
+            raise ValueError("Schema not found")
+
+        # Find the specific field
+        field = None
+        for f in schema.fields:
+            if f.id == str(field_id):
+                field = f
+                break
+
+        if not field:
+            raise ValueError("Field not found in schema")
+
+        errors = []
+        warnings = []
+        field_name = field.field_name
+
+        # Validate field data based on field configuration
+        if field_name in field_data:
+            value = field_data[field_name]
+
+            # Required field validation
+            if field.is_required and (value is None or value == ""):
+                errors.append(f"Field '{field_name}' is required")
+
+            # Type-specific validation
+            field_type = field.field_type
+            if value is not None and value != "":
+                if field_type == 'number':
+                    try:
+                        float(value)
+                    except (ValueError, TypeError):
+                        errors.append(f"Field '{field_name}' must be a valid number")
+                elif field_type == 'select':
+                    options = field.field_config.get('options', [])
+                    if value not in options:
+                        errors.append(f"Field '{field_name}' must be one of: {', '.join(options)}")
+
+        elif field.is_required:
+            errors.append(f"Required field '{field_name}' is missing")
+
+        return SchemaValidationResult(
+            is_valid=len(errors) == 0,
+            errors=errors,
+            warnings=warnings,
+            validated_data=field_data,
+            schema_version=schema.version
+        )
+
+    async def duplicate_schema_field(self, schema_id: UUID, field_id: UUID, name_suffix: str = " Copy") -> Optional[ComponentSchemaFieldResponse]:
+        """Duplicate an existing schema field with new name"""
+        # Get the original field
+        original_field = self.db.query(ComponentSchemaField).filter(
+            and_(
+                ComponentSchemaField.id == field_id,
+                ComponentSchemaField.schema_id == schema_id,
+                ComponentSchemaField.is_active == True
+            )
+        ).first()
+
+        if not original_field:
+            return None
+
+        # Find next available display order
+        max_order = self.db.query(ComponentSchemaField.display_order)\
+            .filter(ComponentSchemaField.schema_id == schema_id)\
+            .order_by(desc(ComponentSchemaField.display_order))\
+            .first()
+
+        next_order = (max_order[0] if max_order else 0) + 1
+
+        # Create duplicated field
+        duplicated_field = ComponentSchemaField(
+            schema_id=schema_id,
+            field_name=original_field.field_name + name_suffix,
+            field_type=original_field.field_type,
+            field_config=original_field.field_config.copy() if original_field.field_config else {},
+            help_text=original_field.help_text,
+            display_order=next_order,
+            is_required=original_field.is_required,
+            is_active=True
+        )
+
+        self.db.add(duplicated_field)
+        self.db.commit()
+        self.db.refresh(duplicated_field)
+
+        return ComponentSchemaFieldResponse(
+            id=str(duplicated_field.id),
+            field_name=duplicated_field.field_name,
+            field_type=duplicated_field.field_type,
+            field_config=duplicated_field.field_config,
+            help_text=duplicated_field.help_text,
+            display_order=duplicated_field.display_order,
+            is_required=duplicated_field.is_required,
+            is_active=duplicated_field.is_active
+        )

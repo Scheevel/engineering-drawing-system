@@ -1,0 +1,90 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e6]: Engineering Drawing Index System
+  - generic [ref=e8]:
+    - generic [ref=e10]:
+      - button [ref=e12] [cursor=pointer]:
+        - img [ref=e13] [cursor=pointer]
+      - separator [ref=e15]
+      - list [ref=e16]:
+        - listitem "Dashboard" [ref=e17]:
+          - button "Dashboard" [ref=e18] [cursor=pointer]:
+            - img [ref=e20] [cursor=pointer]
+            - generic:
+              - generic: Dashboard
+        - listitem "Projects" [ref=e22]:
+          - button "Projects" [ref=e23] [cursor=pointer]:
+            - img [ref=e25] [cursor=pointer]
+            - generic:
+              - generic: Projects
+        - listitem "Schema Management" [ref=e27]:
+          - button "Schema Management" [ref=e28] [cursor=pointer]:
+            - img [ref=e30] [cursor=pointer]
+            - generic:
+              - generic: Schema Management
+        - listitem "Search Components" [ref=e32]:
+          - button "Search Components" [ref=e33] [cursor=pointer]:
+            - img [ref=e35] [cursor=pointer]
+            - generic:
+              - generic: Search Components
+        - listitem "Upload Drawings" [ref=e37]:
+          - button "Upload Drawings" [ref=e38] [cursor=pointer]:
+            - img [ref=e40] [cursor=pointer]
+            - generic:
+              - generic: Upload Drawings
+    - main [ref=e42]:
+      - generic [ref=e43]:
+        - heading "Search Components" [level=1] [ref=e44]
+        - generic [ref=e46]:
+          - generic [ref=e50]:
+            - generic [ref=e51]: Search piece marks, components, or descriptions
+            - generic [ref=e52]:
+              - img [ref=e53]
+              - combobox "Search piece marks, components, or descriptions" [ref=e55]
+              - button [ref=e56] [cursor=pointer]:
+                - img [ref=e57] [cursor=pointer]
+              - group:
+                - generic: Search piece marks, components, or descriptions
+            - paragraph [ref=e60]: undefined query
+          - button "Search Scope" [ref=e62] [cursor=pointer]:
+            - img [ref=e64] [cursor=pointer]
+            - text: Search Scope
+            - img [ref=e67] [cursor=pointer]
+          - generic [ref=e70]:
+            - generic: Component Type
+            - generic [ref=e71]:
+              - combobox [ref=e72] [cursor=pointer]
+              - textbox
+              - img
+              - group:
+                - generic: Component Type
+          - generic [ref=e74]:
+            - generic [ref=e75]: Project
+            - generic [ref=e76]:
+              - combobox [ref=e77] [cursor=pointer]: All Projects
+              - textbox: all
+              - img
+              - group:
+                - generic: Project
+          - generic [ref=e79]:
+            - generic: Instance Identifier
+            - generic [ref=e80]:
+              - textbox "Instance Identifier" [ref=e81]
+              - group:
+                - generic: Instance Identifier
+            - paragraph [ref=e82]: Filter by specific instance (optional)
+          - generic [ref=e83]:
+            - button "Clear Filters" [disabled]:
+              - generic:
+                - img
+              - text: Clear Filters
+        - generic [ref=e85]:
+          - heading "Recent Components(0 total available)" [level=6] [ref=e86]:
+            - text: Recent Components
+            - generic [ref=e87]: (0 total available)
+          - paragraph [ref=e88]: Start typing in the search box above to find specific components, or browse recent additions below.
+          - paragraph [ref=e90]: No components have been processed yet. Upload some drawings to get started!
+```

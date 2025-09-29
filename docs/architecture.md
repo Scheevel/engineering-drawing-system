@@ -41,6 +41,7 @@ This is the **DEFINITIVE technology selection** for the entire Engineering Drawi
 | Frontend Language | TypeScript | ^4.9.5 | Type-safe frontend development | Prevents runtime errors in complex component editing flows |
 | Frontend Framework | React | ^18.2.0 | Component-based UI with hooks | Enables sophisticated modal editing with proper state management |
 | UI Component Library | Material-UI (MUI) | ^5.14.0 | Professional engineering UI components | Provides consistent design system optimized for data-heavy interfaces |
+| Drag and Drop | @dnd-kit/core + @dnd-kit/sortable | ^6.3.1 + ^10.0.0 | Accessible drag-and-drop functionality | Modern, accessible drag-and-drop for field reordering with keyboard and touch support |
 | State Management | React Query + React Hook Form | ^3.39.0 + ^7.45.0 | Server state + form state management | Optimistic updates with conflict resolution for component editing |
 | Backend Language | Python | ^3.11 | Async backend development | Excellent for ML/OCR integration with strong typing support |
 | Backend Framework | FastAPI | ^0.115.0 | High-performance async API framework | Auto-generated OpenAPI docs + native async support for drawing processing |
@@ -959,5 +960,118 @@ The Engineering Drawing Index System architecture represents a sophisticated ful
 3. **Mobile/Tablet Responsiveness** - Adapt component editing interfaces for field use on tablets
 4. **Advanced Authentication & Authorization** - Implement role-based access control for team collaboration
 5. **Production Deployment Architecture** - Migrate from Docker Compose to Kubernetes for production scalability
+
+## Field Reordering Implementation Patterns
+
+### Drag-and-Drop Architecture with @dnd-kit
+
+**Technology Stack:**
+- **Core Library:** @dnd-kit/core ^6.3.1
+- **Sorting Strategy:** @dnd-kit/sortable ^10.0.0
+- **Utilities:** @dnd-kit/utilities ^3.2.2
+- **UI Integration:** Material-UI v5.14.0 compatibility
+
+**Implementation Pattern:**
+
+```typescript
+// 1. DndContext Setup with Accessibility
+const sensors = useSensors(
+  useSensor(PointerSensor, {
+    activationConstraint: { distance: 8 }, // Prevent accidental drags
+  }),
+  useSensor(KeyboardSensor, {
+    coordinateGetter: sortableKeyboardCoordinates, // WCAG 2.1 AA compliance
+  })
+);
+
+// 2. Sortable Field Component Pattern
+const SortableFieldItem = ({ field }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: field.id });
+
+  const style = {
+    transform: CSS?.Transform?.toString(transform) || undefined,
+    transition,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  return (
+    <Paper
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      sx={{
+        cursor: isDragging ? 'grabbing' : 'grab',
+        border: isDragging ? '2px dashed #1976d2' : '1px solid #e0e0e0',
+      }}
+    >
+      <IconButton {...listeners} aria-label="Drag to reorder field">
+        <DragIndicatorIcon />
+      </IconButton>
+      {/* Field content */}
+    </Paper>
+  );
+};
+
+// 3. Drag End Handler with State Management
+const handleDragEnd = (event: DragEndEvent) => {
+  const { active, over } = event;
+
+  if (active.id !== over?.id) {
+    setFields((items) => {
+      const oldIndex = items.findIndex((item) => item.id === active.id);
+      const newIndex = items.findIndex((item) => item.id === over?.id);
+      return arrayMove(items, oldIndex, newIndex);
+    });
+  }
+};
+```
+
+**Key Implementation Principles:**
+
+1. **Accessibility First**
+   - Keyboard navigation support (Tab + Space/Enter)
+   - Screen reader compatibility with proper ARIA labels
+   - Touch device support for mobile/tablet use
+   - Focus management during drag operations
+
+2. **Visual Feedback**
+   - Clear drag handles with Material-UI icons
+   - Visual state changes during drag (opacity, border)
+   - Consistent hover states and cursor changes
+   - Smooth transitions with CSS Transform
+
+3. **Performance Optimization**
+   - Minimal re-renders using CSS Transform instead of layout changes
+   - Distance-based activation to prevent accidental drags
+   - Early exit detection for drag completion
+
+4. **Integration Patterns**
+   - Compatible with React Hook Form field arrays
+   - Works with Material-UI Paper/Card components
+   - Integrates with existing schema management state
+   - Supports real-time validation during reordering
+
+**Browser Compatibility:**
+- Modern browsers with pointer events support
+- Touch devices (iOS Safari 14+, Chrome Mobile 90+)
+- Keyboard-only navigation support
+- Screen reader compatibility (tested with NVDA/VoiceOver)
+
+**Error Handling:**
+- Graceful fallback when drag operations fail
+- Null-safe transform handling for test environments
+- Recovery from interrupted drag sessions
+- Validation of final field order before persistence
+
+This implementation provides the foundation for sophisticated field management workflows while maintaining accessibility and performance standards required for engineering applications.
+
+---
 
 This architectural documentation serves as the foundation for the development team to understand, debug, and enhance the component editing system that is central to the Engineering Drawing Index System's value proposition.

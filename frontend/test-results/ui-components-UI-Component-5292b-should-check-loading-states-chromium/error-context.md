@@ -1,0 +1,70 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e6]: Engineering Drawing Index System
+  - generic [ref=e8]:
+    - generic [ref=e10]:
+      - button [ref=e12] [cursor=pointer]:
+        - img [ref=e13] [cursor=pointer]
+      - separator [ref=e15]
+      - list [ref=e16]:
+        - listitem "Dashboard" [ref=e17]:
+          - button "Dashboard" [ref=e18] [cursor=pointer]:
+            - img [ref=e20] [cursor=pointer]
+            - generic:
+              - generic: Dashboard
+        - listitem "Projects" [ref=e22]:
+          - button "Projects" [ref=e23] [cursor=pointer]:
+            - img [ref=e25] [cursor=pointer]
+            - generic:
+              - generic: Projects
+        - listitem "Schema Management" [ref=e27]:
+          - button "Schema Management" [ref=e28] [cursor=pointer]:
+            - img [ref=e30] [cursor=pointer]
+            - generic:
+              - generic: Schema Management
+        - listitem "Search Components" [ref=e32]:
+          - button "Search Components" [ref=e33] [cursor=pointer]:
+            - img [ref=e35] [cursor=pointer]
+            - generic:
+              - generic: Search Components
+        - listitem "Upload Drawings" [ref=e37]:
+          - button "Upload Drawings" [ref=e38] [cursor=pointer]:
+            - img [ref=e40] [cursor=pointer]
+            - generic:
+              - generic: Upload Drawings
+    - main [ref=e42]:
+      - generic [ref=e43]:
+        - heading "Dashboard" [level=1] [ref=e44]
+        - generic [ref=e45]:
+          - generic [ref=e46]:
+            - heading "Quick Actions" [level=6] [ref=e47]
+            - generic [ref=e48]:
+              - generic [ref=e51] [cursor=pointer]:
+                - img [ref=e53] [cursor=pointer]
+                - heading "Upload Drawings" [level=3] [ref=e55] [cursor=pointer]
+                - paragraph [ref=e56] [cursor=pointer]: Upload new engineering drawings for processing
+              - generic [ref=e59] [cursor=pointer]:
+                - img [ref=e61] [cursor=pointer]
+                - heading "Search Components" [level=3] [ref=e63] [cursor=pointer]
+                - paragraph [ref=e64] [cursor=pointer]: Find components across all drawings
+              - generic [ref=e67] [cursor=pointer]:
+                - img [ref=e69] [cursor=pointer]
+                - heading "View Drawings" [level=3] [ref=e71] [cursor=pointer]
+                - paragraph [ref=e72] [cursor=pointer]: Browse uploaded drawings
+              - generic [ref=e75] [cursor=pointer]:
+                - img [ref=e77] [cursor=pointer]
+                - heading "System Reports" [level=3] [ref=e79] [cursor=pointer]
+                - paragraph [ref=e80] [cursor=pointer]: View processing statistics and reports
+          - progressbar [ref=e83]:
+            - img [ref=e84]
+          - generic [ref=e87]:
+            - heading "Recent Activity" [level=6] [ref=e88]
+            - list [ref=e89]:
+              - listitem [ref=e90]:
+                - generic [ref=e91]:
+                  - generic [ref=e92]: No recent activity
+                  - paragraph [ref=e93]: Upload drawings to see activity
+```

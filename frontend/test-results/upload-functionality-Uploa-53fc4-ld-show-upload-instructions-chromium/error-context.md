@@ -1,0 +1,67 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e6]: Engineering Drawing Index System
+  - generic [ref=e8]:
+    - generic [ref=e10]:
+      - button [ref=e12] [cursor=pointer]:
+        - img [ref=e13] [cursor=pointer]
+      - separator [ref=e15]
+      - list [ref=e16]:
+        - listitem "Dashboard" [ref=e17]:
+          - button "Dashboard" [ref=e18] [cursor=pointer]:
+            - img [ref=e20] [cursor=pointer]
+            - generic:
+              - generic: Dashboard
+        - listitem "Projects" [ref=e22]:
+          - button "Projects" [ref=e23] [cursor=pointer]:
+            - img [ref=e25] [cursor=pointer]
+            - generic:
+              - generic: Projects
+        - listitem "Schema Management" [ref=e27]:
+          - button "Schema Management" [ref=e28] [cursor=pointer]:
+            - img [ref=e30] [cursor=pointer]
+            - generic:
+              - generic: Schema Management
+        - listitem "Search Components" [ref=e32]:
+          - button "Search Components" [ref=e33] [cursor=pointer]:
+            - img [ref=e35] [cursor=pointer]
+            - generic:
+              - generic: Search Components
+        - listitem "Upload Drawings" [ref=e37]:
+          - button "Upload Drawings" [ref=e38] [cursor=pointer]:
+            - img [ref=e40] [cursor=pointer]
+            - generic:
+              - generic: Upload Drawings
+    - main [ref=e42]:
+      - generic [ref=e43]:
+        - heading "Upload Engineering Drawings" [level=1] [ref=e44]
+        - generic [ref=e45]:
+          - paragraph [ref=e46]: Upload your engineering drawings for automatic processing and component extraction. Supported formats include PDF, JPEG, and PNG files up to 50MB.
+          - generic [ref=e48]:
+            - generic [ref=e49]:
+              - heading "Project Assignment" [level=6] [ref=e50]
+              - generic [ref=e51]:
+                - generic [ref=e52]: Assign drawings to project
+                - generic [ref=e53]:
+                  - img [ref=e54]
+                  - combobox [ref=e56] [cursor=pointer]:
+                    - generic [ref=e57] [cursor=pointer]:
+                      - img [ref=e58] [cursor=pointer]
+                      - text: Unassigned
+                  - textbox: unassigned
+                  - img
+                  - group:
+                    - generic: Assign drawings to project
+            - generic [ref=e60] [cursor=pointer]:
+              - button "Choose File" [ref=e61]
+              - img [ref=e62] [cursor=pointer]
+              - heading "Drag & drop drawings here" [level=6] [ref=e64] [cursor=pointer]
+              - paragraph [ref=e65] [cursor=pointer]: or click to select files
+              - generic [ref=e66] [cursor=pointer]: "Supported formats: PDF, JPEG, PNG (Max 50MB)"
+            - alert [ref=e67]:
+              - img [ref=e69]
+              - generic [ref=e71]: No files selected. Drag and drop drawing files or click the area above to select.
+```

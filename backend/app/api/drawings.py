@@ -93,9 +93,26 @@ async def serve_drawing_file(
         if not drawing:
             raise HTTPException(status_code=404, detail="Drawing not found")
         
-        # Check if file exists
-        if not os.path.exists(drawing.file_path):
-            raise HTTPException(status_code=404, detail=f"Drawing file not found on disk: {drawing.file_path}")
+        # Check if file exists, with fallback paths for development/production mismatch
+        file_path = drawing.file_path
+
+        if not os.path.exists(file_path):
+            # Try alternative paths for development/production compatibility
+            filename = os.path.basename(file_path)
+            alternative_paths = [
+                os.path.join("./uploads", filename),           # Local development path
+                os.path.join("uploads", filename),             # Relative path
+                os.path.join("/app/uploads", filename),        # Container absolute path
+                f"./uploads/{filename}",                       # Explicit local path
+            ]
+
+            for alt_path in alternative_paths:
+                if os.path.exists(alt_path):
+                    file_path = alt_path
+                    print(f"Found file at alternative path: {alt_path}")
+                    break
+            else:
+                raise HTTPException(status_code=404, detail=f"Drawing file not found on disk: {drawing.file_path} (also tried alternatives: {alternative_paths})")
         
         # Determine media type based on file extension
         file_ext = os.path.splitext(drawing.file_path)[1].lower()
@@ -108,7 +125,7 @@ async def serve_drawing_file(
         media_type = media_type_map.get(file_ext, 'application/octet-stream')
         
         return FileResponse(
-            path=drawing.file_path,
+            path=file_path,
             media_type=media_type,
             filename=drawing.original_name or drawing.file_name
         )
