@@ -17,6 +17,7 @@ import {
   IconButton,
   ListItemIcon,
   ListItemText,
+  CircularProgress,
 } from '@mui/material';
 import {
   Lock as LockIcon,
@@ -25,9 +26,11 @@ import {
   Info as InfoIcon,
   Star as DefaultIcon,
   Close as CloseIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import { useQuery } from 'react-query';
+import { useQuery, useQueryClient } from 'react-query';
 import { ComponentSchema, TypeLockStatus, getAvailableSchemas, unlockComponentType } from '../../services/api.ts';
+import { useSchemaChangeListener } from '../../hooks/schema/useSchemaChangeListener.ts';
 
 interface TypeSelectionDropdownProps {
   componentId?: string;
@@ -131,15 +134,38 @@ const TypeSelectionDropdown: React.FC<TypeSelectionDropdownProps> = ({
   showLockDetails = true,
 }) => {
   const [unlockDialogOpen, setUnlockDialogOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch available schemas if component ID is provided and schemas not passed as props
-  const { data: schemasData } = useQuery(
+  const { data: schemasData, refetch: refetchSchemas, isFetching } = useQuery(
     ['available-schemas', componentId],
     () => componentId ? getAvailableSchemas(componentId) : Promise.resolve(null),
     {
       enabled: !!componentId && !propSchemas,
     }
   );
+
+  // Real-time schema change listener
+  useSchemaChangeListener({
+    projectId,
+    onSchemaChange: async (event) => {
+      setIsRefreshing(true);
+      try {
+        // Invalidate and refetch schemas when changes occur
+        if (componentId && !propSchemas) {
+          await refetchSchemas();
+        }
+        // If the current schema was deleted, notify parent
+        if (event.type === 'schema_deleted' && event.schemaId === currentSchemaId) {
+          // Parent component will handle schema switching
+        }
+      } finally {
+        setIsRefreshing(false);
+      }
+    },
+    autoInvalidateCache: true,
+  });
 
   const availableSchemas = propSchemas || schemasData?.available_schemas || [];
   const lockStatus = propLockStatus || {
@@ -244,20 +270,55 @@ const TypeSelectionDropdown: React.FC<TypeSelectionDropdownProps> = ({
 
   return (
     <Box>
-      <FormControl fullWidth variant="outlined" disabled={disabled}>
-        <InputLabel>Component Schema</InputLabel>
-        <Select
-          value={currentSchemaId || ''}
-          onChange={(e) => handleSchemaChange(e.target.value)}
-          label="Component Schema"
-          displayEmpty
-        >
-          <MenuItem value="">
-            <em>No schema selected</em>
-          </MenuItem>
-          {availableSchemas.map(renderSchemaOption)}
-        </Select>
-      </FormControl>
+      <Box display="flex" alignItems="center" gap={1} mb={1}>
+        <FormControl fullWidth variant="outlined" disabled={disabled || isRefreshing}>
+          <InputLabel>Component Schema</InputLabel>
+          <Select
+            value={currentSchemaId || ''}
+            onChange={(e) => handleSchemaChange(e.target.value)}
+            label="Component Schema"
+            displayEmpty
+            endAdornment={
+              (isFetching || isRefreshing) && (
+                <CircularProgress size={20} sx={{ mr: 2 }} />
+              )
+            }
+          >
+            <MenuItem value="">
+              <em>No schema selected</em>
+            </MenuItem>
+            {availableSchemas.map(renderSchemaOption)}
+          </Select>
+        </FormControl>
+
+        {/* Manual refresh button */}
+        {componentId && !propSchemas && (
+          <Tooltip title="Refresh available schemas">
+            <IconButton
+              onClick={() => {
+                setIsRefreshing(true);
+                refetchSchemas().finally(() => setIsRefreshing(false));
+              }}
+              disabled={disabled || isFetching || isRefreshing}
+              size="small"
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
+
+      {/* Real-time update indicator */}
+      {(isFetching || isRefreshing) && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <Box display="flex" alignItems="center" gap={1}>
+            <CircularProgress size={16} />
+            <Typography variant="body2">
+              {isRefreshing ? 'Refreshing schemas...' : 'Loading schemas...'}
+            </Typography>
+          </Box>
+        </Alert>
+      )}
 
       {selectedSchema && (
         <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>

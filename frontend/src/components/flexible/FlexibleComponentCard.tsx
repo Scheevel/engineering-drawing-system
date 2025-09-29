@@ -31,6 +31,9 @@ import {
   Settings as SpecsIcon,
   Lock as LockIcon,
   LockOpen as UnlockIcon,
+  Schema as SchemaIcon,
+  ManageAccounts as ManageIcon,
+  Pageview as ViewDrawingIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
@@ -47,6 +50,10 @@ import {
   FlexibleComponentCreate,
   FlexibleComponentUpdate,
 } from '../../services/api.ts';
+
+// Import schema navigation hook
+import { useSchemaNavigation } from '../../hooks/schema/useSchemaNavigation.ts';
+import { useSchemaChangeIntegration } from '../../hooks/schema/useSchemaChangeListener.ts';
 
 // Import our new flexible components
 import SchemaAwareForm from './SchemaAwareForm.tsx';
@@ -79,11 +86,22 @@ interface TabPanelProps {
   value: number;
 }
 
-const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
-  <div hidden={value !== index} style={{ width: '100%' }}>
-    {value === index && children}
-  </div>
-);
+const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
+  if (value !== index) {
+    return null;
+  }
+
+  return (
+    <Box
+      role="tabpanel"
+      id={`tabpanel-${index}`}
+      aria-labelledby={`tab-${index}`}
+      sx={{ width: '100%' }}
+    >
+      {children}
+    </Box>
+  );
+};
 
 const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
   componentId,
@@ -97,6 +115,32 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
   const theme = useTheme();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const schemaNavigation = useSchemaNavigation();
+
+  // Schema change event integration
+  const { emitSchemaUpdated } = useSchemaChangeIntegration({
+    projectId,
+    onSchemaCreated: (event) => {
+      // Refresh available schemas when a new schema is created
+      queryClient.invalidateQueries(['project-schemas', projectId]);
+    },
+    onSchemaUpdated: (event) => {
+      // Update current component if it uses the updated schema
+      if (selectedSchema?.id === event.schemaId) {
+        queryClient.invalidateQueries(['schema', event.schemaId]);
+        queryClient.invalidateQueries(['project-schemas', projectId]);
+      }
+    },
+    onSchemaDeleted: (event) => {
+      // Handle schema deletion - switch to default schema if current is deleted
+      if (selectedSchema?.id === event.schemaId && projectSchemas?.schemas.length) {
+        const defaultSchema = projectSchemas.schemas.find(s => s.is_default) || projectSchemas.schemas[0];
+        if (defaultSchema) {
+          handleSchemaChange(defaultSchema.id, defaultSchema);
+        }
+      }
+    },
+  });
 
   const [mode, setMode] = useState(initialMode);
   const [tabValue, setTabValue] = useState(0);
@@ -180,6 +224,13 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
     }
   }, [component, projectSchemas, isCreating]);
 
+  // Reset tab to Details when modal opens
+  useEffect(() => {
+    if (open) {
+      setTabValue(0);
+    }
+  }, [open]);
+
   const handleSave = async () => {
     if (!validation?.is_valid) {
       return;
@@ -239,6 +290,72 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
     } catch (error) {
       console.error('Failed to unlock component:', error);
     }
+  };
+
+  const handleViewDrawing = () => {
+    if (component?.drawing_id) {
+      // Navigate to drawing viewer with component highlighting
+      navigate(`/drawings/${component.drawing_id}?highlight=${componentId}`);
+    } else if (drawingId) {
+      // Fallback to drawingId prop if component.drawing_id not available
+      navigate(`/drawings/${drawingId}?highlight=${componentId}`);
+    }
+  };
+
+  // Schema management handlers
+  const handleManageSchemas = () => {
+    // Save current component context in sessionStorage for return navigation
+    const componentContext = {
+      componentId,
+      drawingId,
+      projectId,
+      mode,
+      timestamp: Date.now(),
+    };
+    sessionStorage.setItem('flexibleComponentContext', JSON.stringify(componentContext));
+
+    // Navigate to schema management for the project
+    if (projectId) {
+      schemaNavigation.navigateToSchemas(projectId);
+    } else {
+      schemaNavigation.navigateToSchemas();
+    }
+  };
+
+  const handleEditCurrentSchema = () => {
+    if (selectedSchema) {
+      // Save current component context
+      const componentContext = {
+        componentId,
+        drawingId,
+        projectId,
+        mode,
+        selectedSchemaId: selectedSchema.id,
+        formValues,
+        timestamp: Date.now(),
+      };
+      sessionStorage.setItem('flexibleComponentContext', JSON.stringify(componentContext));
+
+      // Navigate to edit the current schema
+      schemaNavigation.navigateToSchemaEdit(selectedSchema.id, projectId);
+    }
+  };
+
+  // Schema change handler with real-time updates and event emission
+  const handleSchemaChangeWithUpdates = (schemaId: string, schema: ComponentSchema) => {
+    handleSchemaChange(schemaId, schema);
+
+    // Emit schema update event for cross-component communication
+    emitSchemaUpdated(schemaId, {
+      componentId,
+      previousSchemaId: selectedSchema?.id,
+      newSchema: schema,
+    });
+
+    // Invalidate related caches for real-time updates
+    queryClient.invalidateQueries(['project-schemas', projectId]);
+    queryClient.invalidateQueries(['component-schemas']);
+    queryClient.invalidateQueries(['schema', schemaId]);
   };
 
   if (isLoading) {
@@ -327,31 +444,124 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
               {isEditing && (
                 <Card sx={{ mb: 3 }}>
                   <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Component Schema
-                    </Typography>
+                    <Box display="flex" justifyContent="between" alignItems="center" mb={2}>
+                      <Typography variant="h6">
+                        Component Schema
+                      </Typography>
+
+                      {/* Schema Management Actions */}
+                      <Box display="flex" gap={1}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<ManageIcon />}
+                          onClick={handleManageSchemas}
+                          disabled={updateMutation.isLoading || createMutation.isLoading}
+                        >
+                          Manage Schemas
+                        </Button>
+
+                        {selectedSchema && (
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<EditIcon />}
+                            onClick={handleEditCurrentSchema}
+                            disabled={updateMutation.isLoading || createMutation.isLoading}
+                          >
+                            Edit Schema
+                          </Button>
+                        )}
+                      </Box>
+                    </Box>
+
                     <TypeSelectionDropdown
                       componentId={componentId}
                       currentSchemaId={pendingSchemaId}
                       availableSchemas={availableSchemas}
                       lockStatus={lockStatus}
-                      onSchemaChange={handleSchemaChange}
+                      onSchemaChange={handleSchemaChangeWithUpdates}
                       onUnlock={handleUnlock}
                       disabled={updateMutation.isLoading || createMutation.isLoading}
                     />
+
+                    {/* Schema validation feedback */}
+                    {validation && !validation.is_valid && (
+                      <Alert severity="warning" sx={{ mt: 2 }}>
+                        <Typography variant="body2" fontWeight={500}>
+                          Schema Validation Issues:
+                        </Typography>
+                        <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+                          {validation.errors.slice(0, 3).map((error, idx) => (
+                            <li key={idx} style={{ fontSize: '0.875rem' }}>
+                              {error}
+                            </li>
+                          ))}
+                          {validation.errors.length > 3 && (
+                            <li style={{ fontSize: '0.875rem', fontStyle: 'italic' }}>
+                              ... and {validation.errors.length - 3} more issues
+                            </li>
+                          )}
+                        </ul>
+                      </Alert>
+                    )}
                   </CardContent>
                 </Card>
               )}
 
               {/* Tabs for different sections */}
               <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-                <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)}>
-                  <Tab icon={<EditIcon />} label="Details" />
+                <Tabs
+                  value={tabValue}
+                  onChange={(e, v) => {
+                    // Fallback handler - should not be needed with custom onClick handlers
+                    console.log('Material-UI onChange triggered:', tabValue, 'to', v);
+                    setTabValue(v);
+                  }}
+                  aria-label="Component information tabs"
+                >
+                  <Tab
+                    icon={<EditIcon />}
+                    label="Details"
+                    id="tab-0"
+                    aria-controls="tabpanel-0"
+                    onClick={() => {
+                      console.log('Details tab clicked, setting tabValue to 0');
+                      setTabValue(0);
+                    }}
+                  />
                   {!isCreating && (
                     <>
-                      <Tab icon={<DimensionsIcon />} label="Dimensions" />
-                      <Tab icon={<SpecsIcon />} label="Specifications" />
-                      <Tab icon={<HistoryIcon />} label="History" />
+                      <Tab
+                        icon={<DimensionsIcon />}
+                        label="Dimensions"
+                        id="tab-1"
+                        aria-controls="tabpanel-1"
+                        onClick={() => {
+                          console.log('Dimensions tab clicked, setting tabValue to 1');
+                          setTabValue(1);
+                        }}
+                      />
+                      <Tab
+                        icon={<SpecsIcon />}
+                        label="Specifications"
+                        id="tab-2"
+                        aria-controls="tabpanel-2"
+                        onClick={() => {
+                          console.log('Specifications tab clicked, setting tabValue to 2');
+                          setTabValue(2);
+                        }}
+                      />
+                      <Tab
+                        icon={<HistoryIcon />}
+                        label="History"
+                        id="tab-3"
+                        aria-controls="tabpanel-3"
+                        onClick={() => {
+                          console.log('History tab clicked, setting tabValue to 3');
+                          setTabValue(3);
+                        }}
+                      />
                     </>
                   )}
                 </Tabs>
@@ -359,15 +569,78 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
 
               {/* Tab Panels */}
               <TabPanel value={tabValue} index={0}>
+                {/* System Information Section */}
+                {!isCreating && component && (
+                  <Card sx={{ mb: 3 }}>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        System Information
+                      </Typography>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            Piece Mark
+                          </Typography>
+                          <Typography variant="body1" fontWeight="bold">
+                            {component.piece_mark}
+                          </Typography>
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            Drawing File
+                          </Typography>
+                          <Typography variant="body1">
+                            {component.drawing_file_name || 'N/A'}
+                          </Typography>
+                        </Grid>
+
+                        {(component.location_x !== null && component.location_x !== undefined &&
+                          component.location_y !== null && component.location_y !== undefined) && (
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="body2" color="text.secondary">
+                              Location on Drawing
+                            </Typography>
+                            <Typography variant="body1">
+                              X: {Math.round(component.location_x)}, Y: {Math.round(component.location_y)}
+                            </Typography>
+                          </Grid>
+                        )}
+
+                        {component.confidence_score !== null && component.confidence_score !== undefined && (
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="body2" color="text.secondary">
+                              Detection Confidence
+                            </Typography>
+                            <Chip
+                              label={`${Math.round(component.confidence_score * 100)}%`}
+                              size="small"
+                              color={component.confidence_score > 0.8 ? 'success' : 'warning'}
+                            />
+                          </Grid>
+                        )}
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Schema-Based Fields */}
                 {selectedSchema ? (
-                  <SchemaAwareForm
-                    schema={selectedSchema}
-                    initialValues={formValues}
-                    onValuesChange={setFormValues}
-                    onValidationChange={setValidation}
-                    disabled={!isEditing}
-                    showHelpText={!showHelp} // Show inline help if panel is closed
-                  />
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        Component Details
+                      </Typography>
+                      <SchemaAwareForm
+                        schema={selectedSchema}
+                        initialValues={formValues}
+                        onValuesChange={setFormValues}
+                        onValidationChange={setValidation}
+                        disabled={!isEditing}
+                        showHelpText={!showHelp} // Show inline help if panel is closed
+                      />
+                    </CardContent>
+                  </Card>
                 ) : (
                   <Alert severity="info">
                     {isCreating ? 'Please select a schema to begin creating the component.' :
@@ -410,7 +683,7 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
 
         <DialogActions>
           <Box display="flex" justifyContent="between" width="100%">
-            {/* Left side - Status info */}
+            {/* Left side - Status info and actions */}
             <Box display="flex" alignItems="center" gap={1}>
               {validation && (
                 <Chip
@@ -419,6 +692,19 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
                   color={validation.is_valid ? 'success' : 'error'}
                   size="small"
                 />
+              )}
+
+              {/* View Drawing Button - only show for existing components */}
+              {!isCreating && (component?.drawing_id || drawingId) && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<ViewDrawingIcon />}
+                  onClick={handleViewDrawing}
+                  sx={{ ml: 1 }}
+                >
+                  View Drawing
+                </Button>
               )}
             </Box>
 

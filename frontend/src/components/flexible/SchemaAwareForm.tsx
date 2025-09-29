@@ -11,6 +11,7 @@ import {
   FormHelperText,
   Typography,
   Box,
+  Autocomplete,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { ComponentSchema, SchemaFieldType, SchemaValidationResult } from '../../services/api.ts';
@@ -206,6 +207,38 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
           />
         );
 
+      case 'autocomplete':
+        return (
+          <Controller
+            {...fieldProps}
+            render={({ field: formField, fieldState: { error } }) => (
+              <Autocomplete
+                {...formField}
+                value={formField.value || null}
+                onChange={(event, newValue) => {
+                  formField.onChange(newValue);
+                }}
+                options={field.field_config.options || []}
+                getOptionLabel={(option: any) => option?.label || option?.toString() || ''}
+                isOptionEqualToValue={(option: any, value: any) =>
+                  (option?.value || option) === (value?.value || value)
+                }
+                freeSolo={field.field_config.allow_custom || false}
+                disabled={disabled}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label={formatFieldLabel(field.field_name)}
+                    variant="outlined"
+                    error={!!error}
+                    helperText={error?.message || (showHelpText && field.help_text ? field.help_text : '')}
+                  />
+                )}
+              />
+            )}
+          />
+        );
+
       default:
         return (
           <TextField
@@ -316,6 +349,9 @@ function buildDefaultValues(schema: ComponentSchema, initialValues: Record<strin
         case 'date':
           defaults[field.field_name] = field.field_config.default_value || null;
           break;
+        case 'autocomplete':
+          defaults[field.field_name] = field.field_config.default_value || '';
+          break;
         default:
           defaults[field.field_name] = '';
       }
@@ -374,6 +410,16 @@ function getValidationRules(field: ComponentSchema['fields'][0]): Record<string,
         };
       }
       break;
+
+    case 'autocomplete':
+      if (!field.field_config.allow_custom && field.field_config.options) {
+        rules.validate = (value: any) => {
+          if (!value) return true; // Allow empty values unless required
+          const validOptions = field.field_config.options.map((opt: any) => opt.value || opt);
+          return validOptions.includes(value?.value || value) || 'Please select a valid option';
+        };
+      }
+      break;
   }
 
   return rules;
@@ -392,6 +438,8 @@ function getFieldWidth(field: ComponentSchema['fields'][0]): number {
       return 6;  // Half width for checkboxes
     case 'date':
       return 4;  // Third width for dates
+    case 'autocomplete':
+      return 6;  // Half width for autocomplete fields
     default:
       return 6;  // Half width for most fields
   }

@@ -12,27 +12,49 @@ import {
   IconButton,
   Button,
   Chip,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
-import { Dimension } from '../../services/api.ts';
+import { useQuery } from 'react-query';
+import { getComponentDimensions } from '../../services/api.ts';
 
 interface ComponentDimensionsProps {
   componentId: string;
-  dimensions: Dimension[];
-  editMode: boolean;
-  onUpdate: () => void;
+  editMode?: boolean;
+  onUpdate?: () => void;
 }
 
 const ComponentDimensions: React.FC<ComponentDimensionsProps> = ({
   componentId,
-  dimensions,
-  editMode,
+  editMode = false,
   onUpdate,
 }) => {
+  const { data: dimensions = [], isLoading, error } = useQuery(
+    ['component-dimensions', componentId],
+    () => getComponentDimensions(componentId),
+    { enabled: !!componentId }
+  );
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error">
+        Failed to load component dimensions.
+      </Alert>
+    );
+  }
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>

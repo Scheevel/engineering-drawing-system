@@ -12,27 +12,49 @@ import {
   IconButton,
   Button,
   Chip,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
-import { Specification } from '../../services/api.ts';
+import { useQuery } from 'react-query';
+import { getComponentSpecifications } from '../../services/api.ts';
 
 interface ComponentSpecificationsProps {
   componentId: string;
-  specifications: Specification[];
-  editMode: boolean;
-  onUpdate: () => void;
+  editMode?: boolean;
+  onUpdate?: () => void;
 }
 
 const ComponentSpecifications: React.FC<ComponentSpecificationsProps> = ({
   componentId,
-  specifications,
-  editMode,
+  editMode = false,
   onUpdate,
 }) => {
+  const { data: specifications = [], isLoading, error } = useQuery(
+    ['component-specifications', componentId],
+    () => getComponentSpecifications(componentId),
+    { enabled: !!componentId }
+  );
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error">
+        Failed to load component specifications.
+      </Alert>
+    );
+  }
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
