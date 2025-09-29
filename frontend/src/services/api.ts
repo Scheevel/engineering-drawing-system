@@ -763,6 +763,19 @@ export const getGlobalDefaultSchema = async (): Promise<ComponentSchema> => {
   return response.data;
 };
 
+export const setDefaultSchema = async (projectId: string, schemaId: string): Promise<ComponentSchema> => {
+  const response = await api.post(`/schemas/projects/${projectId}/default`, null, {
+    params: { schema_id: schemaId }
+  });
+  return response.data;
+};
+
+export const unsetDefaultSchema = async (projectId: string, schemaId: string): Promise<void> => {
+  await api.delete(`/schemas/projects/${projectId}/default`, {
+    params: { schema_id: schemaId }
+  });
+};
+
 // Schema Field Management API
 export const addSchemaField = async (schemaId: string, fieldData: ComponentSchemaFieldCreate): Promise<ComponentSchemaField> => {
   const response = await api.post(`/schemas/${schemaId}/fields`, fieldData);
@@ -780,6 +793,20 @@ export const removeSchemaField = async (fieldId: string): Promise<void> => {
 
 export const validateDataAgainstSchema = async (schemaId: string, data: Record<string, any>): Promise<SchemaValidationResult> => {
   const response = await api.post(`/schemas/${schemaId}/validate`, data);
+  return response.data;
+};
+
+// Field-specific validation
+export const validateFieldData = async (schemaId: string, fieldId: string, fieldData: Record<string, any>): Promise<SchemaValidationResult> => {
+  const response = await api.put(`/schemas/${schemaId}/fields/${fieldId}/validation`, fieldData);
+  return response.data;
+};
+
+// Field duplication
+export const duplicateSchemaField = async (schemaId: string, fieldId: string, nameSuffix: string = ' Copy'): Promise<ComponentSchemaField> => {
+  const response = await api.post(`/schemas/${schemaId}/fields/${fieldId}/duplicate`, null, {
+    params: { name_suffix: nameSuffix }
+  });
   return response.data;
 };
 
@@ -874,6 +901,234 @@ export const validateComponentData = async (schemaId: string, componentData: Rec
     params: { schema_id: schemaId }
   });
   return response.data;
+};
+
+// ========================================
+// SCHEMA MANAGEMENT EXTENSIONS
+// ========================================
+
+// Enhanced management interfaces
+export interface SchemaUsageStats {
+  schema_id: string;
+  schema_name: string;
+  component_count: number;
+  last_used: string | null;
+  created_at: string;
+  is_active: boolean;
+  is_default: boolean;
+}
+
+export interface SchemaMigrationPlan {
+  source_schema_id: string;
+  target_schema_id: string;
+  affected_components: number;
+  field_mapping: Record<string, string>;
+  potential_data_loss: string[];
+  migration_warnings: string[];
+}
+
+export interface BulkValidationResult {
+  total_validated: number;
+  valid_count: number;
+  invalid_count: number;
+  validation_results: Array<{
+    component_id: string;
+    piece_mark: string;
+    is_valid: boolean;
+    errors: string[];
+  }>;
+}
+
+export interface SchemaMetrics {
+  total_schemas: number;
+  active_schemas: number;
+  default_schemas: number;
+  field_usage_stats: Array<{
+    field_type: string;
+    usage_count: number;
+    average_per_schema: number;
+  }>;
+  most_used_schemas: SchemaUsageStats[];
+}
+
+// Schema template interfaces
+export interface SchemaTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: 'engineering' | 'construction' | 'manufacturing' | 'general';
+  fields: ComponentSchemaFieldCreate[];
+  preview_component?: Record<string, any>;
+  is_system_template: boolean;
+  usage_count: number;
+}
+
+export interface SchemaTemplateListResponse {
+  templates: SchemaTemplate[];
+  categories: string[];
+  total: number;
+}
+
+// Schema import/export interfaces
+export interface SchemaExportData {
+  schema: Omit<ComponentSchema, 'id' | 'created_at' | 'updated_at'>;
+  metadata: {
+    exported_at: string;
+    exported_by?: string;
+    export_version: string;
+    component_count?: number;
+  };
+}
+
+export interface SchemaImportResult {
+  success: boolean;
+  imported_schema?: ComponentSchema;
+  errors: string[];
+  warnings: string[];
+  field_mapping?: Record<string, string>;
+}
+
+// Schema comparison interfaces
+export interface SchemaFieldDiff {
+  field_name: string;
+  change_type: 'added' | 'removed' | 'modified' | 'unchanged';
+  old_value?: ComponentSchemaField;
+  new_value?: ComponentSchemaField;
+  impact_level: 'none' | 'low' | 'medium' | 'high';
+}
+
+export interface SchemaDiff {
+  schema_info: {
+    old_name: string;
+    new_name: string;
+    old_version: number;
+    new_version: number;
+  };
+  field_changes: SchemaFieldDiff[];
+  summary: {
+    fields_added: number;
+    fields_removed: number;
+    fields_modified: number;
+    breaking_changes: number;
+  };
+}
+
+// Field configuration validation
+export interface FieldConfigValidation {
+  isValid: boolean;
+  errors: string[];
+  warnings?: string[];
+}
+
+// ========================================
+// ENHANCED ERROR HANDLING FOR SCHEMA OPERATIONS
+// ========================================
+
+// Schema-specific error types
+export class SchemaValidationError extends Error {
+  constructor(
+    message: string,
+    public validationErrors: string[],
+    public field?: string
+  ) {
+    super(message);
+    this.name = 'SchemaValidationError';
+  }
+}
+
+export class SchemaMigrationError extends Error {
+  constructor(
+    message: string,
+    public sourceSchemaId: string,
+    public targetSchemaId: string,
+    public affectedComponents: number
+  ) {
+    super(message);
+    this.name = 'SchemaMigrationError';
+  }
+}
+
+// Enhanced API response wrapper for schema operations
+export interface SchemaApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  warnings?: string[];
+  metadata?: {
+    operation: string;
+    timestamp: string;
+    affected_resources?: string[];
+  };
+}
+
+// Retry configuration for schema operations
+export const SCHEMA_RETRY_CONFIG = {
+  retries: 3,
+  retryDelay: (attempt: number) => Math.min(1000 * Math.pow(2, attempt), 10000),
+  retryCondition: (error: any) => {
+    // Retry on network errors and 5xx server errors, but not on validation errors
+    return !error.response || (error.response.status >= 500 && error.response.status < 600);
+  },
+};
+
+// Schema operation helper functions
+export const withSchemaErrorHandling = async <T>(
+  operation: () => Promise<T>,
+  operationName: string
+): Promise<T> => {
+  try {
+    return await operation();
+  } catch (error: any) {
+    if (error.response?.status === 400 && error.response?.data?.validation_errors) {
+      throw new SchemaValidationError(
+        `Schema validation failed for ${operationName}`,
+        error.response.data.validation_errors,
+        error.response.data.field
+      );
+    }
+
+    if (error.response?.status === 409 && operationName.includes('migration')) {
+      throw new SchemaMigrationError(
+        error.response.data.message || `Schema migration failed`,
+        error.response.data.source_schema_id,
+        error.response.data.target_schema_id,
+        error.response.data.affected_components || 0
+      );
+    }
+
+    // Re-throw other errors as-is
+    throw error;
+  }
+};
+
+// Batch operation helpers
+export const batchSchemaOperation = async <T, R>(
+  items: T[],
+  operation: (item: T) => Promise<R>,
+  batchSize: number = 5
+): Promise<Array<{ success: boolean; data?: R; error?: string; item: T }>> => {
+  const results: Array<{ success: boolean; data?: R; error?: string; item: T }> = [];
+
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const batchPromises = batch.map(async (item) => {
+      try {
+        const data = await operation(item);
+        return { success: true, data, item };
+      } catch (error: any) {
+        return {
+          success: false,
+          error: error.message || 'Unknown error',
+          item,
+        };
+      }
+    });
+
+    const batchResults = await Promise.all(batchPromises);
+    results.push(...batchResults);
+  }
+
+  return results;
 };
 
 export default api;

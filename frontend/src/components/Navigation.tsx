@@ -20,6 +20,7 @@ import {
   Description as DrawingIcon,
   Upload as UploadIcon,
   Folder as FolderIcon,
+  Schema as SchemaIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
@@ -49,6 +50,7 @@ const Navigation: React.FC<NavigationProps> = ({ onDrawerToggle }) => {
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
     { text: 'Projects', icon: <FolderIcon />, path: '/projects' },
+    { text: 'Schema Management', icon: <SchemaIcon />, path: '/schemas' },
     { text: 'Search Components', icon: <SearchIcon />, path: '/search' },
     { text: 'Upload Drawings', icon: <UploadIcon />, path: '/upload' },
   ];
