@@ -1,0 +1,83 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e6]: Engineering Drawing Index System
+  - generic [ref=e8]:
+    - generic [ref=e10]:
+      - button [ref=e12] [cursor=pointer]:
+        - img [ref=e13] [cursor=pointer]
+      - separator [ref=e15]
+      - list [ref=e16]:
+        - listitem "Dashboard" [ref=e17]:
+          - button "Dashboard" [ref=e18] [cursor=pointer]:
+            - img [ref=e20] [cursor=pointer]
+            - generic:
+              - generic: Dashboard
+        - listitem "Projects" [ref=e22]:
+          - button "Projects" [ref=e23] [cursor=pointer]:
+            - img [ref=e25] [cursor=pointer]
+            - generic:
+              - generic: Projects
+        - listitem "Schema Management" [ref=e27]:
+          - button "Schema Management" [ref=e28] [cursor=pointer]:
+            - img [ref=e30] [cursor=pointer]
+            - generic:
+              - generic: Schema Management
+        - listitem "Search Components" [ref=e32]:
+          - button "Search Components" [ref=e33] [cursor=pointer]:
+            - img [ref=e35] [cursor=pointer]
+            - generic:
+              - generic: Search Components
+        - listitem "Upload Drawings" [ref=e37]:
+          - button "Upload Drawings" [ref=e38] [cursor=pointer]:
+            - img [ref=e40] [cursor=pointer]
+            - generic:
+              - generic: Upload Drawings
+    - main [ref=e42]:
+      - generic [ref=e43]:
+        - navigation:
+          - list
+        - generic [ref=e44]:
+          - heading "Schema Management" [level=1] [ref=e45]
+          - paragraph [ref=e46]: Manage component type schemas across all projects. Create, edit, and organize your schema definitions.
+        - generic [ref=e47]:
+          - generic [ref=e48]:
+            - heading "Schemas (0)" [level=2] [ref=e49]
+            - group "View mode selection" [ref=e50]:
+              - button "Card view" [ref=e51] [cursor=pointer]:
+                - img [ref=e52] [cursor=pointer]
+              - button "Table view" [pressed] [ref=e54] [cursor=pointer]:
+                - img [ref=e55] [cursor=pointer]
+            - button "Create Schema" [ref=e57] [cursor=pointer]: Create Schema
+          - generic [ref=e59]:
+            - generic [ref=e63]:
+              - img [ref=e64]
+              - searchbox "Search schemas by name or description" [ref=e66]
+              - group
+            - generic [ref=e68]:
+              - generic [ref=e69]: Status
+              - generic [ref=e70]:
+                - combobox "Status" [ref=e71] [cursor=pointer]: All Statuses
+                - textbox: all
+                - img
+                - group:
+                  - generic: Status
+            - generic [ref=e73]:
+              - generic [ref=e74]: Usage
+              - generic [ref=e75]:
+                - combobox "Usage" [ref=e76] [cursor=pointer]: All Schemas
+                - textbox: all
+                - img
+                - group:
+                  - generic: Usage
+            - button "Default Only" [ref=e79] [cursor=pointer]: Default Only
+          - generic [ref=e81]:
+            - heading "No schemas found" [level=6] [ref=e82]
+            - paragraph [ref=e83]: Create your first schema to get started.
+            - button "Create Schema" [ref=e84] [cursor=pointer]: Create Schema
+        - alert [ref=e85]:
+          - img [ref=e87]
+          - paragraph [ref=e90]: Global schema management is available for system administrators. For project-specific schema management, navigate to a project and access schemas from there.
+```

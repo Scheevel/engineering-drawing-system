@@ -1,0 +1,26 @@
+{
+  "name": "engineering-drawing-system",
+  "version": "1.0.0",
+  "description": "Engineering Drawing Index System - Development Orchestration",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"docker-compose up -d\" \"cd frontend && npm start\"",
+    "dev:stop": "docker-compose down && pkill -f 'npm start' || true",
+    "dev:clean": "make dev-clean",
+    "dev:status": "make dev-status",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop all",
+    "pm2:restart": "pm2 restart all",
+    "pm2:logs": "pm2 logs",
+    "pm2:monitor": "pm2 monit",
+    "pm2:status": "pm2 status",
+    "pm2:clean": "pm2 stop all && pm2 delete all && docker-compose down -v"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "pm2": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

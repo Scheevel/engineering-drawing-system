@@ -9,6 +9,7 @@ import ComponentEditor from './pages/ComponentEditor.tsx';
 import ProjectsPage from './pages/ProjectsPage.tsx';
 import DrawingsListPage from './pages/DrawingsListPage.tsx';
 import SchemaManagementPage from './pages/schema/SchemaManagementPage.tsx';
+import SchemaCreatePage from './pages/schema/SchemaCreatePage.tsx';
 import ProjectSchemaPage from './pages/schema/ProjectSchemaPage.tsx';
 import SchemaEditPage from './pages/schema/SchemaEditPage.tsx';
 import Navigation from './components/Navigation.tsx';
@@ -65,7 +66,7 @@ const App: React.FC = () => {
             <Route path="/schemas" element={<SchemaManagementPage />} />
             <Route path="/schemas/:schemaId" element={<SchemaEditPage />} />
             <Route path="/schemas/:schemaId/edit" element={<SchemaEditPage />} />
-            <Route path="/schemas/create" element={<SchemaManagementPage />} />
+            <Route path="/schemas/create" element={<SchemaCreatePage />} />
             <Route path="/projects/:projectId/schemas" element={<ProjectSchemaPage />} />
             <Route path="/projects/:projectId/schemas/:schemaId" element={<SchemaEditPage />} />
             <Route path="/projects/:projectId/schemas/:schemaId/edit" element={<SchemaEditPage />} />

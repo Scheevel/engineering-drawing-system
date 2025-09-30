@@ -41,6 +41,7 @@ import {
   Clear as ClearIcon,
   Search as SearchIcon,
   FilterList as FilterIcon,
+  Schema as SchemaIcon,
 } from '@mui/icons-material';
 import { ComponentSchema } from '../../services/api.ts';
 import { SchemaUsageStats } from '../../types/schema';
@@ -556,6 +557,19 @@ const SchemaListView: React.FC<SchemaListViewProps> = ({
           </Grid>
         </Grid>
       </Box>
+
+      {/* Default Schema Information Message */}
+      {schemas.some(schema => schema.is_default && schema.id === 'default-schema-001') && (
+        <Alert
+          severity="info"
+          sx={{ mx: 2, mt: 1, mb: 0 }}
+          icon={<SchemaIcon />}
+        >
+          <Typography variant="body2">
+            <strong>Using default schema</strong> - Create custom schemas for your projects to customize field structures and improve data organization.
+          </Typography>
+        </Alert>
+      )}
 
       {/* Content */}
       <Box sx={{ p: 2 }}>

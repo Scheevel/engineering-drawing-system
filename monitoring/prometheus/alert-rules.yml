@@ -1,0 +1,150 @@
+# Prometheus alerting rules for Engineering Drawing System
+groups:
+  - name: engineering_drawing_system_alerts
+    rules:
+      # System-level alerts
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}"
+
+      - alert: HighDiskUsage
+        expr: 100 - ((node_filesystem_avail_bytes{mountpoint="/",fstype!="rootfs"} * 100) / node_filesystem_size_bytes{mountpoint="/",fstype!="rootfs"}) > 90
+        for: 10m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage is above 90% for more than 10 minutes on {{ $labels.instance }}"
+
+      # Container-level alerts
+      - alert: ContainerHighMemoryUsage
+        expr: container_memory_usage_bytes{name=~"drawing.*"} / container_spec_memory_limit_bytes{name=~"drawing.*"} * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: "{{ $labels.name }}"
+        annotations:
+          summary: "High memory usage in container {{ $labels.name }}"
+          description: "Container {{ $labels.name }} is using more than 90% of its memory limit"
+
+      - alert: ContainerRestarted
+        expr: increase(container_last_seen{name=~"drawing.*"}[10m]) > 0
+        labels:
+          severity: info
+          service: "{{ $labels.name }}"
+        annotations:
+          summary: "Container {{ $labels.name }} has restarted"
+          description: "Container {{ $labels.name }} was restarted in the last 10 minutes"
+
+      # Application-level alerts
+      - alert: HighAPIErrorRate
+        expr: rate(fastapi_requests_total{status=~"5.."}[5m]) / rate(fastapi_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+          service: drawing-backend
+        annotations:
+          summary: "High API error rate"
+          description: "API error rate is above 5% for more than 5 minutes"
+
+      - alert: HighAPIResponseTime
+        expr: histogram_quantile(0.95, rate(fastapi_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: drawing-backend
+        annotations:
+          summary: "High API response time"
+          description: "95th percentile API response time is above 2 seconds for more than 5 minutes"
+
+      - alert: APIServiceDown
+        expr: up{job="drawing-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: drawing-backend
+        annotations:
+          summary: "API service is down"
+          description: "The drawing backend API service has been down for more than 1 minute"
+
+      # Database alerts
+      - alert: DatabaseConnectionFailure
+        expr: up{job="postgresql"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: postgresql
+        annotations:
+          summary: "Database connection failure"
+          description: "Cannot connect to PostgreSQL database for more than 2 minutes"
+
+      # Redis alerts
+      - alert: RedisServiceDown
+        expr: up{job="redis"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis service is down"
+          description: "Redis service has been down for more than 2 minutes"
+
+      # Elasticsearch alerts
+      - alert: ElasticsearchServiceDown
+        expr: up{job="elasticsearch"} == 0
+        for: 3m
+        labels:
+          severity: warning
+          service: elasticsearch
+        annotations:
+          summary: "Elasticsearch service is down"
+          description: "Elasticsearch service has been down for more than 3 minutes"
+
+      # Monitoring stack alerts
+      - alert: PrometheusConfigReloadFailed
+        expr: prometheus_config_last_reload_successful == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: prometheus
+        annotations:
+          summary: "Prometheus configuration reload failed"
+          description: "Prometheus configuration reload failed - check the configuration file"
+
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: "{{ $labels.job }}"
+        annotations:
+          summary: "Prometheus target down"
+          description: "Prometheus target {{ $labels.job }} on {{ $labels.instance }} has been down for more than 5 minutes"
+
+      # File system alerts
+      - alert: TooManyOpenFiles
+        expr: process_open_fds{job="drawing-backend"} / process_max_fds{job="drawing-backend"} * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: drawing-backend
+        annotations:
+          summary: "Too many open files"
+          description: "The drawing backend process is using more than 80% of available file descriptors"

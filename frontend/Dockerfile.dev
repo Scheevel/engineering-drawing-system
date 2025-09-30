@@ -1,0 +1,17 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies for better caching
+# Only copy package files first to leverage Docker layer caching
+COPY package*.json ./
+RUN npm ci && npm cache clean --force
+
+# Copy source code (this layer will only rebuild when source changes)
+COPY . .
+
+# Expose development port
+EXPOSE 3000
+
+# Start development server with HMR
+CMD ["npm", "start"]

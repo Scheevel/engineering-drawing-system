@@ -32,7 +32,11 @@ test.describe('Schema Management', () => {
 
     // Either show schemas or an empty state message
     const hasSchemas = await page.locator('[data-testid*="schema"], .schema-item').count() > 0;
-    const hasEmptyState = await page.locator('text=/no schemas/i, text=/empty/i').count() > 0;
+    const hasEmptyStateFound = await page.locator('text=/no schemas found/i').count() > 0;
+    const hasEmptyStateGeneric = await page.locator('text=/empty/i').count() > 0;
+    const hasCreateFirstSchema = await page.locator('text=/create your first schema/i').count() > 0;
+
+    const hasEmptyState = hasEmptyStateFound || hasEmptyStateGeneric || hasCreateFirstSchema;
 
     expect(hasSchemas || hasEmptyState).toBeTruthy();
   });

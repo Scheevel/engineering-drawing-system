@@ -1,0 +1,223 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgis/postgis:14-3.2
+    container_name: drawing_postgres_dev
+    environment:
+      POSTGRES_DB: drawing_index
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d drawing_index"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: '0.25'
+    networks:
+      - dev-network
+
+  # Redis for caching and Celery
+  redis:
+    image: redis:7-alpine
+    container_name: drawing_redis_dev
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data_dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: '0.1'
+    networks:
+      - dev-network
+
+  # Elasticsearch for search
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: drawing_elasticsearch_dev
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - bootstrap.memory_lock=false
+      - "cluster.routing.allocation.disk.threshold_enabled=false"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data_dev:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '0.5'
+    networks:
+      - dev-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: drawing_backend_dev
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/drawing_index
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - UPLOAD_DIR=/app/uploads
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    ports:
+      - "8001:8000"
+    volumes:
+      - upload_data_dev:/app/uploads
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    command: >
+      sh -c "python -m alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: '1.0'
+    networks:
+      - dev-network
+
+  # Frontend (Development with HMR)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: drawing_frontend_dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Anonymous volume for node_modules isolation
+    environment:
+      - REACT_APP_API_URL=http://localhost:8001
+      - CHOKIDAR_USEPOLLING=true  # For file watching in Docker
+      - FAST_REFRESH=true
+      - WDS_SOCKET_HOST=localhost
+      - WDS_SOCKET_PORT=3000
+    depends_on:
+      - backend
+      - redis
+      - postgres
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '0.5'
+    networks:
+      - dev-network
+
+  # Celery worker for background processing
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: drawing_celery_worker_dev
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/drawing_index
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - upload_data_dev:/app/uploads
+      - ./backend:/app
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    command: celery -A app.core.celery_app worker --loglevel=info --concurrency=2
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.core.celery_app inspect ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '0.5'
+    networks:
+      - dev-network
+
+  # Celery flower for monitoring
+  celery-flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: drawing_celery_flower_dev
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - celery-worker
+    command: celery -A app.core.celery_app flower --port=5555
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: '0.1'
+    networks:
+      - dev-network
+
+volumes:
+  postgres_data_dev:
+    driver: local
+  redis_data_dev:
+    driver: local
+  elasticsearch_data_dev:
+    driver: local
+  upload_data_dev:
+    driver: local
+
+networks:
+  dev-network:
+    driver: bridge
+    name: drawing_dev_network

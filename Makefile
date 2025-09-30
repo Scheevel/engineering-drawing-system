@@ -18,7 +18,7 @@ ifeq ($(findstring CYGWIN,$(UNAME_S)),CYGWIN)
 	OPEN_CMD := cygstart
 endif
 
-.PHONY: help dev-up dev-down dev-restart dev-clean dev-status dev-logs dev-debug dev-test dev-reset dev-open clean-nodejs clean-ports clean-docker test-cleanup status-docker status-ports status-nodejs status-health pm2-start pm2-stop pm2-restart pm2-status pm2-logs pm2-monitor pm2-clean check-deps
+.PHONY: help dev-up dev-down dev-restart dev-clean dev-status dev-logs dev-debug dev-test dev-reset dev-open clean-nodejs clean-ports clean-docker test-cleanup status-docker status-ports status-nodejs status-health pm2-start pm2-stop pm2-restart pm2-status pm2-logs pm2-monitor pm2-clean check-deps monitoring-up monitoring-down monitoring-restart monitoring-status monitoring-logs monitoring-dashboards monitoring-clean
 
 # Default target - show help
 .DEFAULT_GOAL := help
@@ -66,6 +66,15 @@ help:
 	@echo "  pm2-logs    Stream PM2 logs"
 	@echo "  pm2-monitor Open PM2 monitoring dashboard"
 	@echo "  pm2-clean   Clean PM2 processes and Docker resources"
+	@echo ""
+	@echo "Monitoring Stack Commands:"
+	@echo "  monitoring-up         Start monitoring stack (Prometheus, Grafana, Loki)"
+	@echo "  monitoring-down       Stop monitoring stack"
+	@echo "  monitoring-restart    Restart monitoring stack"
+	@echo "  monitoring-status     Show monitoring services status"
+	@echo "  monitoring-logs       Stream monitoring stack logs"
+	@echo "  monitoring-dashboards Open monitoring dashboards in browser"
+	@echo "  monitoring-clean      Clean monitoring data and containers"
 
 # Start development environment
 dev-up:
@@ -238,3 +247,56 @@ pm2-clean:
 	@echo "🧹 Cleaning PM2 processes and Docker resources..."
 	@pm2 stop all && pm2 delete all && docker-compose down -v
 	@echo "✅ PM2 and Docker cleanup complete"
+
+# Monitoring Stack Commands
+monitoring-up:
+	@echo "📊 Starting monitoring stack..."
+	@echo "📈 Starting Prometheus, Grafana, Loki, and Promtail..."
+	@docker-compose -f docker-compose.monitoring.yml up -d
+	@echo "✅ Monitoring stack ready!"
+	@echo "🎯 Access points:"
+	@echo "   - Prometheus: http://localhost:9090"
+	@echo "   - Grafana: http://localhost:3001 (admin/admin123)"
+	@echo "   - Loki: http://localhost:3100"
+
+monitoring-down:
+	@echo "🛑 Stopping monitoring stack..."
+	@docker-compose -f docker-compose.monitoring.yml down
+	@echo "✅ Monitoring stack stopped"
+
+monitoring-restart: monitoring-down
+	@sleep 2
+	@$(MAKE) monitoring-up
+
+monitoring-status:
+	@echo "📊 Monitoring stack status:"
+	@docker-compose -f docker-compose.monitoring.yml ps
+
+monitoring-logs:
+	@echo "📋 Streaming monitoring stack logs..."
+	@docker-compose -f docker-compose.monitoring.yml logs -f
+
+monitoring-dashboards:
+	@echo "🌐 Opening monitoring dashboards..."
+	@echo "Platform: $(PLATFORM)"
+	@if [ "$(PLATFORM)" = "macos" ]; then \
+		open http://localhost:9090 && \
+		open http://localhost:3001; \
+	elif [ "$(PLATFORM)" = "linux" ]; then \
+		xdg-open http://localhost:9090 && \
+		xdg-open http://localhost:3001; \
+	elif [ "$(PLATFORM)" = "windows" ]; then \
+		$(OPEN_CMD) http://localhost:9090 && \
+		$(OPEN_CMD) http://localhost:3001; \
+	else \
+		echo "⚠️  Platform not detected. Please open:"; \
+		echo "   - Prometheus: http://localhost:9090"; \
+		echo "   - Grafana: http://localhost:3001"; \
+	fi
+	@echo "✅ Monitoring dashboards launched"
+
+monitoring-clean:
+	@echo "🧹 Cleaning monitoring stack and data..."
+	@docker-compose -f docker-compose.monitoring.yml down -v --remove-orphans
+	@docker volume prune -f --filter label=com.docker.compose.project=engineering-drawing-system-standalone
+	@echo "✅ Monitoring cleanup complete"

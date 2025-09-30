@@ -1,0 +1,227 @@
+# Promtail configuration for Engineering Drawing System
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Docker container logs scraping
+  - job_name: docker-containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["logging=promtail"]
+    relabel_configs:
+      # Set the service name from container label or name
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.+)'
+        target_label: 'container'
+      # Set the log path
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'stream'
+      # Add job label
+      - source_labels: ['service']
+        target_label: 'job'
+        replacement: '${1}'
+      # Add compose project
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        target_label: 'compose_project'
+    pipeline_stages:
+      # Parse JSON logs for structured containers
+      - json:
+          expressions:
+            timestamp: time
+            level: level
+            message: msg
+            logger: logger
+      # Parse timestamp if present
+      - timestamp:
+          source: timestamp
+          format: RFC3339
+      # Set log level labels
+      - labels:
+          level:
+          service:
+          container:
+          stream:
+
+  # Engineering Drawing System specific services
+  - job_name: drawing-backend
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: name
+            values: ["drawing_backend", "drawing-backend"]
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.+)'
+        target_label: 'container'
+      - replacement: 'drawing-backend'
+        target_label: 'service'
+      - replacement: 'engineering-drawing-system'
+        target_label: 'job'
+    pipeline_stages:
+      # Parse FastAPI/uvicorn logs
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) (?P<level>\w+) (?P<message>.*)'
+      - timestamp:
+          source: timestamp
+          format: '2006-01-02 15:04:05,000'
+      - labels:
+          level:
+          service:
+
+  - job_name: drawing-frontend
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: name
+            values: ["drawing_frontend", "drawing-frontend"]
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.+)'
+        target_label: 'container'
+      - replacement: 'drawing-frontend'
+        target_label: 'service'
+      - replacement: 'engineering-drawing-system'
+        target_label: 'job'
+    pipeline_stages:
+      # Parse React/npm logs
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z) (?P<level>\w+) (?P<message>.*)'
+      - timestamp:
+          source: timestamp
+          format: RFC3339
+      - labels:
+          level:
+          service:
+
+  - job_name: drawing-celery
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: name
+            values: ["drawing_celery_worker", "drawing-celery-worker"]
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.+)'
+        target_label: 'container'
+      - replacement: 'drawing-celery'
+        target_label: 'service'
+      - replacement: 'engineering-drawing-system'
+        target_label: 'job'
+    pipeline_stages:
+      # Parse Celery logs
+      - regex:
+          expression: '^\[(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}): (?P<level>\w+)/(?P<process>\w+)\] (?P<message>.*)'
+      - timestamp:
+          source: timestamp
+          format: '2006-01-02 15:04:05,000'
+      - labels:
+          level:
+          service:
+          process:
+
+  - job_name: drawing-postgres
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: name
+            values: ["drawing_postgres", "drawing-postgres"]
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.+)'
+        target_label: 'container'
+      - replacement: 'drawing-postgres'
+        target_label: 'service'
+      - replacement: 'engineering-drawing-system'
+        target_label: 'job'
+    pipeline_stages:
+      # Parse PostgreSQL logs
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} \w{3}) \[(?P<process>\d+)\] (?P<level>\w+): (?P<message>.*)'
+      - timestamp:
+          source: timestamp
+          format: '2006-01-02 15:04:05.000 MST'
+      - labels:
+          level:
+          service:
+          process:
+
+  - job_name: drawing-redis
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: name
+            values: ["drawing_redis", "drawing-redis"]
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.+)'
+        target_label: 'container'
+      - replacement: 'drawing-redis'
+        target_label: 'service'
+      - replacement: 'engineering-drawing-system'
+        target_label: 'job'
+    pipeline_stages:
+      # Parse Redis logs
+      - regex:
+          expression: '^(?P<process>\d+):(?P<role>\w+) (?P<timestamp>\d{2} \w{3} \d{4} \d{2}:\d{2}:\d{2}\.\d{3}) (?P<level>.) (?P<message>.*)'
+      - timestamp:
+          source: timestamp
+          format: '02 Jan 2006 15:04:05.000'
+      - labels:
+          level:
+          service:
+          role:
+
+  - job_name: drawing-elasticsearch
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: name
+            values: ["drawing_elasticsearch", "drawing-elasticsearch"]
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.+)'
+        target_label: 'container'
+      - replacement: 'drawing-elasticsearch'
+        target_label: 'service'
+      - replacement: 'engineering-drawing-system'
+        target_label: 'job'
+    pipeline_stages:
+      # Parse Elasticsearch logs (JSON format)
+      - json:
+          expressions:
+            timestamp: '@timestamp'
+            level: level
+            message: message
+            component: component
+      - timestamp:
+          source: timestamp
+          format: RFC3339
+      - labels:
+          level:
+          service:
+          component:
+
+# Global settings
+global:
+  # Promtail instance name
+  external_labels:
+    cluster: development
+    environment: local

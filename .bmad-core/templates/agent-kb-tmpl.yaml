@@ -1,0 +1,204 @@
+title: "Agent Knowledge Base Template"
+description: "Template for creating agent-consumable knowledge base documents for feature usage and orchestration"
+filename_pattern: "usability-{epic-number}-{descriptive-subject}.md"
+
+sections:
+  - name: "document_header"
+    title: "Document Header"
+    instruction: "Create document metadata with title, type, audience, date, and scope"
+    elicit: false
+    content: |
+      # Usability Guide: {epic_title}
+
+      **Document Type:** Agent Knowledge Base
+      **Target Audience:** BMAD Agents (Dev, QA, SM, PO)
+      **Last Updated:** {current_date}
+      **Epic Scope:** {story_list}
+
+  - name: "executive_summary"
+    title: "Executive Summary"
+    instruction: "Write a 2-3 sentence overview of what the epic delivers and how agents can leverage it"
+    elicit: true
+    content: |
+      ## Executive Summary
+
+      {summary_content}
+
+  - name: "feature_catalog"
+    title: "Feature Catalog"
+    instruction: "Organize features by logical groupings with When/Agent Syntax/Why/How structure for each feature group"
+    elicit: true
+    content: |
+      ## Feature Catalog
+
+      ### 🎯 {feature_group_1_name} ({story_references})
+
+      **WHEN TO USE:** {when_to_use_scenarios}
+
+      **AGENT EXECUTION SYNTAX:**
+      ```bash
+      # {command_category_1}
+      {command_1}          # {command_1_description}
+      {command_2}          # {command_2_description}
+      {command_3}          # {command_3_description}
+
+      # {command_category_2}
+      {command_4}          # {command_4_description}
+      {command_5}          # {command_5_description}
+      ```
+
+      **WHY USE THIS:** {benefits_and_problem_solved}
+
+      **HOW AGENTS SHOULD USE:**
+      - **Dev Agent:** {dev_agent_specific_guidance}
+      - **QA Agent:** {qa_agent_specific_guidance}
+      - **All Agents:** {universal_agent_guidance}
+
+  - name: "agent_execution_patterns"
+    title: "Agent Execution Patterns"
+    instruction: "Create role-specific workflow examples showing command sequences for common scenarios"
+    elicit: true
+    content: |
+      ## Agent Execution Patterns
+
+      ### 🤖 Dev Agent Usage
+
+      ```bash
+      # {dev_workflow_name}
+      {dev_command_1}                    # {dev_step_1_description}
+      {dev_command_2}                    # {dev_step_2_description}
+      # ... perform development work ...
+      {dev_command_3}                    # {dev_step_3_description}
+      {dev_command_4}                    # {dev_step_4_description}
+      ```
+
+      ### 🧪 QA Agent Usage
+
+      ```bash
+      # {qa_workflow_name}
+      {qa_command_1}                     # {qa_step_1_description}
+      {qa_command_2}                     # {qa_step_2_description}
+      # ... execute test suites ...
+      {qa_command_3}                     # {qa_step_3_description}
+      {qa_command_4}                     # {qa_step_4_description}
+      ```
+
+      ### 📋 SM/PO Agent Usage
+
+      ```bash
+      # {sm_po_workflow_name}
+      {sm_command_1}                     # {sm_step_1_description}
+      {sm_command_2}                     # {sm_step_2_description}
+      {sm_command_3}                     # {sm_step_3_description}
+      ```
+
+  - name: "cross_platform_compatibility"
+    title: "Cross-Platform Compatibility"
+    instruction: "Document platform-specific behaviors, detection mechanisms, and compatibility notes"
+    elicit: false
+    content: |
+      ## Cross-Platform Compatibility
+
+      **Platform Detection:** {detection_mechanism}
+      - **macOS:** {macos_specific_behavior}
+      - **Linux:** {linux_specific_behavior}
+      - **Windows WSL:** {windows_wsl_specific_behavior}
+
+      **Error Handling:** {fallback_mechanisms}
+
+  - name: "troubleshooting"
+    title: "Troubleshooting for Agents"
+    instruction: "List common issues agents might encounter with specific resolution commands and validation steps"
+    elicit: true
+    content: |
+      ## Troubleshooting for Agents
+
+      ### Common Issues & Resolutions
+
+      ```bash
+      # {issue_1_description}
+      {resolution_command_1}             # {resolution_explanation_1}
+
+      # {issue_2_description}
+      {resolution_command_2}             # {resolution_explanation_2}
+      {resolution_command_3}             # {resolution_explanation_3}
+
+      # {issue_3_description}
+      {resolution_command_4}             # {resolution_explanation_4}
+      # Fallback: {manual_fallback_procedure}
+      ```
+
+      ### Validation Commands
+
+      ```bash
+      # Verify Implementation
+      {validation_command_1}             # {validation_description_1}
+      {validation_command_2}             # {validation_description_2}
+      {validation_command_3}             # {validation_description_3}
+      ```
+
+  - name: "integration_points"
+    title: "Integration Points"
+    instruction: "Document how features integrate with existing systems, APIs, or workflows"
+    elicit: true
+    content: |
+      ## Integration Points
+
+      ### {integration_category_1}
+      - **{integration_point_1}:** {integration_description_1}
+      - **{integration_point_2}:** {integration_description_2}
+      - **{integration_point_3}:** {integration_description_3}
+
+      ### {integration_category_2}
+      - **{integration_point_4}:** {integration_description_4}
+      - **{integration_point_5}:** {integration_description_5}
+
+  - name: "best_practices"
+    title: "Best Practices for BMAD Agents"
+    instruction: "Create numbered list of actionable best practices with specific commands and scenarios"
+    elicit: true
+    content: |
+      ## Best Practices for BMAD Agents
+
+      1. **{practice_1_title}** with `{practice_1_command}` {practice_1_context}
+      2. **{practice_2_title}** (`{practice_2_command}`)
+      3. **{practice_3_title}** for {practice_3_scenario}
+      4. **{practice_4_title}** with `{practice_4_command}` to {practice_4_outcome}
+      5. **{practice_5_title}** for {practice_5_scenario}
+      6. **{practice_6_title}** to {practice_6_outcome}
+
+  - name: "footer"
+    title: "Document Footer"
+    instruction: "Add closing statement confirming agent readiness"
+    elicit: false
+    content: |
+      ---
+
+      **Agent Consumption Ready:** This document provides executable commands and clear usage patterns for all {epic_title} features.
+
+variables:
+  epic_title:
+    type: string
+    description: "The full title of the epic (e.g., 'Epic Story #5 - Development Environment Orchestration')"
+    required: true
+
+  current_date:
+    type: string
+    description: "Current date in YYYY-MM-DD format"
+    required: true
+    default: "auto"
+
+  story_list:
+    type: string
+    description: "Comma-separated list of story numbers covered (e.g., 'Stories 5.1, 5.2, 5.3, 5.4, 5.5')"
+    required: true
+
+  epic_number:
+    type: string
+    description: "Epic number for filename (e.g., '5')"
+    required: true
+
+  descriptive_subject:
+    type: string
+    description: "Brief descriptive subject for filename (e.g., 'dev-environment-orchestration')"
+    required: true

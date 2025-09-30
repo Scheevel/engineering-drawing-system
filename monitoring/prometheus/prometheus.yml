@@ -1,0 +1,117 @@
+# Prometheus configuration for Engineering Drawing System
+global:
+  scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  scrape_timeout: 10s
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  - "alert-rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    metrics_path: /metrics
+    scrape_interval: 15s
+
+  # Node Exporter - System metrics (CPU, memory, disk, network)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    metrics_path: /metrics
+    scrape_interval: 15s
+
+  # cAdvisor - Container metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    metrics_path: /metrics
+    scrape_interval: 15s
+
+  # FastAPI Backend - Application metrics
+  - job_name: 'drawing-backend'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: /metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    honor_labels: true
+    # Add when metrics endpoint is implemented
+
+  # PostgreSQL Database metrics (via postgres_exporter when added)
+  - job_name: 'postgresql'
+    static_configs:
+      - targets: ['postgres:5432']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    # Requires postgres_exporter to be added
+
+  # Redis metrics (via redis_exporter when added)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    # Requires redis_exporter to be added
+
+  # Elasticsearch metrics
+  - job_name: 'elasticsearch'
+    static_configs:
+      - targets: ['elasticsearch:9200']
+    metrics_path: /_prometheus/metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    # Elasticsearch has built-in prometheus metrics
+
+  # Celery Worker monitoring (via celery-exporter when added)
+  - job_name: 'celery-worker'
+    static_configs:
+      - targets: ['celery-worker:9540']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    # Requires celery-exporter to be added
+
+  # Flower - Celery monitoring web UI (has basic metrics)
+  - job_name: 'celery-flower'
+    static_configs:
+      - targets: ['celery-flower:5555']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    # Check if Flower exposes metrics endpoint
+
+  # Docker Engine metrics (when docker daemon metrics are enabled)
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['host.docker.internal:9323']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    # Requires Docker daemon metrics to be enabled
+
+# Remote write configuration (for long-term storage)
+# remote_write:
+#   - url: "https://prometheus-remote-write-endpoint"
+#     basic_auth:
+#       username: "username"
+#       password: "password"
+
+# Remote read configuration (for long-term storage)
+# remote_read:
+#   - url: "https://prometheus-remote-read-endpoint"
+#     basic_auth:
+#       username: "username"
+#       password: "password"

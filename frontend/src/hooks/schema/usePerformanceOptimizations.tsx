@@ -46,11 +46,15 @@ export const useDebounced = <T extends (...args: any[]) => any>(
       }
     );
 
-    // Wrap to track pending state
+    // Wrap to track pending state and preserve debounce methods
     const wrappedFn = (...args: Parameters<T>) => {
       setIsPending(true);
       return debouncedFn(...args);
     };
+
+    // Preserve the cancel and flush methods from lodash debounce
+    (wrappedFn as any).cancel = debouncedFn.cancel.bind(debouncedFn);
+    (wrappedFn as any).flush = debouncedFn.flush.bind(debouncedFn);
 
     return wrappedFn as T;
   }, [delay, options.leading, options.trailing, options.maxWait]);
@@ -251,6 +255,7 @@ export interface VirtualScrollOptions {
   containerHeight: number;
   overscan?: number;
   enableDynamicHeight?: boolean;
+  enabled?: boolean;
 }
 
 export const useVirtualScroll = <T extends VirtualScrollItem>(
@@ -258,7 +263,7 @@ export const useVirtualScroll = <T extends VirtualScrollItem>(
   options: VirtualScrollOptions
 ) => {
   const [scrollTop, setScrollTop] = useState(0);
-  const { itemHeight, containerHeight, overscan = 5, enableDynamicHeight = false } = options;
+  const { itemHeight, containerHeight, overscan = 5, enableDynamicHeight = false, enabled = true } = options;
 
   const itemHeights = useRef<Map<string, number>>(new Map());
 
@@ -276,6 +281,16 @@ export const useVirtualScroll = <T extends VirtualScrollItem>(
   );
 
   const virtualItems = useMemo(() => {
+    // If virtual scrolling is disabled, return all items
+    if (!enabled) {
+      return items.map((item, index) => ({
+        index,
+        item,
+        height: getItemHeight(item, index),
+        offsetTop: 0, // Not used when virtual scrolling is disabled
+      }));
+    }
+
     const visibleStart = Math.floor(scrollTop / itemHeight);
     const visibleEnd = Math.min(
       visibleStart + Math.ceil(containerHeight / itemHeight),
@@ -309,7 +324,7 @@ export const useVirtualScroll = <T extends VirtualScrollItem>(
     }
 
     return virtualItems;
-  }, [items, scrollTop, itemHeight, containerHeight, overscan, getItemHeight]);
+  }, [items, scrollTop, itemHeight, containerHeight, overscan, getItemHeight, enabled]);
 
   const totalHeight = useMemo(() => {
     return items.reduce((total, item, index) => {

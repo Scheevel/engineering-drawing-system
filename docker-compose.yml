@@ -59,7 +59,7 @@ services:
 
   # Backend API
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: drawing_backend
@@ -72,6 +72,7 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - DEBUG=true
       - LOG_LEVEL=DEBUG
+      - ENABLE_METRICS=true
     ports:
       - "8001:8000"
     volumes:

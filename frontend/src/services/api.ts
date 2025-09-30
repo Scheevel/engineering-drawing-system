@@ -620,6 +620,48 @@ export const getSavedSearchCount = async (projectId: string): Promise<{count: nu
 // Schema Types
 export type SchemaFieldType = 'text' | 'number' | 'select' | 'checkbox' | 'textarea' | 'date';
 
+// Default Schema Constant
+export const DEFAULT_SCHEMA: ComponentSchema = {
+  id: 'default-schema-001',
+  name: 'Default Schema',
+  description: 'Default schema for immediate use when no custom schemas exist',
+  version: 1,
+  is_default: true,
+  is_active: true,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  fields: [{
+    id: 'default-notes-field',
+    field_name: 'notes',
+    field_type: 'textarea',
+    field_config: {
+      rows: 4,
+      placeholder: 'Enter notes and observations...'
+    },
+    help_text: 'General notes and observations for this component',
+    display_order: 1,
+    is_required: false,
+    is_active: true
+  }]
+};
+
+// Utility functions for schema type checking and management
+export const isSystemGeneratedSchema = (schema: ComponentSchema): boolean => {
+  return schema.is_default === true && schema.id === DEFAULT_SCHEMA.id;
+};
+
+export const isDefaultSchema = (schemaId: string): boolean => {
+  return schemaId === DEFAULT_SCHEMA.id;
+};
+
+export const getUserSchemaCount = (schemas: ComponentSchema[]): number => {
+  return schemas.filter(schema => !isSystemGeneratedSchema(schema)).length;
+};
+
+export const getUserSchemas = (schemas: ComponentSchema[]): ComponentSchema[] => {
+  return schemas.filter(schema => !isSystemGeneratedSchema(schema));
+};
+
 export interface ComponentSchemaField {
   id?: string;
   field_name: string;
@@ -729,9 +771,36 @@ export interface SchemaValidationResult {
 }
 
 // Schema Management API
-export const getProjectSchemas = async (projectId: string, includeGlobal: boolean = true): Promise<ComponentSchemaListResponse> => {
+const getProjectSchemasFromAPI = async (projectId: string, includeGlobal: boolean = true): Promise<ComponentSchemaListResponse> => {
   const response = await api.get(`/schemas/projects/${projectId}?include_global=${includeGlobal}`);
   return response.data;
+};
+
+export const getProjectSchemas = async (projectId: string, includeGlobal: boolean = true): Promise<ComponentSchemaListResponse> => {
+  try {
+    // First, try to get user schemas from API
+    const result = await getProjectSchemasFromAPI(projectId, includeGlobal);
+
+    // If user schemas exist, return them (custom schemas take precedence)
+    if (result.schemas && result.schemas.length > 0) {
+      return result;
+    }
+
+    // No user schemas found - return default schema for immediate use
+    return {
+      schemas: [DEFAULT_SCHEMA],
+      total: 1,
+      project_id: projectId
+    };
+  } catch (error) {
+    // If API fails (backend unavailable), return default schema as fallback
+    console.warn('Schema API unavailable, using default schema:', error);
+    return {
+      schemas: [DEFAULT_SCHEMA],
+      total: 1,
+      project_id: projectId
+    };
+  }
 };
 
 export const getSchema = async (schemaId: string): Promise<ComponentSchema> => {
@@ -745,11 +814,21 @@ export const createSchema = async (schemaData: ComponentSchemaCreate): Promise<C
 };
 
 export const updateSchema = async (schemaId: string, updates: ComponentSchemaUpdate): Promise<ComponentSchema> => {
+  // Prevent updating the default schema
+  if (schemaId === DEFAULT_SCHEMA.id) {
+    throw new Error('Cannot modify the default schema. Create a custom schema instead.');
+  }
+
   const response = await api.put(`/schemas/${schemaId}`, updates);
   return response.data;
 };
 
 export const deactivateSchema = async (schemaId: string): Promise<void> => {
+  // Prevent deleting the default schema
+  if (schemaId === DEFAULT_SCHEMA.id) {
+    throw new Error('Cannot delete the default schema. It is required for system operation.');
+  }
+
   await api.delete(`/schemas/${schemaId}`);
 };
 
