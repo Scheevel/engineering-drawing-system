@@ -150,6 +150,9 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
   const [validation, setValidation] = useState<SchemaValidationResult>();
   const [selectedSchema, setSelectedSchema] = useState<ComponentSchema>();
   const [pendingSchemaId, setPendingSchemaId] = useState<string>();
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
   const isCreating = !componentId && mode === 'create';
   const isEditing = mode === 'edit' || isCreating;
@@ -163,12 +166,15 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
     }
   );
 
-  // Fetch project schemas for creation mode
+  // Determine effective project ID - use provided projectId, component's project, or fallback
+  const effectiveProjectId = projectId || component?.project_id || 'default-project';
+
+  // Fetch project schemas (including default schema fallback)
   const { data: projectSchemas } = useQuery(
-    ['project-schemas', projectId],
-    () => projectId ? getProjectSchemas(projectId) : null,
+    ['project-schemas', effectiveProjectId],
+    () => getProjectSchemas(effectiveProjectId),
     {
-      enabled: open && isCreating && !!projectId,
+      enabled: open,
     }
   );
 
@@ -214,8 +220,17 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
   useEffect(() => {
     if (component) {
       setFormValues(component.dynamic_data || {});
-      setSelectedSchema(component.schema_info);
-      setPendingSchemaId(component.schema_id);
+
+      // If component has schema info, use it
+      if (component.schema_info) {
+        setSelectedSchema(component.schema_info);
+        setPendingSchemaId(component.schema_id);
+      } else if (projectSchemas?.schemas.length) {
+        // Component has no schema - fall back to default schema
+        const defaultSchema = projectSchemas.schemas.find(s => s.is_default) || projectSchemas.schemas[0];
+        setSelectedSchema(defaultSchema);
+        setPendingSchemaId(defaultSchema.id);
+      }
     } else if (isCreating && projectSchemas?.schemas.length) {
       // Set default schema for new components
       const defaultSchema = projectSchemas.schemas.find(s => s.is_default) || projectSchemas.schemas[0];
@@ -224,17 +239,24 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
     }
   }, [component, projectSchemas, isCreating]);
 
-  // Reset tab to Details when modal opens
+  // Reset tab to Details when modal opens and clear save messages
   useEffect(() => {
     if (open) {
       setTabValue(0);
+      setSaveError(null);
+      setSaveSuccess(null);
     }
   }, [open]);
 
   const handleSave = async () => {
     if (!validation?.is_valid) {
+      setSaveError('Please fix all validation errors before saving.');
       return;
     }
+
+    setSaving(true);
+    setSaveError(null);
+    setSaveSuccess(null);
 
     try {
       if (isCreating) {
@@ -249,6 +271,8 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
           dynamic_data: formValues,
           coordinates: initialPosition,
         });
+
+        setSaveSuccess('Component created successfully!');
       } else if (componentId) {
         await updateMutation.mutateAsync({
           id: componentId,
@@ -257,9 +281,15 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
             dynamic_data: formValues,
           },
         });
+
+        setSaveSuccess('Component updated successfully!');
       }
     } catch (error) {
       console.error('Failed to save component:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save changes. Please try again.';
+      setSaveError(errorMessage);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -437,6 +467,18 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
         </DialogTitle>
 
         <DialogContent>
+          {/* Save Feedback Messages */}
+          {saveSuccess && (
+            <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSaveSuccess(null)}>
+              {saveSuccess}
+            </Alert>
+          )}
+          {saveError && (
+            <Alert severity="error" sx={{ mb: 3 }} onClose={() => setSaveError(null)}>
+              {saveError}
+            </Alert>
+          )}
+
           <Grid container spacing={3}>
             {/* Main Content Area */}
             <Grid item xs={showHelp ? 8 : 12}>
@@ -721,10 +763,10 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
                   <Button
                     onClick={handleSave}
                     variant="contained"
-                    startIcon={<SaveIcon />}
-                    disabled={!validation?.is_valid || updateMutation.isLoading || createMutation.isLoading}
+                    startIcon={saving ? <CircularProgress size={16} /> : <SaveIcon />}
+                    disabled={!validation?.is_valid || saving || updateMutation.isLoading || createMutation.isLoading}
                   >
-                    {isCreating ? 'Create' : 'Save'}
+                    {saving ? 'Saving...' : (isCreating ? 'Create' : 'Save')}
                   </Button>
                 </>
               ) : (

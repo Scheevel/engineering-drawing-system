@@ -23,9 +23,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 
-// import SchemaListView from '../../components/schema-management/SchemaListView';
+import SchemaListView from '../../components/schema-management/SchemaListView.tsx';
 // import useSimpleNavigation from '../../simple-nav-hook';
-import { getProjectSchemas, ComponentSchema } from '../../services/api';
+import { getProjectSchemas, ComponentSchema } from '../../services/api.ts';
 // import { schemaManagementService } from '../../services/schemaManagementService';
 
 const SchemaManagementPage: React.FC = () => {
@@ -33,25 +33,22 @@ const SchemaManagementPage: React.FC = () => {
   // const { breadcrumbs } = useSimpleNavigation();
   const breadcrumbs: any[] = [];
 
-  // For global schemas, we'll need to fetch schemas from all projects
-  // This is a simplified implementation - in reality, you might want a dedicated endpoint
-  // const {
-  //   data: globalMetrics,
-  //   isLoading: metricsLoading,
-  //   error: metricsError,
-  // } = useQuery(
-  //   ['schema-metrics'],
-  //   () => schemaManagementService.getSchemaMetrics(),
-  //   {
-  //     staleTime: 5 * 60 * 1000, // 5 minutes
-  //   }
-  // );
+  // For global schemas, we'll use a demo project to trigger default schema fallback
+  // This allows users to see the default schema when visiting /schemas
+  const {
+    data: schemasResponse,
+    isLoading,
+    error,
+  } = useQuery(
+    ['global-schemas', 'demo-project'],
+    () => getProjectSchemas('demo-project'),
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    }
+  );
 
-  // Mock data for now - in real implementation, this would come from a global schemas endpoint
+  const schemas = schemasResponse?.schemas || [];
   const globalMetrics = null; // Temporarily disable metrics until backend endpoint is available
-  const [mockSchemas] = useState<ComponentSchema[]>([]);
-  const isLoading = false; // metricsLoading;
-  const error = null; // metricsError;
 
   const handleSchemaView = (schema: ComponentSchema) => {
     // Navigate to schema detail view
@@ -149,8 +146,8 @@ const SchemaManagementPage: React.FC = () => {
       )}
 
       {/* Schema List */}
-      {/* <SchemaListView
-        schemas={mockSchemas}
+      <SchemaListView
+        schemas={schemas}
         usageStats={{}} // Would come from global usage stats
         isLoading={isLoading}
         error={error instanceof Error ? error : null}
@@ -159,17 +156,7 @@ const SchemaManagementPage: React.FC = () => {
         onSchemaCreate={handleSchemaCreate}
         allowEdit={true}
         allowCreate={true}
-      /> */}
-
-      {/* Placeholder for global schemas */}
-      {!isLoading && mockSchemas.length === 0 && !error && (
-        <Alert severity="info" sx={{ mt: 3 }}>
-          <Typography variant="body2">
-            Global schema management is available for system administrators.
-            For project-specific schema management, navigate to a project and access schemas from there.
-          </Typography>
-        </Alert>
-      )}
+      />
     </Container>
   );
 };
