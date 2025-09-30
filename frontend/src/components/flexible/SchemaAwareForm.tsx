@@ -67,6 +67,14 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                     }
                   } : undefined
                 }}
+                InputLabelProps={{
+                  sx: disabled ? {
+                    '&.Mui-disabled': {
+                      color: 'rgba(0, 0, 0, 0.7)', // Darker label for better readability
+                      fontSize: '1rem', // Slightly larger label
+                    }
+                  } : undefined
+                }}
               />
             )}
           />
@@ -94,6 +102,14 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                   sx: disabled ? {
                     '& .MuiInputBase-input.Mui-disabled': {
                       WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)', // Black text for better readability
+                    }
+                  } : undefined
+                }}
+                InputLabelProps={{
+                  sx: disabled ? {
+                    '&.Mui-disabled': {
+                      color: 'rgba(0, 0, 0, 0.7)', // Darker label for better readability
+                      fontSize: '1rem', // Slightly larger label
                     }
                   } : undefined
                 }}
@@ -128,6 +144,14 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                     }
                   } : undefined
                 }}
+                InputLabelProps={{
+                  sx: disabled ? {
+                    '&.Mui-disabled': {
+                      color: 'rgba(0, 0, 0, 0.7)', // Darker label for better readability
+                      fontSize: '1rem', // Slightly larger label
+                    }
+                  } : undefined
+                }}
                 inputProps={{
                   min: field.field_config.min || undefined,
                   max: field.field_config.max || undefined,
@@ -148,7 +172,16 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
             {...fieldProps}
             render={({ field: formField, fieldState: { error } }) => (
               <FormControl fullWidth variant="outlined" error={!!error} disabled={disabled}>
-                <InputLabel>{formatFieldLabel(field.field_name)}</InputLabel>
+                <InputLabel
+                  sx={disabled ? {
+                    '&.Mui-disabled': {
+                      color: 'rgba(0, 0, 0, 0.7)', // Darker label for better readability
+                      fontSize: '1rem', // Slightly larger label
+                    }
+                  } : undefined}
+                >
+                  {formatFieldLabel(field.field_name)}
+                </InputLabel>
                 <Select
                   {...formField}
                   label={formatFieldLabel(field.field_name)}
@@ -231,6 +264,12 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                 helperText={error?.message || (showHelpText && field.help_text ? field.help_text : '')}
                 InputLabelProps={{
                   shrink: true,
+                  sx: disabled ? {
+                    '&.Mui-disabled': {
+                      color: 'rgba(0, 0, 0, 0.7)', // Darker label for better readability
+                      fontSize: '1rem', // Slightly larger label
+                    }
+                  } : undefined
                 }}
                 InputProps={{
                   sx: disabled ? {
@@ -278,6 +317,15 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                       sx: disabled ? {
                         '& .MuiInputBase-input.Mui-disabled': {
                           WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)', // Black text for better readability
+                        }
+                      } : undefined
+                    }}
+                    InputLabelProps={{
+                      ...params.InputLabelProps,
+                      sx: disabled ? {
+                        '&.Mui-disabled': {
+                          color: 'rgba(0, 0, 0, 0.7)', // Darker label for better readability
+                          fontSize: '1rem', // Slightly larger label
                         }
                       } : undefined
                     }}
