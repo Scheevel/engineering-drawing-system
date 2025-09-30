@@ -30,6 +30,7 @@ class ComponentSchema(Base):
     project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=True)  # Nullable for global schemas
     name = Column(String(100), nullable=False)
     description = Column(Text)
+    schema_definition = Column(JSON, nullable=False, default=lambda: {"version": "1.0", "fields": []})
     version = Column(Integer, default=1)
     is_default = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)

@@ -48,6 +48,10 @@ async def update_flexible_component(
     db: Session = Depends(get_db)
 ):
     """Update component with schema-aware validation and type-locking"""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"=== UPDATE REQUEST === Component ID: {component_id}")
+    logger.info(f"Update data: {update_data.dict(exclude_unset=True)}")
     try:
         flex_service = FlexibleComponentService(db)
         updated_component = await flex_service.update_flexible_component(component_id, update_data)

@@ -725,10 +725,15 @@ export interface ComponentSchemaListResponse {
   project_id?: string;
 }
 
+// Dynamic data structure matching backend DynamicComponentData model
+export interface DynamicComponentData {
+  field_values: Record<string, any>;
+}
+
 export interface FlexibleComponent extends Component {
   schema_id?: string;
   schema_info?: ComponentSchema;
-  dynamic_data: Record<string, any>;
+  dynamic_data: DynamicComponentData | Record<string, any>; // Allow both formats for backward compatibility
   is_type_locked: boolean;
 }
 
@@ -736,7 +741,7 @@ export interface FlexibleComponentCreate {
   piece_mark: string;
   drawing_id: string;
   schema_id?: string;
-  dynamic_data?: Record<string, any>;
+  dynamic_data?: DynamicComponentData | Record<string, any>; // Allow both formats
   coordinates?: {
     x: number;
     y: number;
@@ -748,7 +753,7 @@ export interface FlexibleComponentCreate {
 export interface FlexibleComponentUpdate {
   piece_mark?: string;
   schema_id?: string;
-  dynamic_data?: Record<string, any>;
+  dynamic_data?: DynamicComponentData | Record<string, any>; // Allow both formats
   coordinates?: {
     x: number;
     y: number;

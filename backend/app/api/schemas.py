@@ -43,19 +43,27 @@ async def get_schema(
 
 @router.get("/projects/{project_id}", response_model=ComponentSchemaListResponse)
 async def get_project_schemas(
-    project_id: UUID,
+    project_id: str,
     include_global: bool = Query(True, description="Include global schemas"),
     db: Session = Depends(get_db)
 ):
     """Get all active schemas for a project"""
     try:
+        # Handle special "default-project" case for unassigned drawings
+        parsed_project_id = None
+        if project_id != "default-project":
+            try:
+                parsed_project_id = UUID(project_id)
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid project ID format: {project_id}")
+
         schema_service = SchemaService(db)
-        schemas = await schema_service.get_project_schemas(project_id, include_global)
+        schemas = await schema_service.get_project_schemas(parsed_project_id, include_global)
 
         return ComponentSchemaListResponse(
             schemas=schemas,
             total=len(schemas),
-            project_id=project_id
+            project_id=parsed_project_id
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get project schemas: {str(e)}")

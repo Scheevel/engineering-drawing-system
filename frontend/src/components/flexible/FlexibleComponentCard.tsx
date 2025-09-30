@@ -219,17 +219,23 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
   // Initialize data when component loads
   useEffect(() => {
     if (component) {
-      setFormValues(component.dynamic_data || {});
+      // Extract field_values from dynamic_data if it exists, otherwise use empty object
+      const dynamicData = component.dynamic_data?.field_values || component.dynamic_data || {};
+      setFormValues(dynamicData);
 
       // If component has schema info, use it
       if (component.schema_info) {
         setSelectedSchema(component.schema_info);
         setPendingSchemaId(component.schema_id);
       } else if (projectSchemas?.schemas.length) {
-        // Component has no schema - fall back to default schema
+        // Component has no schema - automatically assign default schema
         const defaultSchema = projectSchemas.schemas.find(s => s.is_default) || projectSchemas.schemas[0];
-        setSelectedSchema(defaultSchema);
-        setPendingSchemaId(defaultSchema.id);
+        if (defaultSchema) {
+          setSelectedSchema(defaultSchema);
+          setPendingSchemaId(defaultSchema.id);
+          // Auto-assign the default schema to this legacy component
+          console.log('Auto-assigning default schema to legacy component:', defaultSchema.name);
+        }
       }
     } else if (isCreating && projectSchemas?.schemas.length) {
       // Set default schema for new components
@@ -268,7 +274,7 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
           piece_mark: formValues.piece_mark || 'NEW-COMPONENT',
           drawing_id: drawingId,
           schema_id: pendingSchemaId,
-          dynamic_data: formValues,
+          dynamic_data: { field_values: formValues },
           coordinates: initialPosition,
         });
 
@@ -278,7 +284,7 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
           id: componentId,
           updates: {
             schema_id: pendingSchemaId,
-            dynamic_data: formValues,
+            dynamic_data: { field_values: formValues },
           },
         });
 
@@ -300,7 +306,8 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
       setMode('view');
       // Reset form to original values
       if (component) {
-        setFormValues(component.dynamic_data || {});
+        const dynamicData = component.dynamic_data?.field_values || component.dynamic_data || {};
+        setFormValues(dynamicData);
         setSelectedSchema(component.schema_info);
         setPendingSchemaId(component.schema_id);
       }
