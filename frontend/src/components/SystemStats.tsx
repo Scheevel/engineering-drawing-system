@@ -1,10 +1,11 @@
 import React from 'react';
-import { Paper, Typography, Grid, Card, CardContent, CircularProgress, Alert, Box } from '@mui/material';
+import { Paper, Typography, Grid, Card, CardContent, CircularProgress, Alert, Box, IconButton, Tooltip } from '@mui/material';
+import { Refresh as RefreshIcon } from '@mui/icons-material';
 import { useQuery } from 'react-query';
 import { getSystemStats } from '../services/api.ts';
 
 const SystemStats: React.FC = () => {
-  const { data: systemStats, isLoading, error } = useQuery(
+  const { data: systemStats, isLoading, error, refetch } = useQuery(
     'system-stats',
     getSystemStats,
     {
@@ -58,9 +59,16 @@ const SystemStats: React.FC = () => {
 
   return (
     <Paper sx={{ p: 2 }}>
-      <Typography variant="h6" gutterBottom>
-        System Statistics
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Typography variant="h6">
+          System Statistics
+        </Typography>
+        <Tooltip title="Refresh statistics">
+          <IconButton onClick={() => refetch()} disabled={isLoading} size="small">
+            <RefreshIcon />
+          </IconButton>
+        </Tooltip>
+      </Box>
       {error && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           Using demo data - backend unavailable
