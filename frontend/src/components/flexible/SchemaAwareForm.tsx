@@ -60,6 +60,13 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                 inputProps={{
                   maxLength: field.field_config.max_length || undefined,
                 }}
+                InputProps={{
+                  sx: disabled ? {
+                    '& .MuiInputBase-input.Mui-disabled': {
+                      WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)', // Black text for better readability
+                    }
+                  } : undefined
+                }}
               />
             )}
           />
@@ -82,6 +89,13 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                 helperText={error?.message || (showHelpText && field.help_text ? field.help_text : '')}
                 inputProps={{
                   maxLength: field.field_config.max_length || undefined,
+                }}
+                InputProps={{
+                  sx: disabled ? {
+                    '& .MuiInputBase-input.Mui-disabled': {
+                      WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)', // Black text for better readability
+                    }
+                  } : undefined
                 }}
               />
             )}
@@ -108,6 +122,11 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                       {field.field_config.unit}
                     </Typography>
                   ),
+                  sx: disabled ? {
+                    '& .MuiInputBase-input.Mui-disabled': {
+                      WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)', // Black text for better readability
+                    }
+                  } : undefined
                 }}
                 inputProps={{
                   min: field.field_config.min || undefined,
@@ -133,6 +152,11 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                 <Select
                   {...formField}
                   label={formatFieldLabel(field.field_name)}
+                  sx={disabled ? {
+                    '& .MuiSelect-select.Mui-disabled': {
+                      WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)', // Black text for better readability
+                    }
+                  } : undefined}
                 >
                   {field.field_config.options?.map((option: any) => (
                     <MenuItem key={option.value || option} value={option.value || option}>
@@ -167,9 +191,19 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                       {...formField}
                       checked={!!formField.value}
                       onChange={(e) => formField.onChange(e.target.checked)}
+                      sx={disabled ? {
+                        '&.Mui-disabled': {
+                          color: 'rgba(0, 0, 0, 0.6)', // Darker color for better visibility
+                        }
+                      } : undefined}
                     />
                   }
                   label={formatFieldLabel(field.field_name)}
+                  sx={disabled ? {
+                    '& .MuiFormControlLabel-label.Mui-disabled': {
+                      color: 'rgba(0, 0, 0, 0.87)', // Black label text
+                    }
+                  } : undefined}
                 />
                 {(error?.message || (showHelpText && field.help_text)) && (
                   <FormHelperText>
@@ -197,6 +231,13 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                 helperText={error?.message || (showHelpText && field.help_text ? field.help_text : '')}
                 InputLabelProps={{
                   shrink: true,
+                }}
+                InputProps={{
+                  sx: disabled ? {
+                    '& .MuiInputBase-input.Mui-disabled': {
+                      WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)', // Black text for better readability
+                    }
+                  } : undefined
                 }}
                 onChange={(e) => {
                   const value = e.target.value || null;
@@ -232,6 +273,14 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                     variant="outlined"
                     error={!!error}
                     helperText={error?.message || (showHelpText && field.help_text ? field.help_text : '')}
+                    InputProps={{
+                      ...params.InputProps,
+                      sx: disabled ? {
+                        '& .MuiInputBase-input.Mui-disabled': {
+                          WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)', // Black text for better readability
+                        }
+                      } : undefined
+                    }}
                   />
                 )}
               />
