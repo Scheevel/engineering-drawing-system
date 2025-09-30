@@ -1,0 +1,29 @@
+{
+  "allowedCommands": [
+    "pm2:*",
+    "node:*",
+    "open:*",
+    "open http://localhost:*",
+    "curl:*",
+    "fetch:*",
+    "read:*",
+    "npm run start",
+    "npm run build",
+    "npm run:*",
+    "npm test:*",
+    "npm install:*",
+    "docker:*",
+    "docker-compose:*",
+    "docker compose:*",
+    "git status",
+    "git diff:*",
+    "git log:*",
+    "git add:*",
+    "git commit:*",
+    "python3:*",
+    "pytest:*",
+    "alembic:*",
+    "uvicorn:*",
+    "celery:*"
+  ]
+}

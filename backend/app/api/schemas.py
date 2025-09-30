@@ -49,13 +49,17 @@ async def get_project_schemas(
 ):
     """Get all active schemas for a project"""
     try:
-        # Handle special "default-project" case for unassigned drawings
+        # Handle special project identifiers (default-project, demo-project, etc.)
+        # These are used by the frontend for unassigned/demo projects
         parsed_project_id = None
-        if project_id != "default-project":
+        special_project_ids = ["default-project", "demo-project", "unassigned", "global"]
+
+        if project_id not in special_project_ids:
             try:
                 parsed_project_id = UUID(project_id)
             except ValueError:
-                raise HTTPException(status_code=400, detail=f"Invalid project ID format: {project_id}")
+                # If not a valid UUID and not a special identifier, treat as global (null)
+                parsed_project_id = None
 
         schema_service = SchemaService(db)
         schemas = await schema_service.get_project_schemas(parsed_project_id, include_global)
