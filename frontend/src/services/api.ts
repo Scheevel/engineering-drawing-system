@@ -617,8 +617,8 @@ export const getSavedSearchCount = async (projectId: string): Promise<{count: nu
 // FLEXIBLE COMPONENT SCHEMA SYSTEM
 // ========================================
 
-// Schema Types
-export type SchemaFieldType = 'text' | 'number' | 'select' | 'checkbox' | 'textarea' | 'date';
+// Schema Types (must match backend SchemaFieldType enum)
+export type SchemaFieldType = 'text' | 'number' | 'select' | 'multiselect' | 'autocomplete' | 'checkbox' | 'textarea' | 'date';
 
 // Default Schema Constant
 export const DEFAULT_SCHEMA: ComponentSchema = {
@@ -826,6 +826,24 @@ export const updateSchema = async (schemaId: string, updates: ComponentSchemaUpd
 
   const response = await api.put(`/schemas/${schemaId}`, updates);
   return response.data;
+};
+
+export const duplicateSchema = async (schemaId: string, newName?: string, projectId?: string): Promise<ComponentSchema> => {
+  const params: Record<string, string> = {};
+  if (newName) params.new_name = newName;
+  if (projectId) params.project_id = projectId;
+
+  const response = await api.post(`/schemas/${schemaId}/duplicate`, null, { params });
+  return response.data;
+};
+
+export const getSchemaUsage = async (schemaId: string): Promise<{ schema_id: string; components_using_schema: number; component_ids: string[]; truncated: boolean }> => {
+  const response = await api.get(`/schemas/${schemaId}/usage`);
+  return response.data;
+};
+
+export const deleteSchema = async (schemaId: string): Promise<void> => {
+  await api.delete(`/schemas/${schemaId}`);
 };
 
 export const deactivateSchema = async (schemaId: string): Promise<void> => {

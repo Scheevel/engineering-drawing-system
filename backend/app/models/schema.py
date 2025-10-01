@@ -96,23 +96,61 @@ class ComponentSchemaFieldResponse(ComponentSchemaFieldBase):
 
 # Base models for component schemas
 class ComponentSchemaBase(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100)
+    name: str = Field(..., min_length=3, max_length=100, description="Schema name (3-100 characters, letters, numbers, hyphens, underscores only)")
     description: Optional[str] = Field(None, max_length=1000)
     is_default: bool = False
     is_active: bool = True
 
     @validator('name')
     def validate_name(cls, v):
-        """Ensure schema name is valid"""
-        if not v.strip():
+        """
+        Validate schema name according to requirements:
+        - 3-100 characters
+        - Only letters, numbers, hyphens (-), underscores (_)
+        - Must start with letter or number
+        - No leading/trailing spaces
+        """
+        import re
+
+        # Check for empty or whitespace-only
+        if not v or not v.strip():
             raise ValueError('Schema name cannot be empty')
 
-        # Basic validation for reasonable schema names
-        import re
-        if not re.match(r'^[a-zA-Z0-9\s\-_()]+$', v.strip()):
-            raise ValueError('Schema name contains invalid characters')
+        # Check for leading/trailing spaces
+        if v != v.strip():
+            raise ValueError('Schema name cannot have leading or trailing spaces')
 
-        return v.strip()
+        trimmed = v.strip()
+
+        # Check minimum length (Pydantic Field handles max, but we check min for better error message)
+        if len(trimmed) < 3:
+            raise ValueError('Minimum 3 characters required')
+
+        # Check if name contains spaces
+        if ' ' in trimmed:
+            raise ValueError('Schema name cannot contain spaces. Use hyphens (-) or underscores (_) instead')
+
+        # Check if starts with letter or number
+        if not re.match(r'^[a-zA-Z0-9]', trimmed):
+            raise ValueError('Schema name must start with a letter or number')
+
+        # Check for invalid characters and provide specific feedback
+        invalid_chars = set()
+        valid_pattern = re.compile(r'^[a-zA-Z0-9_-]$')
+
+        for char in trimmed:
+            if not valid_pattern.match(char):
+                invalid_chars.add(char)
+
+        if invalid_chars:
+            char_list = ', '.join(f'"{c}"' for c in sorted(invalid_chars))
+            raise ValueError(f'Invalid characters: {char_list}. Allowed: letters, numbers, hyphens (-), underscores (_)')
+
+        # Final pattern check - must start with letter/number, then only valid chars
+        if not re.match(r'^[a-zA-Z0-9][a-zA-Z0-9_-]*$', trimmed):
+            raise ValueError('Schema name must start with a letter or number and can only contain letters, numbers, hyphens (-), and underscores (_)')
+
+        return trimmed
 
 class ComponentSchemaCreate(ComponentSchemaBase):
     project_id: Optional[UUID] = None  # Null for global schemas

@@ -159,6 +159,27 @@ async def update_schema(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update schema: {str(e)}")
 
+@router.post("/{schema_id}/duplicate", response_model=ComponentSchemaResponse)
+async def duplicate_schema(
+    schema_id: UUID,
+    new_name: Optional[str] = Query(None, description="Name for the duplicated schema"),
+    project_id: Optional[UUID] = Query(None, description="Target project for the duplicate"),
+    db: Session = Depends(get_db)
+):
+    """Duplicate a schema with all its fields (FR-6 AC 33)"""
+    try:
+        schema_service = SchemaService(db)
+        duplicated_schema = await schema_service.duplicate_schema(schema_id, new_name, project_id)
+
+        if not duplicated_schema:
+            raise HTTPException(status_code=404, detail="Schema not found")
+
+        return duplicated_schema
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to duplicate schema: {str(e)}")
+
 @router.delete("/{schema_id}")
 async def deactivate_schema(
     schema_id: UUID,

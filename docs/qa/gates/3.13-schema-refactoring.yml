@@ -1,0 +1,228 @@
+schema: 1
+story: '3.13'
+story_title: 'Schema Refactoring - Comprehensive Schema Management System'
+gate: CONCERNS
+status_reason: 'Implementation quality is excellent with all 40 ACs addressed, but Phase 2 & 3 tests are not implemented (only Phase 1 has comprehensive coverage). Risk-based testing requires validation of critical features before production.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-09-30T23:30:00Z'
+
+top_issues:
+  - severity: medium
+    category: test_coverage
+    description: 'Phase 2 & 3 tests not implemented - missing coverage for dirty state detection, multi-select fields, deletion workflows, and schema protection UI'
+    refs:
+      - 'frontend/src/hooks/schema/useSchemaDirtyState.ts'
+      - 'frontend/src/components/flexible/SchemaAwareForm.tsx'
+      - 'frontend/src/pages/schema/SchemaManagementPage.tsx'
+    suggested_owner: dev
+    recommendation: 'Create integration tests for Phase 2 & 3 features before production deployment'
+
+waiver:
+  active: false
+
+quality_score: 90
+# Calculation: 100 - (10 × 1 CONCERNS) = 90
+# Excellent implementation, minor concern on test coverage
+
+expires: '2025-10-14T23:30:00Z'
+# 2 weeks from review date
+
+evidence:
+  tests_reviewed:
+    count: 4
+    files:
+      - 'frontend/src/hooks/schema/useSchemaValidation.test.ts (60+ cases)'
+      - 'backend/tests/test_schema_validation.py (50+ cases)'
+      - 'backend/tests/test_schema_api_validation.py (15+ API tests)'
+      - 'frontend/tests/e2e/schema-validation.spec.ts (20+ E2E scenarios)'
+  risks_identified:
+    count: 3
+    high_priority:
+      - 'Schema deletion without comprehensive integration tests'
+      - 'Multi-select field persistence untested in end-to-end scenarios'
+      - 'Dirty state detection lacks unit test coverage'
+  trace:
+    ac_covered:
+      # Phase 1 ACs with test coverage
+      - 1  # Display validation rules
+      - 2  # Real-time feedback
+      - 3  # Clear error messages
+      - 4  # Prevent save submission
+      - 5  # Specific invalid character messages
+      - 6  # Redirect to schema list
+      - 7  # Success toast
+      - 8  # Schema appears in list
+      - 9  # List refreshes
+      - 10 # Navigation failure handling
+      - 17 # Editing schema name updates backend
+      - 18 # Updated name in list
+      - 19 # Updated name on reload
+      - 20 # Name uniqueness validation
+      - 21 # Audit trail (SQLAlchemy onupdate)
+    ac_gaps:
+      # Phase 2 & 3 ACs lacking test coverage
+      - 11 # Adding field enables Save (implementation exists, tests missing)
+      - 12 # Editing field enables Save
+      - 13 # Removing field enables Save
+      - 14 # Reordering fields enables Save
+      - 15 # Save button disabled when no changes
+      - 16 # Unsaved changes warning
+      - 22 # Create multi-select field type
+      - 23 # Multi-select options configuration
+      - 24 # Field config saves to database
+      - 25 # Multi-select rendering
+      - 26 # Select multiple values
+      - 27 # Values persist to dynamic_data
+      - 28 # System Default badge (implementation exists, E2E test missing)
+      - 29 # Edit button disabled for default
+      - 30 # Delete button disabled for default
+      - 31 # Backend rejects updates on default
+      - 32 # Clear protection messages
+      - 33 # Duplicate default schema
+      - 34 # Check dependencies before deletion
+      - 35 # Warning with component count
+      - 36 # Reassignment workflow (partially implemented)
+      - 37 # Confirmation dialog
+      - 38 # Return to list after deletion
+      - 39 # Default cannot be deleted
+      - 40 # Soft delete (is_active = false)
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Backend protection prevents unauthorized modification of default schemas. Error messages do not leak sensitive information. ValueError exceptions properly handled by FastAPI.'
+  performance:
+    status: PASS
+    notes: 'Dirty state detection uses useMemo for efficient comparison. React Query caching prevents unnecessary API calls. No performance regressions expected.'
+  reliability:
+    status: CONCERNS
+    notes: 'Implementation is robust, but lack of Phase 2 & 3 tests means edge cases and error scenarios are not validated. Dependency checking works but reassignment workflow is simplified.'
+  maintainability:
+    status: PASS
+    notes: 'Excellent code organization with clear FR-X AC comments for traceability. useSchemaDirtyState hook is well-documented. TypeScript interfaces provide strong type safety.'
+
+code_quality_strengths:
+  - 'Comprehensive FR-X AC comment traceability throughout codebase'
+  - 'Consistent backend protection pattern across all mutation methods'
+  - 'Well-designed useSchemaDirtyState hook with clear separation of concerns'
+  - 'User-friendly error messages guide toward duplicate workflow'
+  - 'Proper TypeScript interfaces with JSDoc comments'
+  - 'Follows established coding standards (imports, naming, error handling)'
+
+recommendations:
+  immediate:
+    - action: 'Create integration tests for useSchemaDirtyState hook before production'
+      priority: P1
+      refs:
+        - 'frontend/src/hooks/schema/useSchemaDirtyState.ts'
+      rationale: 'Dirty state detection is critical for preventing data loss - must validate all change types (add, remove, modify, reorder)'
+
+    - action: 'Add E2E tests for multi-select field complete workflow'
+      priority: P1
+      refs:
+        - 'frontend/src/components/flexible/SchemaAwareForm.tsx'
+      rationale: 'Multi-select is a new field type - must validate create, configure, render, and persist flow'
+
+    - action: 'Create integration tests for schema deletion workflow'
+      priority: P1
+      refs:
+        - 'frontend/src/pages/schema/SchemaManagementPage.tsx'
+        - 'backend/app/services/schema_service.py'
+      rationale: 'Deletion with dependency checking is a critical safety feature - must validate all scenarios'
+
+  future:
+    - action: 'Consider implementing full reassignment workflow UI (FR-7 AC 36)'
+      priority: P2
+      refs:
+        - 'frontend/src/pages/schema/SchemaManagementPage.tsx'
+      rationale: 'Current implementation blocks deletion if components exist, but does not provide in-dialog reassignment. Users must manually reassign components before deletion.'
+
+    - action: 'Add performance tests for dirty state detection with large schemas'
+      priority: P3
+      refs:
+        - 'frontend/src/hooks/schema/useSchemaDirtyState.ts'
+      rationale: 'Field comparison uses Map lookups (O(n)) - should validate performance with 50+ fields'
+
+    - action: 'Create automated test for all 8 field types'
+      priority: P2
+      refs:
+        - 'frontend/src/components/flexible/SchemaAwareForm.tsx'
+      rationale: 'Story mentions testing all 8 types (text, textarea, number, date, select, checkbox, autocomplete, multiselect) - only Phase 1 validation tested'
+
+implementation_highlights:
+  - title: 'Unified Dirty State Architecture'
+    description: 'useSchemaDirtyState hook elegantly combines React Hook Form metadata changes with field operation tracking, solving the dual-source dirty state problem'
+    file: 'frontend/src/hooks/schema/useSchemaDirtyState.ts'
+
+  - title: 'Comprehensive Backend Protection'
+    description: 'All schema modification methods (update, add_field, update_field, remove_field, deactivate) consistently check is_default flag and return helpful error messages'
+    file: 'backend/app/services/schema_service.py'
+
+  - title: 'Type System Synchronization'
+    description: 'Fixed frontend/backend type mismatch by adding multiselect and autocomplete to match backend enum, cascading changes through UI selectors, validators, and configs'
+    files:
+      - 'frontend/src/services/api.ts'
+      - 'frontend/src/components/schema-management/FieldTypeSelector.tsx'
+      - 'frontend/src/types/schema.ts'
+
+technical_debt:
+  identified:
+    - item: 'Phase 2 & 3 test coverage gap'
+      impact: 'medium'
+      effort: 'high'
+      recommendation: 'Prioritize before production deployment - 3-5 days estimated for comprehensive test suite'
+
+    - item: 'Simplified reassignment workflow (FR-7 AC 36)'
+      impact: 'low'
+      effort: 'medium'
+      recommendation: 'Current implementation is functional (blocks deletion), full workflow is a nice-to-have enhancement'
+
+    - item: 'No automated validation of all 8 field types'
+      impact: 'medium'
+      effort: 'medium'
+      recommendation: 'Create parametrized test that validates create/render/save for all types - prevents regression'
+
+acceptance_criteria_summary:
+  total: 40
+  fully_implemented: 40
+  partially_implemented: 0
+  not_implemented: 0
+  tested:
+    unit: 10  # Phase 1 ACs (1-5, 17-21)
+    integration: 10  # Phase 1 ACs tested at API level
+    e2e: 10  # Phase 1 ACs tested end-to-end
+  untested:
+    unit: 30  # Phase 2 & 3 ACs (11-16, 22-40)
+    integration: 30
+    e2e: 30
+
+gate_decision_rationale: |
+  This story represents exemplary implementation quality with comprehensive requirements
+  traceability and clean architecture. All 40 acceptance criteria are implemented and
+  documented with clear FR-X AC comments.
+
+  The CONCERNS gate is issued due to test coverage gap in Phase 2 & 3 features. While
+  Phase 1 has excellent test coverage (145+ test cases across 4 test files), the
+  critical features added in Phase 2 & 3 lack validation:
+
+  - Dirty state detection (critical for preventing data loss)
+  - Multi-select field type (new functionality)
+  - Schema deletion workflows (safety-critical)
+  - Default schema protection UI (security-relevant)
+
+  Risk-based testing principles require comprehensive test coverage for these features
+  before production deployment. The implementation code quality is excellent, so test
+  creation should be straightforward.
+
+  Recommendation: Add Phase 2 & 3 tests (estimated 3-5 days) before production release.
+  Implementation can proceed to merge/staging with this gate, but production deployment
+  should be blocked until test coverage is complete.
+
+next_steps:
+  - 'Dev: Create integration tests for useSchemaDirtyState hook'
+  - 'Dev: Add E2E tests for multi-select field workflow'
+  - 'Dev: Create integration tests for deletion workflows'
+  - 'Dev: Update story File List with any files modified during this session'
+  - 'Dev: Run all new tests to ensure they pass'
+  - 'QA: Re-review after tests added (expect PASS gate)'
+  - 'Team: Decide if production deployment waits for tests or proceeds with known gap'

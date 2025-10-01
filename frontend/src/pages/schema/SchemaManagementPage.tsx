@@ -14,24 +14,42 @@ import {
   Link,
   Alert,
   Skeleton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  DialogContentText,
+  CircularProgress,
 } from '@mui/material';
 import {
   NavigateNext as NavigateNextIcon,
   Dashboard as DashboardIcon,
   Schema as SchemaIcon,
+  Warning as WarningIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 
 import SchemaListView from '../../components/schema-management/SchemaListView.tsx';
 // import useSimpleNavigation from '../../simple-nav-hook';
-import { getProjectSchemas, ComponentSchema } from '../../services/api.ts';
+import { getProjectSchemas, ComponentSchema, deleteSchema, duplicateSchema, getSchemaUsage } from '../../services/api.ts';
 // import { schemaManagementService } from '../../services/schemaManagementService';
 
 const SchemaManagementPage: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   // const { breadcrumbs } = useSimpleNavigation();
   const breadcrumbs: any[] = [];
+
+  // Dialog states
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedSchema, setSelectedSchema] = useState<ComponentSchema | null>(null);
+  const [schemaUsageInfo, setSchemaUsageInfo] = useState<{ components_using_schema: number; component_ids: string[] } | null>(null);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [duplicateName, setDuplicateName] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // For global schemas, we'll use a demo project to trigger default schema fallback
   // This allows users to see the default schema when visiting /schemas
@@ -39,6 +57,7 @@ const SchemaManagementPage: React.FC = () => {
     data: schemasResponse,
     isLoading,
     error,
+    refetch: refetchSchemas,
   } = useQuery(
     ['global-schemas', 'demo-project'],
     () => getProjectSchemas('demo-project'),
@@ -49,6 +68,42 @@ const SchemaManagementPage: React.FC = () => {
 
   const schemas = schemasResponse?.schemas || [];
   const globalMetrics = null; // Temporarily disable metrics until backend endpoint is available
+
+  // Delete mutation
+  const deleteMutation = useMutation(
+    (schemaId: string) => deleteSchema(schemaId),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['global-schemas']);
+        refetchSchemas();
+        setDeleteDialogOpen(false);
+        setSelectedSchema(null);
+        setSchemaUsageInfo(null);
+      },
+      onError: (error: any) => {
+        setActionError(error?.response?.data?.detail || error.message || 'Failed to delete schema');
+      },
+    }
+  );
+
+  // Duplicate mutation
+  const duplicateMutation = useMutation(
+    ({ schemaId, newName }: { schemaId: string; newName?: string }) => duplicateSchema(schemaId, newName),
+    {
+      onSuccess: (newSchema) => {
+        queryClient.invalidateQueries(['global-schemas']);
+        refetchSchemas();
+        setDuplicateDialogOpen(false);
+        setSelectedSchema(null);
+        setDuplicateName('');
+        // Navigate to edit the new schema
+        navigate(`/schemas/${newSchema.id}/edit`);
+      },
+      onError: (error: any) => {
+        setActionError(error?.response?.data?.detail || error.message || 'Failed to duplicate schema');
+      },
+    }
+  );
 
   const handleSchemaView = (schema: ComponentSchema) => {
     // Navigate to schema detail view
@@ -63,6 +118,58 @@ const SchemaManagementPage: React.FC = () => {
   const handleSchemaCreate = () => {
     // Navigate to schema creation
     navigate('/schemas/create');
+  };
+
+  // FR-7: Handle schema deletion with dependency checking
+  const handleSchemaDelete = async (schema: ComponentSchema) => {
+    setSelectedSchema(schema);
+    setActionError(null);
+
+    // Check usage before showing dialog
+    try {
+      const usage = await getSchemaUsage(schema.id);
+      setSchemaUsageInfo(usage);
+      setDeleteDialogOpen(true);
+    } catch (error: any) {
+      setActionError(error?.response?.data?.detail || error.message || 'Failed to check schema usage');
+    }
+  };
+
+  const confirmDelete = () => {
+    if (selectedSchema) {
+      deleteMutation.mutate(selectedSchema.id);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setSelectedSchema(null);
+    setSchemaUsageInfo(null);
+    setActionError(null);
+  };
+
+  // FR-6 AC 33: Handle schema duplication
+  const handleSchemaDuplicate = (schema: ComponentSchema) => {
+    setSelectedSchema(schema);
+    setDuplicateName(`${schema.name} (Copy)`);
+    setActionError(null);
+    setDuplicateDialogOpen(true);
+  };
+
+  const confirmDuplicate = () => {
+    if (selectedSchema) {
+      duplicateMutation.mutate({
+        schemaId: selectedSchema.id,
+        newName: duplicateName || undefined,
+      });
+    }
+  };
+
+  const cancelDuplicate = () => {
+    setDuplicateDialogOpen(false);
+    setSelectedSchema(null);
+    setDuplicateName('');
+    setActionError(null);
   };
 
   if (isLoading) {
@@ -154,9 +261,113 @@ const SchemaManagementPage: React.FC = () => {
         onSchemaView={handleSchemaView}
         onSchemaEdit={handleSchemaEdit}
         onSchemaCreate={handleSchemaCreate}
+        onSchemaDelete={handleSchemaDelete}
+        onSchemaDuplicate={handleSchemaDuplicate}
         allowEdit={true}
         allowCreate={true}
       />
+
+      {/* Delete Confirmation Dialog (FR-7 AC 34-37) */}
+      <Dialog open={deleteDialogOpen} onClose={cancelDelete} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box display="flex" alignItems="center" gap={1}>
+            <WarningIcon color="warning" />
+            <Typography variant="h6">Delete Schema</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {actionError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {actionError}
+            </Alert>
+          )}
+
+          {selectedSchema && schemaUsageInfo && (
+            <>
+              <DialogContentText>
+                Are you sure you want to delete the schema <strong>"{selectedSchema.name}"</strong>?
+              </DialogContentText>
+
+              {schemaUsageInfo.components_using_schema > 0 ? (
+                <Alert severity="warning" sx={{ mt: 2 }}>
+                  <Typography variant="body2" fontWeight={500} gutterBottom>
+                    This schema is currently in use
+                  </Typography>
+                  <Typography variant="body2">
+                    {schemaUsageInfo.components_using_schema} component{schemaUsageInfo.components_using_schema !== 1 ? 's are' : ' is'} using this schema.
+                    You must reassign {schemaUsageInfo.components_using_schema !== 1 ? 'these components' : 'this component'} to another schema before deletion.
+                  </Typography>
+                </Alert>
+              ) : (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  <Typography variant="body2">
+                    This schema is not currently in use. It can be safely deleted.
+                  </Typography>
+                </Alert>
+              )}
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDelete} disabled={deleteMutation.isLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDelete}
+            color="error"
+            variant="contained"
+            disabled={
+              deleteMutation.isLoading ||
+              !schemaUsageInfo ||
+              schemaUsageInfo.components_using_schema > 0
+            }
+            startIcon={deleteMutation.isLoading ? <CircularProgress size={20} /> : undefined}
+          >
+            {deleteMutation.isLoading ? 'Deleting...' : 'Delete Schema'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Duplicate Schema Dialog (FR-6 AC 33) */}
+      <Dialog open={duplicateDialogOpen} onClose={cancelDuplicate} maxWidth="sm" fullWidth>
+        <DialogTitle>Duplicate Schema</DialogTitle>
+        <DialogContent>
+          {actionError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {actionError}
+            </Alert>
+          )}
+
+          <DialogContentText sx={{ mb: 2 }}>
+            Create a copy of <strong>"{selectedSchema?.name}"</strong>. Enter a name for the new schema.
+          </DialogContentText>
+
+          <TextField
+            autoFocus
+            fullWidth
+            label="New Schema Name"
+            value={duplicateName}
+            onChange={(e) => setDuplicateName(e.target.value)}
+            placeholder={`${selectedSchema?.name} (Copy)`}
+            helperText="The duplicated schema will be editable and non-default."
+            disabled={duplicateMutation.isLoading}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDuplicate} disabled={duplicateMutation.isLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDuplicate}
+            color="primary"
+            variant="contained"
+            disabled={duplicateMutation.isLoading || !duplicateName.trim()}
+            startIcon={duplicateMutation.isLoading ? <CircularProgress size={20} /> : undefined}
+          >
+            {duplicateMutation.isLoading ? 'Duplicating...' : 'Duplicate'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

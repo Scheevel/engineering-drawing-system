@@ -99,9 +99,10 @@ const SchemaCreatePage: React.FC = () => {
       console.log('Schema created successfully:', newSchema);
 
       setSuccess(true);
+      // Navigate to schema edit page to add fields (FR-2, AC 6-7)
       setTimeout(() => {
-        navigate('/components/schema');
-      }, 2000);
+        navigate(`/schemas/${newSchema.id}/edit`);
+      }, 1500);
     } catch (err) {
       console.error('Failed to create schema:', err);
       setError(err instanceof Error ? err.message : 'Failed to create schema');
@@ -111,7 +112,7 @@ const SchemaCreatePage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/components/schema');
+    navigate('/schemas');
   };
 
   const fieldTypes: { value: SchemaFieldType; label: string }[] = [

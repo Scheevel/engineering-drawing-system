@@ -51,7 +51,7 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
             render={({ field: formField, fieldState: { error } }) => (
               <TextField
                 {...formField}
-                label={formatFieldLabel(field.field_name)}
+                label={field.label || formatFieldLabel(field.field_name)}
                 variant="outlined"
                 fullWidth
                 disabled={disabled}
@@ -87,7 +87,7 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
             render={({ field: formField, fieldState: { error } }) => (
               <TextField
                 {...formField}
-                label={formatFieldLabel(field.field_name)}
+                label={field.label || formatFieldLabel(field.field_name)}
                 variant="outlined"
                 fullWidth
                 multiline
@@ -125,7 +125,7 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
             render={({ field: formField, fieldState: { error } }) => (
               <TextField
                 {...formField}
-                label={formatFieldLabel(field.field_name)}
+                label={field.label || formatFieldLabel(field.field_name)}
                 variant="outlined"
                 fullWidth
                 type="number"
@@ -180,11 +180,11 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                     }
                   } : undefined}
                 >
-                  {formatFieldLabel(field.field_name)}
+                  {field.label || formatFieldLabel(field.field_name)}
                 </InputLabel>
                 <Select
                   {...formField}
-                  label={formatFieldLabel(field.field_name)}
+                  label={field.label || formatFieldLabel(field.field_name)}
                   sx={disabled ? {
                     '& .MuiSelect-select.Mui-disabled': {
                       WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)', // Black text for better readability
@@ -231,7 +231,7 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                       } : undefined}
                     />
                   }
-                  label={formatFieldLabel(field.field_name)}
+                  label={field.label || formatFieldLabel(field.field_name)}
                   sx={disabled ? {
                     '& .MuiFormControlLabel-label.Mui-disabled': {
                       color: 'rgba(0, 0, 0, 0.87)', // Black label text
@@ -255,7 +255,7 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
             render={({ field: formField, fieldState: { error } }) => (
               <TextField
                 {...formField}
-                label={formatFieldLabel(field.field_name)}
+                label={field.label || formatFieldLabel(field.field_name)}
                 variant="outlined"
                 fullWidth
                 type="date"
@@ -287,6 +287,56 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
           />
         );
 
+      case 'multiselect':
+        return (
+          <Controller
+            {...fieldProps}
+            render={({ field: formField, fieldState: { error } }) => (
+              <Autocomplete
+                {...formField}
+                multiple
+                value={formField.value || []}
+                onChange={(event, newValue) => {
+                  formField.onChange(newValue);
+                }}
+                options={field.field_config.options || []}
+                getOptionLabel={(option: any) => option?.label || option?.toString() || ''}
+                isOptionEqualToValue={(option: any, value: any) =>
+                  (option?.value || option) === (value?.value || value)
+                }
+                freeSolo={field.field_config.allow_custom || false}
+                disabled={disabled}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label={field.label || formatFieldLabel(field.field_name)}
+                    variant="outlined"
+                    error={!!error}
+                    helperText={error?.message || (showHelpText && field.help_text ? field.help_text : '')}
+                    InputProps={{
+                      ...params.InputProps,
+                      sx: disabled ? {
+                        '& .MuiInputBase-input.Mui-disabled': {
+                          WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)', // Black text for better readability
+                        }
+                      } : undefined
+                    }}
+                    InputLabelProps={{
+                      ...params.InputLabelProps,
+                      sx: disabled ? {
+                        '&.Mui-disabled': {
+                          color: 'rgba(0, 0, 0, 0.7)', // Darker label for better readability
+                          fontSize: '1rem', // Slightly larger label
+                        }
+                      } : undefined
+                    }}
+                  />
+                )}
+              />
+            )}
+          />
+        );
+
       case 'autocomplete':
         return (
           <Controller
@@ -308,7 +358,7 @@ const FormField: React.FC<FormFieldProps> = ({ field, control, disabled, showHel
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label={formatFieldLabel(field.field_name)}
+                    label={field.label || formatFieldLabel(field.field_name)}
                     variant="outlined"
                     error={!!error}
                     helperText={error?.message || (showHelpText && field.help_text ? field.help_text : '')}
@@ -440,6 +490,9 @@ function buildDefaultValues(schema: ComponentSchema, initialValues: Record<strin
         case 'select':
           defaults[field.field_name] = field.field_config.default_value || '';
           break;
+        case 'multiselect':
+          defaults[field.field_name] = field.field_config.default_value || [];
+          break;
         case 'checkbox':
           defaults[field.field_name] = field.field_config.default_value || false;
           break;
@@ -508,6 +561,33 @@ function getValidationRules(field: ComponentSchema['fields'][0]): Record<string,
       }
       break;
 
+    case 'multiselect':
+      rules.validate = (value: any) => {
+        const selectedValues = Array.isArray(value) ? value : [];
+
+        // Check minimum selections
+        if (field.field_config.min_selections && selectedValues.length < field.field_config.min_selections) {
+          return `Please select at least ${field.field_config.min_selections} option${field.field_config.min_selections > 1 ? 's' : ''}`;
+        }
+
+        // Check maximum selections
+        if (field.field_config.max_selections && selectedValues.length > field.field_config.max_selections) {
+          return `Please select no more than ${field.field_config.max_selections} option${field.field_config.max_selections > 1 ? 's' : ''}`;
+        }
+
+        // Validate against allowed options if custom values not allowed
+        if (!field.field_config.allow_custom && field.field_config.options) {
+          const validOptions = field.field_config.options.map((opt: any) => opt.value || opt);
+          const invalidSelections = selectedValues.filter((v: any) => !validOptions.includes(v?.value || v));
+          if (invalidSelections.length > 0) {
+            return 'Please select only valid options';
+          }
+        }
+
+        return true;
+      };
+      break;
+
     case 'autocomplete':
       if (!field.field_config.allow_custom && field.field_config.options) {
         rules.validate = (value: any) => {
@@ -531,6 +611,8 @@ function getFieldWidth(field: ComponentSchema['fields'][0]): number {
   switch (field.field_type) {
     case 'textarea':
       return 12; // Full width for text areas
+    case 'multiselect':
+      return 12; // Full width for multi-select fields (chips need space)
     case 'checkbox':
       return 6;  // Half width for checkboxes
     case 'date':

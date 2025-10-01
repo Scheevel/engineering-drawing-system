@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any, Tuple
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, or_, desc, asc
+from sqlalchemy import and_, or_, desc, asc, func
 from uuid import UUID
 import json
 
@@ -27,17 +27,17 @@ class SchemaService:
                 if not project:
                     raise ValueError(f"Project {schema_data.project_id} not found")
 
-            # Check for duplicate schema name within project
+            # Check for duplicate schema name within project (case-insensitive)
             existing = self.db.query(ComponentSchema).filter(
                 and_(
                     ComponentSchema.project_id == schema_data.project_id,
-                    ComponentSchema.name == schema_data.name,
+                    func.lower(ComponentSchema.name) == schema_data.name.lower(),
                     ComponentSchema.is_active == True
                 )
             ).first()
 
             if existing:
-                raise ValueError(f"Schema '{schema_data.name}' already exists in this project")
+                raise ValueError(f"A schema named '{schema_data.name}' already exists in this project")
 
             # Create schema
             schema_definition = {
@@ -166,28 +166,90 @@ class SchemaService:
         if not schema:
             return None
 
-        # Check for name conflicts if name is being updated
-        if updates.name and updates.name != schema.name:
+        # FR-6 AC 31: Prevent updates to default schemas
+        if schema.is_default:
+            raise ValueError("Cannot modify system default schema. Please duplicate this schema to create an editable copy.")
+
+        # Check for name conflicts if name is being updated (case-insensitive)
+        if updates.name and updates.name.lower() != schema.name.lower():
             existing = self.db.query(ComponentSchema).filter(
                 and_(
                     ComponentSchema.project_id == schema.project_id,
-                    ComponentSchema.name == updates.name,
+                    func.lower(ComponentSchema.name) == updates.name.lower(),
                     ComponentSchema.is_active == True,
                     ComponentSchema.id != schema_id
                 )
             ).first()
 
             if existing:
-                raise ValueError(f"Schema '{updates.name}' already exists in this project")
+                raise ValueError(f"A schema named '{updates.name}' already exists in this project")
 
         # Apply updates
         for field, value in updates.dict(exclude_unset=True).items():
             setattr(schema, field, value)
 
-        schema.updated_at = self.db.execute("SELECT NOW()").scalar()
+        # SQLAlchemy will automatically update updated_at via onupdate=datetime.utcnow
         self.db.commit()
 
         return await self.get_schema_by_id(schema_id)
+
+    async def duplicate_schema(self, schema_id: UUID, new_name: Optional[str] = None, project_id: Optional[UUID] = None) -> Optional[ComponentSchemaResponse]:
+        """Duplicate a schema with all its fields (FR-6 AC 33)"""
+        # Get the original schema with fields
+        original_schema = await self.get_schema_by_id(schema_id)
+        if not original_schema:
+            raise ValueError(f"Schema {schema_id} not found")
+
+        # Determine new name
+        if not new_name:
+            new_name = f"{original_schema.name} (Copy)"
+
+        # Use the original schema's project_id if not specified
+        target_project_id = project_id if project_id is not None else original_schema.project_id
+
+        # Check for name conflicts (case-insensitive)
+        existing = self.db.query(ComponentSchema).filter(
+            and_(
+                ComponentSchema.project_id == target_project_id,
+                func.lower(ComponentSchema.name) == new_name.lower(),
+                ComponentSchema.is_active == True
+            )
+        ).first()
+
+        if existing:
+            raise ValueError(f"A schema named '{new_name}' already exists in this project")
+
+        # Create new schema (duplicates are never default)
+        new_schema = ComponentSchema(
+            project_id=target_project_id,
+            name=new_name,
+            description=original_schema.description,
+            schema_definition=original_schema.dict().get('schema_definition', {"version": "1.0", "fields": []}),
+            is_default=False,  # Duplicates are never default
+            is_active=True,
+            created_by='api_user'  # TODO: Replace with actual user context
+        )
+
+        self.db.add(new_schema)
+        self.db.flush()  # Get the ID
+
+        # Duplicate all fields
+        for original_field in original_schema.fields:
+            new_field = ComponentSchemaField(
+                schema_id=new_schema.id,
+                field_name=original_field.field_name,
+                field_type=original_field.field_type,
+                field_config=original_field.field_config,
+                help_text=original_field.help_text,
+                display_order=original_field.display_order,
+                is_required=original_field.is_required,
+                is_active=True
+            )
+            self.db.add(new_field)
+
+        self.db.commit()
+
+        return await self.get_schema_by_id(new_schema.id)
 
     async def deactivate_schema(self, schema_id: UUID) -> bool:
         """Deactivate a schema (soft delete)"""
@@ -195,10 +257,14 @@ class SchemaService:
         if not schema:
             return False
 
-        # Check if schema is in use
+        # FR-6 AC 31, FR-7 AC 39: Prevent deletion of default schemas
+        if schema.is_default:
+            raise ValueError("Cannot delete system default schema. Default schemas are protected from deletion.")
+
+        # FR-7 AC 34-35: Check if schema is in use by components
         components_using_schema = self.db.query(Component).filter(Component.schema_id == schema_id).count()
         if components_using_schema > 0:
-            raise ValueError(f"Cannot deactivate schema - {components_using_schema} components are using it")
+            raise ValueError(f"Cannot delete schema '{schema.name}' - {components_using_schema} components are currently using it. Please reassign these components to another schema before deletion.")
 
         schema.is_active = False
         self.db.commit()
@@ -210,6 +276,10 @@ class SchemaService:
         schema = self.db.query(ComponentSchema).filter(ComponentSchema.id == schema_id).first()
         if not schema:
             raise ValueError(f"Schema {schema_id} not found")
+
+        # FR-6 AC 29: Prevent field modifications to default schemas
+        if schema.is_default:
+            raise ValueError("Cannot modify system default schema. Please duplicate this schema to create an editable copy.")
 
         # Check for duplicate field name
         existing_field = self.db.query(ComponentSchemaField).filter(
@@ -245,6 +315,11 @@ class SchemaService:
         if not field:
             return None
 
+        # FR-6 AC 29: Prevent field modifications to default schemas
+        schema = self.db.query(ComponentSchema).filter(ComponentSchema.id == field.schema_id).first()
+        if schema and schema.is_default:
+            raise ValueError("Cannot modify fields in system default schema. Please duplicate this schema to create an editable copy.")
+
         # Check for name conflicts if field_name is being updated
         if updates.field_name and updates.field_name != field.field_name:
             existing = self.db.query(ComponentSchemaField).filter(
@@ -274,6 +349,11 @@ class SchemaService:
         field = self.db.query(ComponentSchemaField).filter(ComponentSchemaField.id == field_id).first()
         if not field:
             return False
+
+        # FR-6 AC 30: Prevent field removal from default schemas
+        schema = self.db.query(ComponentSchema).filter(ComponentSchema.id == field.schema_id).first()
+        if schema and schema.is_default:
+            raise ValueError("Cannot remove fields from system default schema. Please duplicate this schema to create an editable copy.")
 
         # Check if field is in use by checking if any components have data for this field
         components_with_field_data = self.db.query(Component).filter(

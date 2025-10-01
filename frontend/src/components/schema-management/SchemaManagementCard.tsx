@@ -21,6 +21,8 @@ import {
   Visibility as ViewIcon,
   Edit as EditIcon,
   Schema as SchemaIcon,
+  Delete as DeleteIcon,
+  ContentCopy as DuplicateIcon,
 } from '@mui/icons-material';
 import { ComponentSchema } from '../../services/api';
 
@@ -36,6 +38,8 @@ interface SchemaManagementCardProps {
   usageStats?: SchemaUsageStats;
   onEdit?: (schema: ComponentSchema) => void;
   onView?: (schema: ComponentSchema) => void;
+  onDelete?: (schema: ComponentSchema) => void;
+  onDuplicate?: (schema: ComponentSchema) => void;
   compact?: boolean;
 }
 
@@ -44,6 +48,8 @@ const SchemaManagementCard: React.FC<SchemaManagementCardProps> = ({
   usageStats,
   onEdit,
   onView,
+  onDelete,
+  onDuplicate,
   compact = false,
 }) => {
   const formatDate = (dateString: string) => {
@@ -57,7 +63,8 @@ const SchemaManagementCard: React.FC<SchemaManagementCardProps> = ({
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (onEdit && schema.is_active) {
+    // FR-6 AC 29: Prevent editing default schemas
+    if (onEdit && schema.is_active && !schema.is_default) {
       onEdit(schema);
     }
   };
@@ -67,6 +74,23 @@ const SchemaManagementCard: React.FC<SchemaManagementCardProps> = ({
     e.stopPropagation();
     if (onView) {
       onView(schema);
+    }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // FR-6 AC 30: Prevent deleting default schemas
+    if (onDelete && !schema.is_default) {
+      onDelete(schema);
+    }
+  };
+
+  const handleDuplicateClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onDuplicate) {
+      onDuplicate(schema);
     }
   };
 
@@ -112,11 +136,11 @@ const SchemaManagementCard: React.FC<SchemaManagementCardProps> = ({
           />
         </Box>
 
-        {/* Default schema indicator */}
+        {/* Default schema indicator (FR-6 AC 28) */}
         {schema.is_default && (
           <Box mb={1}>
             <Chip
-              label="Default"
+              label="System Default"
               size="small"
               color="primary"
               variant="filled"
@@ -195,23 +219,59 @@ const SchemaManagementCard: React.FC<SchemaManagementCardProps> = ({
             </Tooltip>
           )}
 
+          {onDuplicate && (
+            <Tooltip title={schema.is_default ? "Duplicate system default schema to create editable copy" : `Duplicate schema: ${schema.name}`}>
+              <IconButton
+                size="small"
+                onClick={handleDuplicateClick}
+                aria-label={`Duplicate schema ${schema.name}`}
+              >
+                <DuplicateIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+
           {onEdit && (
             <Tooltip
               title={
-                schema.is_active
-                  ? `Edit schema: ${schema.name}`
-                  : 'Schema must be active to edit'
+                !schema.is_active
+                  ? 'Schema must be active to edit'
+                  : schema.is_default
+                  ? 'Cannot modify system default schema. Please duplicate this schema to create an editable copy.'
+                  : `Edit schema: ${schema.name}`
               }
             >
               <span>
                 <IconButton
                   size="small"
-                  disabled={!schema.is_active}
+                  disabled={!schema.is_active || schema.is_default}
                   onClick={handleEditClick}
                   color="primary"
-                  aria-label={`Edit schema ${schema.name}${!schema.is_active ? ' (disabled - schema inactive)' : ''}`}
+                  aria-label={`Edit schema ${schema.name}${!schema.is_active ? ' (disabled - schema inactive)' : schema.is_default ? ' (disabled - system default)' : ''}`}
                 >
                   <EditIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
+
+          {onDelete && (
+            <Tooltip
+              title={
+                schema.is_default
+                  ? 'Cannot delete system default schema. Default schemas are protected from deletion.'
+                  : `Delete schema: ${schema.name}`
+              }
+            >
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={schema.is_default}
+                  onClick={handleDeleteClick}
+                  color="error"
+                  aria-label={`Delete schema ${schema.name}${schema.is_default ? ' (disabled - system default)' : ''}`}
+                >
+                  <DeleteIcon fontSize="small" />
                 </IconButton>
               </span>
             </Tooltip>

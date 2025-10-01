@@ -24,6 +24,8 @@ import {
   CalendarToday as CalendarIcon,
   Subject as TextAreaIcon,
   ArrowDropDown as SelectIcon,
+  ListAlt as MultiSelectIcon,
+  Search as AutocompleteIcon,
 } from '@mui/icons-material';
 
 import {
@@ -58,6 +60,10 @@ const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({
         return <NumbersIcon {...iconProps} />;
       case 'select':
         return <SelectIcon {...iconProps} />;
+      case 'multiselect':
+        return <MultiSelectIcon {...iconProps} />;
+      case 'autocomplete':
+        return <AutocompleteIcon {...iconProps} />;
       case 'checkbox':
         return <CheckBoxIcon {...iconProps} />;
       case 'textarea':
@@ -69,11 +75,13 @@ const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({
     }
   };
 
-  // All available field types
+  // All available field types (FR-5: AC 22)
   const fieldTypes: SchemaFieldType[] = [
     'text',
     'number',
     'select',
+    'multiselect',
+    'autocomplete',
     'checkbox',
     'textarea',
     'date',

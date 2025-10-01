@@ -50,6 +50,7 @@ import { useSchemaForm, SchemaEditFormData } from '../../hooks/schema/useSchemaF
 import { useDefaultSchemaToggle } from '../../hooks/schema/useDefaultSchemaToggle.ts';
 import { ComponentSchema, ComponentSchemaField, ComponentSchemaFieldCreate } from '../../services/api.ts';
 import { useFieldCRUD } from '../../hooks/schema/useFieldCRUD.ts';
+import { useSchemaDirtyState } from '../../hooks/schema/useSchemaDirtyState.ts';
 import SchemaFormFields from '../../components/schema-management/SchemaFormFields.tsx';
 import DefaultSchemaToggle from '../../components/schema-management/DefaultSchemaToggle.tsx';
 import SchemaFieldList from '../../components/schema-management/SchemaFieldList.tsx';
@@ -117,7 +118,7 @@ const SchemaEditPage: React.FC = () => {
   const {
     form,
     isValid,
-    isDirty,
+    isDirty: formIsDirty,
     isSubmitting,
     handleSubmit,
     handleReset,
@@ -125,6 +126,18 @@ const SchemaEditPage: React.FC = () => {
     nameError,
     descriptionError,
   } = schemaForm;
+
+  // Unified dirty state tracking (FR-3: AC 11-16)
+  const dirtyState = useSchemaDirtyState({
+    initialSchema: schema,
+    formIsDirty,
+    onDirtyChange: (isDirty) => {
+      // Optional: Could show indicator in UI
+      console.log('Schema dirty state changed:', isDirty);
+    },
+  });
+
+  const { isDirty, areFieldsDirty, markFieldsAsDirty, updateFieldsSnapshot, resetDirtyState } = dirtyState;
 
   // Field CRUD operations
   const fieldCRUD = useFieldCRUD();
@@ -249,6 +262,9 @@ const SchemaEditPage: React.FC = () => {
   const handleFieldCreate = (fieldData: ComponentSchemaFieldCreate) => {
     if (!schemaId || !schema?.fields) return;
 
+    // Mark fields as dirty (FR-3, AC 11)
+    markFieldsAsDirty('added');
+
     fieldCRUD.createField.mutate({
       schemaId,
       fieldData,
@@ -256,7 +272,10 @@ const SchemaEditPage: React.FC = () => {
       options: {
         optimisticUpdate: true,
         onSuccess: () => {
-          refetchSchema();
+          refetchSchema().then(() => {
+            // Update fields snapshot after successful refetch
+            updateFieldsSnapshot(schema.fields || []);
+          });
           setShowCreateDialog(false);
         },
         onError: (error) => {
@@ -269,6 +288,9 @@ const SchemaEditPage: React.FC = () => {
   const handleFieldEdit = (fieldId: string, updates: Partial<ComponentSchemaField>) => {
     if (!schema?.fields) return;
 
+    // Mark fields as dirty (FR-3, AC 12)
+    markFieldsAsDirty('modified');
+
     fieldCRUD.updateField.mutate({
       fieldId,
       updates,
@@ -276,7 +298,10 @@ const SchemaEditPage: React.FC = () => {
       options: {
         optimisticUpdate: true,
         onSuccess: () => {
-          refetchSchema();
+          refetchSchema().then(() => {
+            // Update fields snapshot after successful refetch
+            updateFieldsSnapshot(schema.fields || []);
+          });
           setShowEditDialog(false);
           setSelectedField(null);
         },
@@ -290,13 +315,19 @@ const SchemaEditPage: React.FC = () => {
   const handleFieldDelete = (fieldId: string, deleteType: 'soft' | 'hard') => {
     if (!schema?.fields) return;
 
+    // Mark fields as dirty (FR-3, AC 13)
+    markFieldsAsDirty('removed');
+
     fieldCRUD.deleteField.mutate({
       fieldId,
       deleteType,
       options: {
         optimisticUpdate: true,
         onSuccess: () => {
-          refetchSchema();
+          refetchSchema().then(() => {
+            // Update fields snapshot after successful refetch
+            updateFieldsSnapshot(schema.fields || []);
+          });
           setShowDeleteDialog(false);
           setSelectedField(null);
         },
@@ -434,7 +465,7 @@ const SchemaEditPage: React.FC = () => {
               variant="outlined"
               onClick={handleSaveAndContinue}
               loading={isSubmitting}
-              disabled={!isValid || !isDirty}
+              disabled={!isValid || !formIsDirty}
               startIcon={<SaveIcon />}
             >
               Save
@@ -443,7 +474,7 @@ const SchemaEditPage: React.FC = () => {
               variant="contained"
               onClick={handleSaveAndReturn}
               loading={isSubmitting}
-              disabled={!isValid || !isDirty}
+              disabled={!isValid || !formIsDirty}
               startIcon={<SaveIcon />}
             >
               Save & Return
@@ -458,13 +489,20 @@ const SchemaEditPage: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* Unsaved Changes Warning */}
+      {/* Unsaved Changes Warning (FR-3, AC 16) */}
       {isDirty && (
         <Alert severity="warning" sx={{ mb: 3 }}>
           <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Typography variant="body2">
-              You have unsaved changes. Remember to save your work before leaving this page.
-            </Typography>
+            <Box>
+              <Typography variant="body2" gutterBottom>
+                You have unsaved changes. Remember to save your work before leaving this page.
+              </Typography>
+              {areFieldsDirty && (
+                <Typography variant="caption" color="text.secondary">
+                  Field changes: {dirtyState.changeTypes.join(', ')} ({dirtyState.fieldChangeCount} change{dirtyState.fieldChangeCount !== 1 ? 's' : ''})
+                </Typography>
+              )}
+            </Box>
             <Button
               size="small"
               onClick={handleReset}

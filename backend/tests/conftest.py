@@ -20,9 +20,36 @@ os.environ["ENVIRONMENT"] = "test"
 os.environ["DEBUG"] = "true"
 
 from app.main import app
-from app.core.database import get_db, Base
-from app.models.database import Drawing, Component
+from app.core.database import get_db
+from app.models.database import (
+    Base,
+    Project,
+    ComponentSchema,
+    ComponentSchemaField,
+    Drawing,
+    Component,
+    Dimension,
+    Specification,
+    ProcessingTask,
+    SearchLog,
+    ComponentAuditLog,
+    ComponentVersion,
+    SavedSearch,
+)
 
+# Register PostgreSQL-specific types for SQLite compatibility
+from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.ext.compiler import compiles
+
+@compiles(UUID, 'sqlite')
+def compile_uuid_sqlite(type_, compiler, **kw):
+    """Compile PostgreSQL UUID type to CHAR(36) for SQLite"""
+    return "CHAR(36)"
+
+@compiles(JSONB, 'sqlite')
+def compile_jsonb_sqlite(type_, compiler, **kw):
+    """Compile PostgreSQL JSONB type to JSON for SQLite"""
+    return "JSON"
 
 # Test database configuration
 TEST_DATABASE_URL = "sqlite:///./test_instance_identifier.db"

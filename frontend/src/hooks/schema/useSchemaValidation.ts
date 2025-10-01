@@ -11,16 +11,54 @@ import * as yup from 'yup';
 import { useProjectSchemas } from '../../services/schemaQueries.ts';
 import { ComponentSchema } from '../../services/api.ts';
 
+/**
+ * Utility function to detect and list invalid characters in a schema name
+ * Returns a specific error message listing the invalid characters found
+ */
+export const getInvalidCharactersError = (name: string): string | null => {
+  if (!name) return null;
+
+  const invalidChars = new Set<string>();
+  const validPattern = /^[a-zA-Z0-9_-]$/;
+
+  // Check each character
+  for (const char of name) {
+    if (!validPattern.test(char)) {
+      invalidChars.add(char === ' ' ? 'space' : char);
+    }
+  }
+
+  if (invalidChars.size > 0) {
+    const charList = Array.from(invalidChars)
+      .map(c => c === 'space' ? '(space)' : `"${c}"`)
+      .join(', ');
+    return `Invalid characters: ${charList}. Allowed: letters, numbers, hyphens (-), underscores (_)`;
+  }
+
+  return null;
+};
+
 // Base validation schema for schema name field
 export const schemaNameValidationSchema = yup
   .string()
   .required('Schema name is required')
-  .min(3, 'Schema name must be at least 3 characters')
+  .min(3, 'Minimum 3 characters required')
   .max(100, 'Schema name must be less than 100 characters')
+  .test('no-leading-trailing-spaces', 'Schema name cannot have leading or trailing spaces', (value) => {
+    if (!value) return true;
+    return value === value.trim();
+  })
   .matches(
-    /^[a-zA-Z0-9\s\-_\.]+$/,
-    'Schema name can only contain letters, numbers, spaces, hyphens, underscores, and periods'
-  );
+    /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/,
+    {
+      message: 'Schema name must start with a letter or number and can only contain letters, numbers, hyphens (-), and underscores (_)',
+      excludeEmptyString: true,
+    }
+  )
+  .test('no-spaces', 'Schema name cannot contain spaces. Use hyphens (-) or underscores (_) instead', (value) => {
+    if (!value) return true;
+    return !value.includes(' ');
+  });
 
 // Base validation schema for description field
 export const schemaDescriptionValidationSchema = yup
@@ -160,10 +198,16 @@ export const useSchemaValidation = (options: SchemaValidationOptions = {}): Sche
   // Real-time name validation
   const validateName = useCallback(async (name: string): Promise<string | null> => {
     try {
-      // First validate against yup schema
+      // First check for invalid characters and provide specific feedback
+      const invalidCharsError = getInvalidCharactersError(name);
+      if (invalidCharsError) {
+        return invalidCharsError;
+      }
+
+      // Then validate against yup schema
       await schemaNameValidationSchema.validate(name);
 
-      // Then check uniqueness if we have project context
+      // Finally check uniqueness if we have project context
       if (projectId) {
         const isUnique = await checkNameUniqueness(name);
         if (!isUnique) {

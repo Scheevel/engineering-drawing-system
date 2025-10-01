@@ -62,6 +62,8 @@ import {
   CheckBox as CheckboxIcon,
   ArrowUpward as UpIcon,
   ArrowDownward as DownIcon,
+  ListAlt as MultiSelectIcon,
+  Search as AutocompleteIcon,
 } from '@mui/icons-material';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -206,6 +208,8 @@ const AdvancedFieldConfig: React.FC<AdvancedFieldConfigProps> = ({
   const getTabsForFieldType = (type: SchemaFieldType) => {
     switch (type) {
       case 'select':
+      case 'multiselect':
+      case 'autocomplete':
         return ['Options', 'Behavior', 'Display'];
       case 'number':
         return ['Range & Format', 'Units & Display', 'Calculations'];
@@ -961,6 +965,8 @@ const AdvancedFieldConfig: React.FC<AdvancedFieldConfigProps> = ({
   const renderConfiguration = () => {
     switch (fieldType) {
       case 'select':
+      case 'multiselect':
+      case 'autocomplete':
         return renderSelectConfiguration();
       case 'number':
         return renderNumberConfiguration();
@@ -974,6 +980,8 @@ const AdvancedFieldConfig: React.FC<AdvancedFieldConfigProps> = ({
   const getFieldTypeIcon = (type: SchemaFieldType) => {
     switch (type) {
       case 'select': return <CategoryIcon />;
+      case 'multiselect': return <MultiSelectIcon />;
+      case 'autocomplete': return <AutocompleteIcon />;
       case 'number': return <NumberIcon />;
       case 'date': return <DateIcon />;
       case 'text': case 'textarea': return <TextIcon />;

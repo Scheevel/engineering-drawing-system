@@ -81,6 +81,8 @@ interface SchemaListViewProps {
   onSchemaEdit?: (schema: ComponentSchema) => void;
   onSchemaView?: (schema: ComponentSchema) => void;
   onSchemaCreate?: () => void;
+  onSchemaDelete?: (schema: ComponentSchema) => void;
+  onSchemaDuplicate?: (schema: ComponentSchema) => void;
   allowEdit?: boolean;
   allowCreate?: boolean;
   compact?: boolean;
@@ -94,6 +96,8 @@ const SchemaListView: React.FC<SchemaListViewProps> = ({
   onSchemaEdit,
   onSchemaView,
   onSchemaCreate,
+  onSchemaDelete,
+  onSchemaDuplicate,
   allowEdit = true,
   allowCreate = true,
   compact = false,
@@ -605,6 +609,8 @@ const SchemaListView: React.FC<SchemaListViewProps> = ({
                   usageStats={usageStats[schema.id]}
                   onEdit={allowEdit ? onSchemaEdit : undefined}
                   onView={onSchemaView}
+                  onDelete={onSchemaDelete}
+                  onDuplicate={onSchemaDuplicate}
                   compact={compact}
                 />
               </Grid>

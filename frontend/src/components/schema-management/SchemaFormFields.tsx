@@ -24,6 +24,7 @@ import {
 } from '@mui/material';
 import { Controller, Control, FieldErrors } from 'react-hook-form';
 import { ComponentSchema } from '../../services/api.ts';
+import SchemaNameValidationHelper from './SchemaNameValidationHelper.tsx';
 
 export interface SchemaFormFieldsProps {
   control: Control<any>;
@@ -63,26 +64,22 @@ const SchemaFormFields: React.FC<SchemaFormFieldsProps> = ({
               name="name"
               control={control}
               render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Schema Name"
-                  fullWidth
-                  required
-                  error={!!errors.name}
-                  helperText={
-                    <Box display="flex" justifyContent="space-between" width="100%">
-                      <span>
-                        {errors.name || 'Use letters, numbers, spaces, and common punctuation'}
-                      </span>
-                      <span>{field.value?.length || 0}/100</span>
-                    </Box>
-                  }
-                  placeholder="Enter a descriptive name for this schema"
-                  inputProps={{ maxLength: 100 }}
-                  FormHelperTextProps={{
-                    sx: { display: 'flex', justifyContent: 'space-between' }
-                  }}
-                />
+                <Box>
+                  <TextField
+                    {...field}
+                    label="Schema Name"
+                    fullWidth
+                    required
+                    error={!!errors.name}
+                    placeholder="Enter a descriptive name for this schema"
+                    inputProps={{ maxLength: 100 }}
+                  />
+                  <SchemaNameValidationHelper
+                    name={field.value || ''}
+                    error={errors.name}
+                    showRules={true}
+                  />
+                </Box>
               )}
             />
           </Box>
