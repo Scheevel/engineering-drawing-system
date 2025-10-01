@@ -62,7 +62,7 @@ const fieldValidationSchema = yup.object({
   field_type: yup
     .string()
     .required('Field type is required')
-    .oneOf(['text', 'number', 'select', 'checkbox', 'textarea', 'date'], 'Invalid field type'),
+    .oneOf(['text', 'number', 'checkbox', 'textarea', 'date'], 'Invalid field type'),
   help_text: yup
     .string()
     .max(200, 'Help text must be less than 200 characters'),

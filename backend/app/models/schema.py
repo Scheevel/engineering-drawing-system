@@ -158,10 +158,12 @@ class ComponentSchemaCreate(ComponentSchemaBase):
 
     @validator('fields')
     def validate_fields(cls, v):
-        """Ensure field names are unique within schema"""
+        """Ensure field names are unique within schema (when fields exist)"""
+        # Allow empty fields array - fields can be added after schema creation
         if not v:
-            raise ValueError('Schema must have at least one field')
+            return v
 
+        # If fields exist, ensure they have unique names
         field_names = [field.field_name.lower() for field in v]
         if len(field_names) != len(set(field_names)):
             raise ValueError('Field names must be unique within schema')

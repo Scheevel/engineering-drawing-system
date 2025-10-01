@@ -260,7 +260,7 @@ const SchemaEditPage: React.FC = () => {
   };
 
   const handleFieldCreate = (fieldData: ComponentSchemaFieldCreate) => {
-    if (!schemaId || !schema?.fields) return;
+    if (!schemaId || !schema) return;
 
     // Mark fields as dirty (FR-3, AC 11)
     markFieldsAsDirty('added');
@@ -268,13 +268,13 @@ const SchemaEditPage: React.FC = () => {
     fieldCRUD.createField.mutate({
       schemaId,
       fieldData,
-      existingFields: schema.fields,
+      existingFields: schema.fields || [],
       options: {
         optimisticUpdate: true,
         onSuccess: () => {
           refetchSchema().then(() => {
-            // Update fields snapshot after successful refetch
-            updateFieldsSnapshot(schema.fields || []);
+            // Field is now saved to backend, reset dirty state
+            resetDirtyState();
           });
           setShowCreateDialog(false);
         },
@@ -286,7 +286,7 @@ const SchemaEditPage: React.FC = () => {
   };
 
   const handleFieldEdit = (fieldId: string, updates: Partial<ComponentSchemaField>) => {
-    if (!schema?.fields) return;
+    if (!schema) return;
 
     // Mark fields as dirty (FR-3, AC 12)
     markFieldsAsDirty('modified');
@@ -294,13 +294,13 @@ const SchemaEditPage: React.FC = () => {
     fieldCRUD.updateField.mutate({
       fieldId,
       updates,
-      existingFields: schema.fields,
+      existingFields: schema.fields || [],
       options: {
         optimisticUpdate: true,
         onSuccess: () => {
           refetchSchema().then(() => {
-            // Update fields snapshot after successful refetch
-            updateFieldsSnapshot(schema.fields || []);
+            // Field is now saved to backend, reset dirty state
+            resetDirtyState();
           });
           setShowEditDialog(false);
           setSelectedField(null);
@@ -313,7 +313,7 @@ const SchemaEditPage: React.FC = () => {
   };
 
   const handleFieldDelete = (fieldId: string, deleteType: 'soft' | 'hard') => {
-    if (!schema?.fields) return;
+    if (!schema) return;
 
     // Mark fields as dirty (FR-3, AC 13)
     markFieldsAsDirty('removed');
@@ -325,8 +325,8 @@ const SchemaEditPage: React.FC = () => {
         optimisticUpdate: true,
         onSuccess: () => {
           refetchSchema().then(() => {
-            // Update fields snapshot after successful refetch
-            updateFieldsSnapshot(schema.fields || []);
+            // Field is now saved to backend, reset dirty state
+            resetDirtyState();
           });
           setShowDeleteDialog(false);
           setSelectedField(null);

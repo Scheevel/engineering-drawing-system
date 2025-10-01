@@ -1,0 +1,118 @@
+<testsuites id="" name="" tests="2" failures="2" skipped="0" errors="0" time="67.718965">
+<testsuite name="3.13-add-multiselect-field-to-schema.spec.ts" timestamp="2025-10-01T15:57:55.539Z" hostname="chromium" tests="2" failures="2" skipped="0" time="62.916" errors="0">
+<testcase name="Story 3.13: Add Multi-Select Field to Schema › Create a multi-select field and validate it is saved" classname="3.13-add-multiselect-field-to-schema.spec.ts" time="31.409">
+<failure message="3.13-add-multiselect-field-to-schema.spec.ts:141:7 Create a multi-select field and validate it is saved" type="FAILURE">
+<![CDATA[  [chromium] › 3.13-add-multiselect-field-to-schema.spec.ts:141:7 › Story 3.13: Add Multi-Select Field to Schema › Create a multi-select field and validate it is saved 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('dialog').getByRole('button', { name: /save|add/i })
+        - locator resolved to <button disabled id=":r6l:" tabindex="-1" type="submit" class="MuiButtonBase-root MuiButton-root MuiLoadingButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary Mui-disabled MuiButton-root MuiLoadingButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-1ckne7y-MuiButtonBase-root-MuiButton-root-MuiLoadingButton-root">…</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+          - waiting 100ms
+        50 × waiting for element to be visible, enabled and stable
+           - element is not enabled
+         - retrying click action
+           - waiting 500ms
+
+
+      75 |   async saveField() {
+      76 |     // Click save button in dialog
+    > 77 |     await this.page.getByRole('dialog').getByRole('button', { name: /save|add/i }).click();
+         |                                                                                    ^
+      78 |   }
+      79 |
+      80 |   async waitForDialogClosed() {
+        at SchemaEditPage.saveField (/Users/scheevel/Workstream/EVALUATIONS/engineering-drawing-system-standalone/frontend/e2e/3.13-add-multiselect-field-to-schema.spec.ts:77:84)
+        at /Users/scheevel/Workstream/EVALUATIONS/engineering-drawing-system-standalone/frontend/e2e/3.13-add-multiselect-field-to-schema.spec.ts:179:22
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/3.13-add-multiselect-field-3b046-ld-and-validate-it-is-saved-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/3.13-add-multiselect-field-3b046-ld-and-validate-it-is-saved-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/3.13-add-multiselect-field-3b046-ld-and-validate-it-is-saved-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[Editing schema: console-test-1759328811643
+Initial field count: 13
+
+[[ATTACHMENT|3.13-add-multiselect-field-3b046-ld-and-validate-it-is-saved-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|3.13-add-multiselect-field-3b046-ld-and-validate-it-is-saved-chromium/video.webm]]
+
+[[ATTACHMENT|3.13-add-multiselect-field-3b046-ld-and-validate-it-is-saved-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Story 3.13: Add Multi-Select Field to Schema › Create multiple multi-select fields sequentially" classname="3.13-add-multiselect-field-to-schema.spec.ts" time="31.507">
+<failure message="3.13-add-multiselect-field-to-schema.spec.ts:231:7 Create multiple multi-select fields sequentially" type="FAILURE">
+<![CDATA[  [chromium] › 3.13-add-multiselect-field-to-schema.spec.ts:231:7 › Story 3.13: Add Multi-Select Field to Schema › Create multiple multi-select fields sequentially 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('dialog').getByRole('button', { name: /save|add/i })
+        - locator resolved to <button disabled id=":r6l:" tabindex="-1" type="submit" class="MuiButtonBase-root MuiButton-root MuiLoadingButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary Mui-disabled MuiButton-root MuiLoadingButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-1ckne7y-MuiButtonBase-root-MuiButton-root-MuiLoadingButton-root">…</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+          - waiting 100ms
+        51 × waiting for element to be visible, enabled and stable
+           - element is not enabled
+         - retrying click action
+           - waiting 500ms
+
+
+      75 |   async saveField() {
+      76 |     // Click save button in dialog
+    > 77 |     await this.page.getByRole('dialog').getByRole('button', { name: /save|add/i }).click();
+         |                                                                                    ^
+      78 |   }
+      79 |
+      80 |   async waitForDialogClosed() {
+        at SchemaEditPage.saveField (/Users/scheevel/Workstream/EVALUATIONS/engineering-drawing-system-standalone/frontend/e2e/3.13-add-multiselect-field-to-schema.spec.ts:77:84)
+        at /Users/scheevel/Workstream/EVALUATIONS/engineering-drawing-system-standalone/frontend/e2e/3.13-add-multiselect-field-to-schema.spec.ts:257:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/3.13-add-multiselect-field-ff4b5--select-fields-sequentially-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/3.13-add-multiselect-field-ff4b5--select-fields-sequentially-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/3.13-add-multiselect-field-ff4b5--select-fields-sequentially-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|3.13-add-multiselect-field-ff4b5--select-fields-sequentially-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|3.13-add-multiselect-field-ff4b5--select-fields-sequentially-chromium/video.webm]]
+
+[[ATTACHMENT|3.13-add-multiselect-field-ff4b5--select-fields-sequentially-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

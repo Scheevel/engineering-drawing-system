@@ -5,7 +5,7 @@
  * Supports basic schema information and field configuration.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -34,6 +34,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { ComponentSchemaCreate, ComponentSchemaFieldCreate, SchemaFieldType, createSchema } from '../../services/api.ts';
+import SchemaNameValidationHelper from '../../components/schema-management/SchemaNameValidationHelper.tsx';
+import { getInvalidCharactersError } from '../../hooks/schema/useSchemaValidation.ts';
 
 const SchemaCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -48,6 +50,50 @@ const SchemaCreatePage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Validate schema name on change (FR-1 AC 2: real-time validation)
+  useEffect(() => {
+    const name = formData.name;
+
+    if (!name) {
+      setValidationError(null);
+      return;
+    }
+
+    // Check length constraints
+    if (name.length < 3) {
+      setValidationError('Minimum 3 characters required');
+      return;
+    }
+
+    if (name.length > 100) {
+      setValidationError('Maximum 100 characters allowed');
+      return;
+    }
+
+    // Check for leading/trailing spaces
+    if (name !== name.trim()) {
+      setValidationError('Schema name cannot have leading or trailing spaces');
+      return;
+    }
+
+    // Check for invalid characters
+    const invalidCharsError = getInvalidCharactersError(name);
+    if (invalidCharsError) {
+      setValidationError(invalidCharsError);
+      return;
+    }
+
+    // Check must start with letter or number
+    if (!/^[a-zA-Z0-9]/.test(name)) {
+      setValidationError('Schema name must start with a letter or number');
+      return;
+    }
+
+    // All validations passed
+    setValidationError(null);
+  }, [formData.name]);
 
   const handleInputChange = (field: keyof ComponentSchemaCreate, value: any) => {
     setFormData(prev => ({
@@ -201,15 +247,23 @@ const SchemaCreatePage: React.FC = () => {
 
           <Grid container spacing={3} sx={{ mb: 4 }}>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Schema Name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                required
-                placeholder="e.g., Bridge Beam Components"
-                helperText="Descriptive name for this schema type"
-              />
+              <Box>
+                <TextField
+                  fullWidth
+                  label="Schema Name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  required
+                  error={!!validationError}
+                  placeholder="e.g., bridge-beam-components"
+                  inputProps={{ maxLength: 100 }}
+                />
+                <SchemaNameValidationHelper
+                  name={formData.name}
+                  error={validationError}
+                  showRules={true}
+                />
+              </Box>
             </Grid>
             <Grid item xs={12} md={6}>
               <FormControlLabel
@@ -345,7 +399,7 @@ const SchemaCreatePage: React.FC = () => {
             <Button
               type="submit"
               variant="contained"
-              disabled={isSubmitting || !formData.name.trim()}
+              disabled={isSubmitting || !formData.name.trim() || !!validationError}
             >
               {isSubmitting ? 'Creating...' : 'Create Schema'}
             </Button>

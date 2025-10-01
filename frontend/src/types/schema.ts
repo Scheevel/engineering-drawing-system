@@ -361,11 +361,6 @@ export interface FieldTypeConfig {
     unit?: string;
     precision?: number;
   };
-  select: {
-    options: Array<{ value: string; label: string; disabled?: boolean }>;
-    multiple?: boolean;
-    allowCustom?: boolean;
-  };
   checkbox: {
     trueLabel?: string;
     falseLabel?: string;
@@ -396,16 +391,13 @@ export const isFlexibleComponent = (obj: any): obj is FlexibleComponent => {
 };
 
 export const isValidSchemaFieldType = (type: string): type is SchemaFieldType => {
-  return ['text', 'number', 'select', 'multiselect', 'autocomplete', 'checkbox', 'textarea', 'date'].includes(type);
+  return ['text', 'number', 'checkbox', 'textarea', 'date'].includes(type);
 };
 
 // Default values (FR-5: AC 23)
 export const DEFAULT_FIELD_CONFIG: Record<SchemaFieldType, Record<string, any>> = {
   text: { placeholder: '', maxLength: 255 },
   number: { min: 0, step: 1 },
-  select: { options: [], multiple: false },
-  multiselect: { options: [], min_selections: 0, max_selections: null, allow_custom: false },
-  autocomplete: { options: [], allow_custom: true, multiple: false },
   checkbox: { trueLabel: 'Yes', falseLabel: 'No' },
   textarea: { placeholder: '', rows: 3, maxLength: 1000 },
   date: { format: 'YYYY-MM-DD', showTime: false },
@@ -414,9 +406,6 @@ export const DEFAULT_FIELD_CONFIG: Record<SchemaFieldType, Record<string, any>> 
 export const FIELD_TYPE_LABELS: Record<SchemaFieldType, string> = {
   text: 'Text Input',
   number: 'Number Input',
-  select: 'Dropdown Selection',
-  multiselect: 'Multi-Select',
-  autocomplete: 'Autocomplete',
   checkbox: 'Checkbox',
   textarea: 'Multi-line Text',
   date: 'Date Picker',
@@ -425,9 +414,6 @@ export const FIELD_TYPE_LABELS: Record<SchemaFieldType, string> = {
 export const FIELD_TYPE_DESCRIPTIONS: Record<SchemaFieldType, string> = {
   text: 'Single line text input for short text values',
   number: 'Numeric input with optional min/max validation',
-  select: 'Dropdown menu with predefined options',
-  multiselect: 'Multiple selection from a list of options',
-  autocomplete: 'Type-ahead search with suggestions',
   checkbox: 'Boolean checkbox for yes/no values',
   textarea: 'Multi-line text input for longer text content',
   date: 'Date picker with optional time selection',

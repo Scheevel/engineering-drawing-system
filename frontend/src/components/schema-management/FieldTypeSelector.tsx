@@ -23,9 +23,6 @@ import {
   CheckBox as CheckBoxIcon,
   CalendarToday as CalendarIcon,
   Subject as TextAreaIcon,
-  ArrowDropDown as SelectIcon,
-  ListAlt as MultiSelectIcon,
-  Search as AutocompleteIcon,
 } from '@mui/icons-material';
 
 import {
@@ -58,12 +55,6 @@ const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({
         return <TextFieldsIcon {...iconProps} />;
       case 'number':
         return <NumbersIcon {...iconProps} />;
-      case 'select':
-        return <SelectIcon {...iconProps} />;
-      case 'multiselect':
-        return <MultiSelectIcon {...iconProps} />;
-      case 'autocomplete':
-        return <AutocompleteIcon {...iconProps} />;
       case 'checkbox':
         return <CheckBoxIcon {...iconProps} />;
       case 'textarea':
@@ -79,9 +70,6 @@ const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({
   const fieldTypes: SchemaFieldType[] = [
     'text',
     'number',
-    'select',
-    'multiselect',
-    'autocomplete',
     'checkbox',
     'textarea',
     'date',
@@ -110,6 +98,10 @@ const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({
                   backgroundColor: isSelected
                     ? alpha('#1976d2', 0.08)
                     : 'background.paper',
+                  height: '100%',
+                  minHeight: '160px',
+                  display: 'flex',
+                  flexDirection: 'column',
                   '&:hover': disabled
                     ? {}
                     : {
@@ -128,8 +120,8 @@ const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({
                   }
                 }}
               >
-                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                  <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
+                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 }, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Box display="flex" flexDirection="column" alignItems="center" textAlign="center" flex={1} justifyContent="center">
                     {/* Icon */}
                     <Box
                       sx={{

@@ -618,7 +618,7 @@ export const getSavedSearchCount = async (projectId: string): Promise<{count: nu
 // ========================================
 
 // Schema Types (must match backend SchemaFieldType enum)
-export type SchemaFieldType = 'text' | 'number' | 'select' | 'multiselect' | 'autocomplete' | 'checkbox' | 'textarea' | 'date';
+export type SchemaFieldType = 'text' | 'number' | 'checkbox' | 'textarea' | 'date';
 
 // Default Schema Constant
 export const DEFAULT_SCHEMA: ComponentSchema = {
