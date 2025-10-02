@@ -34,17 +34,19 @@ import {
   SwapHoriz as ReassignIcon,
   FilterList as FilterIcon,
   Upload as UploadIcon,
+  FileDownload as ExportIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
-import { 
-  listDrawings, 
+import {
+  listDrawings,
   getProjects,
   deleteDrawing,
   type DrawingListResponse,
-  type ProjectResponse 
+  type ProjectResponse
 } from '../services/api.ts';
 import DrawingReassignDialog from '../components/DrawingReassignDialog.tsx';
+import ExportDialog from '../components/export/ExportDialog.tsx';
 
 interface DrawingFilters {
   projectId: string;
@@ -56,6 +58,7 @@ const DrawingsListPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedDrawings, setSelectedDrawings] = useState<string[]>([]);
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [filters, setFilters] = useState<DrawingFilters>({
     projectId: 'all',
     status: 'all',
@@ -196,13 +199,23 @@ const DrawingsListPage: React.FC = () => {
         <Typography variant="h4" component="h1">
           Drawings
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<UploadIcon />}
-          onClick={() => navigate('/upload')}
-        >
-          Upload Drawings
-        </Button>
+        <Stack direction="row" spacing={2}>
+          <Button
+            variant="outlined"
+            startIcon={<ExportIcon />}
+            onClick={() => setExportDialogOpen(true)}
+            disabled={drawings.length === 0}
+          >
+            Export
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<UploadIcon />}
+            onClick={() => navigate('/upload')}
+          >
+            Upload Drawings
+          </Button>
+        </Stack>
       </Box>
 
       {/* Summary Cards */}
@@ -480,6 +493,13 @@ const DrawingsListPage: React.FC = () => {
           const drawing = drawings.find(d => d.id === id);
           return drawing?.original_name || drawing?.file_name || 'Unknown';
         })}
+      />
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={exportDialogOpen}
+        drawings={drawings}
+        onClose={() => setExportDialogOpen(false)}
       />
     </Box>
   );

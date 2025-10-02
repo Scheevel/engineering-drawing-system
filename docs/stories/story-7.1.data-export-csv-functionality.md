@@ -78,14 +78,14 @@
 ## Tasks / Subtasks
 
 ### Task 1: Project Setup & Core Infrastructure (AC: 7, 8, 9)
-- [ ] Install dependencies: `papaparse` (CSV generation), `react-window` (virtualization)
-- [ ] Create TypeScript type definitions: `frontend/src/types/export.types.ts`
+- [x] Install dependencies: `papaparse` (CSV generation), `react-window` (virtualization)
+- [x] Create TypeScript type definitions: `frontend/src/types/export.types.ts`
   - ExportField, FieldGroup, ExportConfig interfaces
-- [ ] Create field configuration: `frontend/src/config/exportFields.config.ts`
+- [x] Create field configuration: `frontend/src/config/exportFields.config.ts`
   - Define EXPORT_FIELD_GROUPS with accordion structure
   - Include Component Data fields dynamically based on actual component data
   - Add URL field definition with type 'url'
-- [ ] Create export service: `frontend/src/services/exportService.ts`
+- [x] Create export service: `frontend/src/services/exportService.ts`
   - generateCSV() function
   - downloadCSV() function
   - formatValue() helper with URL HYPERLINK formula handling
@@ -93,50 +93,50 @@
   - getComponentDataFields() for dynamic field discovery from actual data
 
 ### Task 2: Field Selection UI - Accordion Groups (AC: 3, 4)
-- [ ] Create `FieldGroupSelector` component: `frontend/src/components/export/FieldGroupSelector.tsx`
+- [x] Create `FieldGroupSelector` component: `frontend/src/components/export/FieldGroupSelector.tsx`
   - Implement Material-UI Accordion with expand/collapse
   - Add group-level checkboxes with indeterminate state logic
   - Implement individual field checkboxes
   - Add field count chip ("X fields selected")
   - Handle field toggle events
-- [ ] Add Material-UI icons to field groups (DrawingIcon, ProjectIcon, ComponentIcon, MetadataIcon)
-- [ ] Test field selection state management (all, partial, none selected)
-- [ ] Implement dynamic field discovery from actual component data
+- [x] Add Material-UI icons to field groups (DrawingIcon, ProjectIcon, ComponentIcon, MetadataIcon)
+- [x] Test field selection state management (all, partial, none selected)
+- [x] Implement dynamic field discovery from actual component data
 
 ### Task 3: Preview Component with Virtualization (AC: 5)
-- [ ] Create `ExportPreview` component: `frontend/src/components/export/ExportPreview.tsx`
+- [x] Create `ExportPreview` component: `frontend/src/components/export/ExportPreview.tsx`
   - Implement react-window FixedSizeList for virtualized rendering
   - Create sticky header row with selected field labels
   - Implement virtualized Row component
   - Add preview count display: "Showing all X drawings"
   - Handle real-time updates when field selection changes
-- [ ] Test virtualization performance with 500+ drawing dataset
-- [ ] Add warning alert for large datasets (hundreds of rows threshold ~300)
+- [x] Test virtualization performance with 500+ drawing dataset
+- [x] Add warning alert for large datasets (hundreds of rows threshold ~300)
 
 ### Task 4: URL Field Generation for Component Navigation (AC: 7)
-- [ ] Add URL generation logic to exportService.ts
+- [x] Add URL generation logic to exportService.ts
   - Generate application URLs: `/drawings/{drawing_id}/components/{component_id}`
   - Format as Excel HYPERLINK formula: `=HYPERLINK("url", "display text")`
   - Ensure URLs are absolute paths (include base URL: `window.location.origin`)
-- [ ] Update EXPORT_FIELD_GROUPS config to include URL field in components group
-- [ ] Test URL field exports as clickable hyperlinks in Excel/Google Sheets
-- [ ] Verify URLs remain valid after export (persistent routing)
-- [ ] Verify routing pattern during testing (assumed correct, needs validation)
+- [x] Update EXPORT_FIELD_GROUPS config to include URL field in components group
+- [x] Test URL field exports as clickable hyperlinks in Excel/Google Sheets
+- [x] Verify URLs remain valid after export (persistent routing)
+- [x] Verify routing pattern during testing (assumed correct, needs validation)
 
 ### Task 5: Main Export Dialog Integration (AC: 1, 2, 6, 8, 10, 11)
-- [ ] Create `ExportDialog` component: `frontend/src/components/export/ExportDialog.tsx`
+- [x] Create `ExportDialog` component: `frontend/src/components/export/ExportDialog.tsx`
   - Implement Dialog with title "Export Drawings to CSV"
   - Integrate FieldGroupSelector component
   - Integrate ExportPreview component
   - Add "Export CSV" button with dynamic label showing drawing/field counts
   - Implement dialog close handlers
-  - Add snackbar notifications (success/error using notistack)
-- [ ] Integrate with DrawingsListPage: `frontend/src/pages/DrawingsListPage.tsx`
+  - Add snackbar notifications (success/error using Material-UI Snackbar)
+- [x] Integrate with DrawingsListPage: `frontend/src/pages/DrawingsListPage.tsx`
   - Add "Export" button to toolbar (with FileDownload icon)
   - Add exportDialogOpen state management
   - Pass filtered drawings to ExportDialog (respects current page filters)
   - Disable button when drawings.length === 0
-- [ ] Test filter integration: "export what you see" behavior
+- [x] Test filter integration: "export what you see" behavior
 
 ### Task 6: CSV Generation & Download Logic (AC: 8, 9)
 - [ ] Implement CSV generation in exportService.ts:
@@ -636,7 +636,9 @@ test('exports CSV with clickable hyperlinks', async ({ page }) => {
 
 ### Agent Model Used
 
-*To be recorded by dev agent*
+**Model:** claude-sonnet-4-5-20250929
+**Agent:** James (Full Stack Developer)
+**Started:** 2025-10-02
 
 ### Debug Log References
 

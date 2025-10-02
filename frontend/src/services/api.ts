@@ -42,6 +42,15 @@ export interface Drawing {
   is_duplicate?: boolean;
 }
 
+export type DrawingListResponse = {
+  items: Drawing[];
+  total: number;
+  page: number;
+  limit: number;
+  has_next: boolean;
+  has_prev: boolean;
+};
+
 export interface ProjectResponse {
   id: string;
   name: string;
