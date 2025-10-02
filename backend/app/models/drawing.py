@@ -65,3 +65,29 @@ class ProcessingStatus(BaseModel):
     components_found: Optional[int] = None
     dimensions_extracted: Optional[int] = None
     error_message: Optional[str] = None
+
+# Export-specific models (Story 7.2)
+class DrawingWithComponents(DrawingResponse):
+    """Drawing response model with nested components for export functionality (Story 7.2)"""
+    components: List['ComponentResponse'] = []
+
+    class Config:
+        from_attributes = True
+
+class ExportDrawingsResponse(BaseModel):
+    """Response model for export drawings endpoint with metadata (Story 7.2)"""
+    drawings: List[DrawingWithComponents]
+    total_drawings: int
+    total_components: int
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
+# Import ComponentResponse and rebuild model to resolve forward references (Pydantic v2)
+try:
+    from app.models.component import ComponentResponse
+    DrawingWithComponents.model_rebuild()
+except ImportError:
+    # ComponentResponse not yet defined during initial import
+    pass

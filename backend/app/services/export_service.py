@@ -11,6 +11,8 @@ from openpyxl.styles import Font, PatternFill, Alignment
 
 from app.models.database import Component, Drawing, Project, Dimension, Specification
 from app.models.export import ExportRequest, ExportFormat
+from app.models.drawing import ExportDrawingsResponse, DrawingWithComponents, DrawingStatus
+from app.models.component import ComponentResponse, DimensionResponse, SpecificationResponse
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -249,7 +251,7 @@ class ExportService:
                 "fields": ["piece_mark", "component_type", "quantity", "drawing_file"]
             },
             {
-                "name": "detailed", 
+                "name": "detailed",
                 "description": "Detailed export with dimensions and specifications",
                 "fields": ["piece_mark", "component_type", "quantity", "dimensions", "specifications"]
             },
@@ -259,3 +261,103 @@ class ExportService:
                 "fields": ["piece_mark", "component_type", "quantity"]
             }
         ]
+
+    async def get_export_drawings(
+        self,
+        project_id: Optional[str] = None,
+        status: Optional[str] = None,
+        db: Session = None
+    ) -> ExportDrawingsResponse:
+        """
+        Load drawings with ALL components for export (Story 7.2).
+        Uses joinedload for efficient component loading (avoids N+1 queries).
+
+        Args:
+            project_id: Optional project UUID to filter drawings
+            status: Optional processing status to filter drawings
+            db: Database session
+
+        Returns:
+            ExportDrawingsResponse with drawings and component counts
+        """
+        try:
+            # Build query with efficient eager loading
+            query = db.query(Drawing).options(
+                joinedload(Drawing.components)
+                    .joinedload(Component.dimensions),
+                joinedload(Drawing.components)
+                    .joinedload(Component.specifications)
+            )
+
+            # Apply filters
+            if project_id:
+                query = query.filter(Drawing.project_id == uuid.UUID(project_id))
+            if status:
+                query = query.filter(Drawing.processing_status == status)
+
+            # Execute query
+            drawings = query.all()
+
+            # Calculate totals
+            total_drawings = len(drawings)
+            total_components = sum(len(d.components) for d in drawings)
+
+            logger.info(f"Export data loaded: {total_drawings} drawings, {total_components} components")
+
+            # Convert to response models (manual construction to handle UUID/metadata conversion)
+            drawings_with_components = []
+            for drawing in drawings:
+                # Build component responses with nested dimensions/specifications
+                component_responses = []
+                for component in drawing.components:
+                    comp_data = {
+                        "id": component.id,
+                        "drawing_id": component.drawing_id,
+                        "piece_mark": component.piece_mark,
+                        "component_type": component.component_type,
+                        "description": component.description,
+                        "quantity": component.quantity,
+                        "material_type": component.material_type,
+                        "location_x": component.location_x,
+                        "location_y": component.location_y,
+                        "bounding_box": component.bounding_box,
+                        "confidence_score": component.confidence_score,
+                        "review_status": component.review_status,
+                        "created_at": component.created_at,
+                        "updated_at": component.updated_at,
+                        "instance_identifier": component.instance_identifier,
+                        "dimensions": [DimensionResponse.from_orm(dim) for dim in component.dimensions] if component.dimensions else [],
+                        "specifications": [SpecificationResponse.from_orm(spec) for spec in component.specifications] if component.specifications else [],
+                    }
+                    component_responses.append(ComponentResponse(**comp_data))
+
+                # Build drawing response with components
+                drawing_data = DrawingWithComponents(
+                    id=str(drawing.id),
+                    project_id=str(drawing.project_id) if drawing.project_id else None,
+                    file_name=drawing.file_name,
+                    file_path=drawing.file_path,
+                    file_size=drawing.file_size,
+                    drawing_type=drawing.drawing_type,
+                    sheet_number=drawing.sheet_number,
+                    drawing_date=drawing.drawing_date,
+                    processing_status=DrawingStatus(drawing.processing_status),
+                    processing_progress=drawing.processing_progress,
+                    upload_date=drawing.upload_date,
+                    error_message=drawing.error_message,
+                    metadata=drawing.drawing_metadata or {},
+                    is_duplicate=False,
+                    components=component_responses
+                )
+                drawings_with_components.append(drawing_data)
+
+            return ExportDrawingsResponse(
+                drawings=drawings_with_components,
+                total_drawings=total_drawings,
+                total_components=total_components,
+                timestamp=datetime.utcnow()
+            )
+
+        except Exception as e:
+            logger.error(f"Error loading export drawings: {str(e)}")
+            raise

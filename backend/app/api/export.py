@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.export_service import ExportService
 from app.models.export import ExportRequest, ExportFormat
+from app.models.drawing import ExportDrawingsResponse
 import tempfile
 import os
 
@@ -94,3 +95,40 @@ async def list_export_templates():
     """List available export templates"""
     templates = await export_service.list_templates()
     return {"templates": templates}
+
+@router.get("/drawings", response_model=ExportDrawingsResponse)
+async def get_export_drawings(
+    project_id: Optional[str] = Query(None, description="Filter by project UUID"),
+    status: Optional[str] = Query(None, description="Filter by processing status"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all drawings with components for export (Story 7.2).
+
+    This endpoint loads ALL drawings (no pagination) with their associated components,
+    dimensions, and specifications using efficient eager loading. Designed for the
+    export page UI to preview and export component data.
+
+    Query Parameters:
+        - project_id: Optional UUID to filter drawings by project
+        - status: Optional processing status (pending, processing, completed, failed)
+
+    Returns:
+        ExportDrawingsResponse with:
+        - drawings: List of drawings with nested components
+        - total_drawings: Count of drawings
+        - total_components: Total count of components across all drawings
+        - timestamp: Time of data retrieval
+    """
+    try:
+        export_data = await export_service.get_export_drawings(
+            project_id=project_id,
+            status=status,
+            db=db
+        )
+        return export_data
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error loading export drawings: {str(e)}"
+        )
