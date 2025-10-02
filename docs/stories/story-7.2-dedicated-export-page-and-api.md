@@ -463,7 +463,14 @@ None yet
 
 ### Completion Notes
 - Implementation started: 2025-10-02
+- Implementation completed: 2025-10-02
 - Following QA guidance from Story 7.1.1 review (high test coverage, edge cases, performance validation)
+- Backend: Fixed Pydantic v2 forward reference issue with model_rebuild()
+- Backend: Manually construct response models to handle UUID→string conversion and field name mapping
+- Backend: Uses SQLAlchemy joinedload() for efficient component loading (< 3 second performance target)
+- Frontend: React Query integration for data fetching with loading/error states
+- Frontend: Reuses existing FieldGroupSelector and ExportPreview components
+- All acceptance criteria met - ready for QA review
 
 ### File List
 Files created or modified during implementation:
@@ -474,8 +481,14 @@ Files created or modified during implementation:
 - `backend/app/api/export.py` - Added GET /export/drawings endpoint
 - `backend/tests/test_export_api.py` - Created comprehensive test suite (19 tests)
 
-**Frontend (In Progress):**
-- TBD
+**Frontend (Completed):**
+- `frontend/src/pages/ExportPage.tsx` - Created full-page export interface with React Query
+- `frontend/src/services/api.ts` - Added getExportDrawings() and ExportDrawingsResponse types
+- `frontend/src/App.tsx` - Added /export route
+- `frontend/src/components/Navigation.tsx` - Added "Export Components" menu item
 
 ### Change Log
 - 2025-10-02: Story status updated to "In Progress" - authorized to begin by user
+- 2025-10-02: Backend implementation completed (API endpoint, models, service, tests)
+- 2025-10-02: Frontend implementation completed (ExportPage, routing, navigation)
+- 2025-10-02: Both commits pushed to main branch - ready for QA review
