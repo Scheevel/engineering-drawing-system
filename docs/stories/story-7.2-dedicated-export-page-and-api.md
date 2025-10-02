@@ -2,7 +2,7 @@
 
 ## Status
 
-**Status**: Draft
+**Status**: In Progress
 **Epic**: 7 - Data Export & Reporting
 **Sprint**: TBD
 **Assigned To**: TBD
@@ -450,3 +450,32 @@ These are explicitly **NOT** part of Story 7.2 but are potential future stories:
 **Validated by**: Neville (discovered "no components to preview" bug during deployment testing)
 **Validation Date**: 2025-10-02
 **Next Steps**: Prioritize for next sprint, assign to developer
+
+---
+
+## Dev Agent Record
+
+### Agent Model Used
+Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
+
+### Debug Log References
+None yet
+
+### Completion Notes
+- Implementation started: 2025-10-02
+- Following QA guidance from Story 7.1.1 review (high test coverage, edge cases, performance validation)
+
+### File List
+Files created or modified during implementation:
+
+**Backend (Completed):**
+- `backend/app/models/drawing.py` - Added DrawingWithComponents and ExportDrawingsResponse models
+- `backend/app/services/export_service.py` - Added get_export_drawings() method with joinedload()
+- `backend/app/api/export.py` - Added GET /export/drawings endpoint
+- `backend/tests/test_export_api.py` - Created comprehensive test suite (19 tests)
+
+**Frontend (In Progress):**
+- TBD
+
+### Change Log
+- 2025-10-02: Story status updated to "In Progress" - authorized to begin by user

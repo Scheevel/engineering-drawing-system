@@ -139,6 +139,32 @@ export interface SearchResponse {
   }; // Story 1.2: Scope effectiveness metrics
 }
 
+// Export interfaces (Story 7.2)
+export interface DrawingWithComponents {
+  id: string;
+  file_name: string;
+  drawing_type?: string;
+  sheet_number?: string;
+  drawing_date?: string;
+  project_id?: string;
+  file_path: string;
+  file_size?: number;
+  processing_status: string;
+  processing_progress: number;
+  upload_date: string;
+  error_message?: string;
+  metadata?: Record<string, any>;
+  is_duplicate?: boolean;
+  components: Component[];
+}
+
+export interface ExportDrawingsResponse {
+  drawings: DrawingWithComponents[];
+  total_drawings: number;
+  total_components: number;
+  timestamp: string;
+}
+
 // Saved Search interfaces
 export interface SavedSearch {
   id: string;
@@ -229,6 +255,15 @@ export const listDrawings = async (params: {
   has_prev: boolean;
 }> => {
   const response = await api.get('/drawings', { params });
+  return response.data;
+};
+
+// Get drawings with components for export (Story 7.2)
+export const getExportDrawings = async (params: {
+  project_id?: string;
+  status?: string;
+} = {}): Promise<ExportDrawingsResponse> => {
+  const response = await api.get('/export/drawings', { params });
   return response.data;
 };
 

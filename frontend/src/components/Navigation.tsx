@@ -21,6 +21,7 @@ import {
   Upload as UploadIcon,
   Folder as FolderIcon,
   Schema as SchemaIcon,
+  FileDownload as ExportIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
@@ -53,6 +54,7 @@ const Navigation: React.FC<NavigationProps> = ({ onDrawerToggle }) => {
     { text: 'Schema Management', icon: <SchemaIcon />, path: '/schemas' },
     { text: 'Search Components', icon: <SearchIcon />, path: '/search' },
     { text: 'Upload Drawings', icon: <UploadIcon />, path: '/upload' },
+    { text: 'Export Components', icon: <ExportIcon />, path: '/export' },
   ];
 
   useEffect(() => {

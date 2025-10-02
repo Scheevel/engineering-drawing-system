@@ -8,6 +8,7 @@ import UploadPage from './pages/UploadPage.tsx';
 import ComponentEditor from './pages/ComponentEditor.tsx';
 import ProjectsPage from './pages/ProjectsPage.tsx';
 import DrawingsListPage from './pages/DrawingsListPage.tsx';
+import ExportPage from './pages/ExportPage.tsx';
 import SchemaManagementPage from './pages/schema/SchemaManagementPage.tsx';
 import SchemaCreatePage from './pages/schema/SchemaCreatePage.tsx';
 import ProjectSchemaPage from './pages/schema/ProjectSchemaPage.tsx';
@@ -61,6 +62,7 @@ const App: React.FC = () => {
             <Route path="/drawings/:id" element={<DrawingViewer />} />
             <Route path="/drawing-viewer/:id" element={<DrawingViewer />} />
             <Route path="/component/:id" element={<ComponentEditor />} />
+            <Route path="/export" element={<ExportPage />} />
 
             {/* Schema Management Routes */}
             <Route path="/schemas" element={<SchemaManagementPage />} />
