@@ -1,3 +1,12 @@
+/**
+ * ExportPreview - Component-centric CSV export preview
+ *
+ * Displays a virtualized preview of component data (Story 7.1.1):
+ * - Each row represents 1 component (not 1 drawing)
+ * - Drawing context fields are available alongside component data
+ * - Virtualization: Only ~20-25 visible rows rendered for performance
+ * - Performance warning triggers at 300+ components
+ */
 import React, { useMemo } from 'react';
 import { FixedSizeList } from 'react-window';
 import {
@@ -20,34 +29,45 @@ const ExportPreview: React.FC<ExportPreviewProps> = ({
 }) => {
   const PERFORMANCE_WARNING_THRESHOLD = 300;
 
-  // Show performance warning for large datasets
-  const showPerformanceWarning = drawings.length > PERFORMANCE_WARNING_THRESHOLD;
+  // Calculate total component count
+  const componentCount = useMemo(() => {
+    return drawings.reduce((sum, drawing) => sum + (drawing.components?.length || 0), 0);
+  }, [drawings]);
 
-  // Memoize preview data to avoid recalculation
+  // Show performance warning for large datasets (component-centric threshold)
+  const showPerformanceWarning = componentCount > PERFORMANCE_WARNING_THRESHOLD;
+
+  // Memoize preview data to avoid recalculation (component-centric: flatten components)
   const previewData = useMemo(() => {
-    return drawings.map(drawing => {
-      const row: Record<string, string> = {};
+    return drawings.flatMap(drawing =>
+      (drawing.components || []).map((component: any) => {
+        const row: Record<string, string> = {};
 
-      selectedFields.forEach(field => {
-        // Extract value from drawing object
-        let value: any;
+        selectedFields.forEach(field => {
+          let value: any;
 
-        // Handle component fields (prefixed with 'component_')
-        if (field.key.startsWith('component_')) {
-          const componentKey = field.key.replace('component_', '');
-          if (drawing.components && drawing.components.length > 0) {
-            value = drawing.components[0][componentKey];
+          // Handle component fields (primary data)
+          if (field.key.startsWith('component_')) {
+            const componentKey = field.key.replace('component_', '');
+            value = component[componentKey];
           }
-        } else {
-          value = drawing[field.key as keyof typeof drawing];
-        }
+          // Handle drawing context fields (prefixed with 'drawing_')
+          else if (field.key.startsWith('drawing_')) {
+            const drawingKey = field.key.replace('drawing_', '');
+            value = drawing[drawingKey];
+          }
+          // Handle direct fields (backward compatibility)
+          else {
+            value = component[field.key] || drawing[field.key];
+          }
 
-        // Format value for display
-        row[field.key] = formatValue(value, field.type, drawing);
-      });
+          // Format value for display (pass both component and drawing for URL generation)
+          row[field.key] = formatValue(value, field.type, { component, drawing });
+        });
 
-      return row;
-    });
+        return row;
+      })
+    );
   }, [drawings, selectedFields]);
 
   // Virtualized row component
@@ -133,11 +153,11 @@ const ExportPreview: React.FC<ExportPreviewProps> = ({
   );
 
   // Handle empty states
-  if (drawings.length === 0) {
+  if (drawings.length === 0 || componentCount === 0) {
     return (
       <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: 'action.hover' }}>
         <Typography variant="body2" color="text.secondary">
-          No drawings to preview
+          No components to preview
         </Typography>
       </Paper>
     );
@@ -155,14 +175,14 @@ const ExportPreview: React.FC<ExportPreviewProps> = ({
 
   return (
     <Box>
-      {/* Count display */}
+      {/* Count display (component-centric) */}
       <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="body2" color="text.secondary">
-          Showing all {drawings.length} drawings
+          Showing all {componentCount} components
         </Typography>
         {showPerformanceWarning && (
           <Alert severity="warning" sx={{ py: 0, '& .MuiAlert-message': { py: 0.5 } }}>
-            Large dataset detected. Export may take a few seconds.
+            Large dataset detected ({componentCount} components). Export may take a few seconds.
           </Alert>
         )}
       </Box>
@@ -172,10 +192,10 @@ const ExportPreview: React.FC<ExportPreviewProps> = ({
         {/* Sticky header */}
         <HeaderRow />
 
-        {/* Virtualized list */}
+        {/* Virtualized list (component rows) */}
         <FixedSizeList
           height={348} // 400 - 52 (header height)
-          itemCount={drawings.length}
+          itemCount={previewData.length} // Component count, not drawing count
           itemSize={52} // Match existing table row height for consistency
           width="100%"
           overscanCount={5} // Render 5 extra rows for smooth scrolling

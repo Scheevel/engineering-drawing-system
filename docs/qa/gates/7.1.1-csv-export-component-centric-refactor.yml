@@ -1,0 +1,118 @@
+schema: 1
+story: '7.1.1'
+story_title: 'CSV Export - Component-Centric Data Model Refactoring'
+gate: PASS with CONCERNS
+status_reason: 'Core refactoring is excellent with strong unit test coverage (72.6%), but React components lack test coverage and manual QA is incomplete.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-10-02T18:45:00Z'
+
+top_issues:
+  - id: 'TEST-001'
+    severity: medium
+    finding: 'React components (ExportDialog, ExportPreview, FieldGroupSelector) have 0% test coverage'
+    suggested_action: 'Add React Testing Library tests for component state management and UI interactions in future sprint'
+    suggested_owner: 'dev'
+  - id: 'TEST-002'
+    severity: medium
+    finding: 'Manual QA validation checklist (Task 8) not completed'
+    suggested_action: 'Execute manual QA: test with varied component counts, verify CSV structure, test Excel HYPERLINK formulas, validate filter integration'
+    suggested_owner: 'qa'
+  - id: 'MNT-001'
+    severity: low
+    finding: 'Minor lint warnings present (unused imports in export components)'
+    suggested_action: 'Clean up unused imports: CloseIcon, ExportField, WarningIcon, Divider'
+    suggested_owner: 'dev'
+  - id: 'TEST-003'
+    severity: low
+    finding: 'No E2E tests for complete export workflow'
+    suggested_action: 'Add Playwright E2E test covering: navigate → filter drawings → select fields → preview → export → verify CSV download'
+    suggested_owner: 'dev'
+
+waiver:
+  active: false
+
+quality_score: 80
+# Score calculation: 100 - (10 × 2 medium concerns) = 80/100
+
+expires: '2025-10-16T18:45:00Z'  # 2 weeks from review
+
+evidence:
+  tests_reviewed:
+    count: 16
+    passing: 16
+    coverage_pct: 72.6
+  risks_identified:
+    count: 4
+    high: 0
+    medium: 2
+    low: 2
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9]  # All ACs except optional AC 10
+    ac_gaps: [10]  # AC 10 optional and not implemented (acceptable)
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'No authentication/authorization changes. CSV escaping handled by papaparse. Client-side only, no server-side injection risks.'
+  performance:
+    status: PASS
+    notes: 'Virtualization ensures DOM performance (20-25 rows). flatMap() efficient. useMemo() prevents recalculations. Warning at 300 components.'
+  reliability:
+    status: PASS
+    notes: 'Error handling with try-catch and callbacks. Edge cases covered (zero components, zero fields). Component count validation before export.'
+  maintainability:
+    status: PASS
+    notes: 'Self-documenting code with clear naming. File-level and inline comments added. Field prefixing strategy (component_, drawing_) consistent.'
+
+recommendations:
+  immediate:  # Should complete before marking Done
+    - action: 'Execute manual QA validation checklist (Task 8) to verify real-world usage'
+      refs: ['Story 7.1.1 Task 8']
+      priority: 'medium'
+    - action: 'Verify CSV row count equals component count (not drawing count) in browser'
+      refs: ['ExportDialog.tsx', 'ExportPreview.tsx']
+      priority: 'medium'
+    - action: 'Test Excel HYPERLINK formula clickability with exported CSV'
+      refs: ['exportService.ts:44']
+      priority: 'medium'
+
+  future:  # Can be addressed in next sprint
+    - action: 'Add React Testing Library tests for ExportDialog, ExportPreview, FieldGroupSelector'
+      refs: ['frontend/src/components/export/']
+      priority: 'low'
+    - action: 'Add Playwright E2E test for complete export workflow'
+      refs: ['frontend/e2e/']
+      priority: 'low'
+    - action: 'Clean up lint warnings (unused imports)'
+      refs: ['ExportDialog.tsx', 'ExportPreview.tsx', 'FieldGroupSelector.tsx']
+      priority: 'low'
+    - action: 'Add integration test for CSV file format validation'
+      refs: ['frontend/src/services/__tests__/']
+      priority: 'low'
+    - action: 'Add performance test to verify virtualization with 1000+ components'
+      refs: ['ExportPreview.tsx']
+      priority: 'low'
+
+technical_notes:
+  - 'Core refactoring transforms export from drawing-centric to component-centric data model'
+  - 'flatMap() elegantly flattens components while excluding drawings with 0 components'
+  - 'Field prefixing strategy (component_, drawing_) provides clear data origin'
+  - 'URL HYPERLINK formula fixed bug from Story 7.1 (was using drawing.id for both IDs)'
+  - 'Documentation exemplary with 38 specific updates in usability guide'
+  - 'Unit tests explicitly validate component-centric behavior with clear test names'
+  - 'Virtualization threshold changed from 300 drawings to 300 components'
+  - 'All 10 acceptance criteria validated (AC 10 optional and not implemented)'
+
+acceptance_criteria_status:
+  total: 10
+  passed: 9
+  failed: 0
+  optional_skipped: 1  # AC 10: Backward Compatibility (toggle between modes)
+
+story_metadata:
+  story_type: 'Refactoring / Data Model Correction'
+  parent_story: 'Story 7.1'
+  files_modified: 5
+  files_created: 0
+  lines_changed_estimate: '~400 (modifications only, no new files)'
+  implementation_approach: 'Component-centric data transformation using flatMap()'

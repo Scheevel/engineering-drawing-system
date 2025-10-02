@@ -3,8 +3,15 @@ import { ExportField } from '../types/export.types';
 
 /**
  * Format a field value based on its type for CSV export
+ * @param value - The value to format
+ * @param fieldType - The type of field (date, url, number, string)
+ * @param context - Optional context object with component and drawing data for URL generation
  */
-export const formatValue = (value: any, fieldType: string, drawing?: any): string => {
+export const formatValue = (
+  value: any,
+  fieldType: string,
+  context?: { component?: any; drawing?: any }
+): string => {
   // Handle null/undefined
   if (value === null || value === undefined) {
     return '';
@@ -28,10 +35,10 @@ export const formatValue = (value: any, fieldType: string, drawing?: any): strin
 
     case 'url':
       // Generate Excel HYPERLINK formula for clickable links
-      if (drawing) {
+      if (context?.component && context?.drawing) {
         const baseUrl = window.location.origin;
-        const url = `${baseUrl}/drawings/${drawing.id}/components/${drawing.id}`;
-        const linkText = drawing.file_name || 'View Component';
+        const url = `${baseUrl}/drawings/${context.drawing.id}/components/${context.component.id}`;
+        const linkText = context.component.piece_mark || 'View Component';
 
         // Excel formula: =HYPERLINK("url", "display text")
         // CSV must double-quote internal quotes: =HYPERLINK(""url"", ""text"")
@@ -85,36 +92,44 @@ export const getComponentDataFields = (drawings: any[]): ExportField[] => {
 };
 
 /**
- * Generate CSV content from drawings and selected fields
+ * Generate CSV content from drawings and selected fields (component-centric)
+ * Each component becomes a separate row with drawing context fields
  */
 export const generateCSV = (
   drawings: any[],
   selectedFields: ExportField[]
 ): string => {
-  // Map drawings to rows with only selected fields
-  const data = drawings.map(drawing => {
-    const row: Record<string, string> = {};
+  // Flatten components from all drawings (component-centric model)
+  // Each component becomes one row with drawing context
+  const data = drawings.flatMap(drawing =>
+    (drawing.components || []).map((component: any) => {
+      const row: Record<string, string> = {};
 
-    selectedFields.forEach(field => {
-      // Extract value from drawing object
-      let value: any;
+      selectedFields.forEach(field => {
+        let value: any;
 
-      // Handle component fields (prefixed with 'component_')
-      if (field.key.startsWith('component_')) {
-        const componentKey = field.key.replace('component_', '');
-        if (drawing.components && drawing.components.length > 0) {
-          value = drawing.components[0][componentKey];
+        // Handle component fields (primary data)
+        if (field.key.startsWith('component_')) {
+          const componentKey = field.key.replace('component_', '');
+          value = component[componentKey];
         }
-      } else {
-        value = drawing[field.key as keyof typeof drawing];
-      }
+        // Handle drawing context fields (prefixed with 'drawing_')
+        else if (field.key.startsWith('drawing_')) {
+          const drawingKey = field.key.replace('drawing_', '');
+          value = drawing[drawingKey];
+        }
+        // Handle direct fields (backward compatibility)
+        else {
+          value = component[field.key] || drawing[field.key];
+        }
 
-      // Format value based on field type
-      row[field.label] = formatValue(value, field.type, drawing);
-    });
+        // Format value based on field type (pass both component and drawing for URL generation)
+        row[field.label] = formatValue(value, field.type, { component, drawing });
+      });
 
-    return row;
-  });
+      return row;
+    })
+  );
 
   // Generate CSV using papaparse
   const csv = Papa.unparse(data, {
@@ -156,7 +171,7 @@ export const downloadCSV = (csvContent: string, filename?: string): void => {
 };
 
 /**
- * Safe wrapper for CSV export with error handling
+ * Safe wrapper for CSV export with error handling (component-centric)
  */
 export const safeExportDrawingsToCSV = (
   drawings: any[],
@@ -165,9 +180,15 @@ export const safeExportDrawingsToCSV = (
   onError?: (error: Error) => void
 ): void => {
   try {
+    // Calculate total component count
+    const componentCount = drawings.reduce(
+      (sum, drawing) => sum + (drawing.components?.length || 0),
+      0
+    );
+
     // Validate inputs
-    if (!drawings || drawings.length === 0) {
-      throw new Error('No drawings to export');
+    if (!drawings || drawings.length === 0 || componentCount === 0) {
+      throw new Error('No components to export');
     }
 
     if (!selectedFields || selectedFields.length === 0) {

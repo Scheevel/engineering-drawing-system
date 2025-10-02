@@ -1,3 +1,13 @@
+/**
+ * ExportDialog - Component-centric CSV export dialog
+ *
+ * Main export interface implementing component-centric data model (Story 7.1.1):
+ * - Export button shows component count: "Export CSV (X components, Y fields)"
+ * - Validates component availability (not just drawing count)
+ * - Success message references component count
+ * - Integrates with FieldGroupSelector (Component Data primary, Drawing Context secondary)
+ * - Displays real-time preview via ExportPreview component
+ */
 import React, { useState, useMemo } from 'react';
 import {
   Dialog,
@@ -44,6 +54,11 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
     severity: 'success',
   });
 
+  // Calculate total component count (component-centric model)
+  const componentCount = useMemo(() => {
+    return drawings.reduce((sum, drawing) => sum + (drawing.components?.length || 0), 0);
+  }, [drawings]);
+
   // Combine static fields with dynamic component fields
   const allFields = useMemo(() => {
     const dynamicComponentFields = getComponentDataFields(drawings);
@@ -56,7 +71,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
     return allFields.filter(field => selectedFieldKeys.includes(field.key));
   }, [allFields, selectedFieldKeys]);
 
-  // Handle CSV export
+  // Handle CSV export (component-centric)
   const handleExport = () => {
     safeExportDrawingsToCSV(
       drawings,
@@ -65,7 +80,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
         // Success callback
         setSnackbar({
           open: true,
-          message: `Exported ${drawings.length} drawings successfully`,
+          message: `Exported ${componentCount} components successfully`,
           severity: 'success',
         });
         // Close dialog after successful export
@@ -95,8 +110,8 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
     setSnackbar({ ...snackbar, open: false });
   };
 
-  // Determine if export button should be disabled
-  const exportDisabled = drawings.length === 0 || selectedFields.length === 0;
+  // Determine if export button should be disabled (component-centric validation)
+  const exportDisabled = drawings.length === 0 || componentCount === 0 || selectedFields.length === 0;
 
   return (
     <>
@@ -115,7 +130,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography variant="h6" component="div">
-              Export Drawings to CSV
+              Export Components to CSV
             </Typography>
             <IconButton
               edge="end"
@@ -172,7 +187,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
             startIcon={<ExportIcon />}
             disabled={exportDisabled}
           >
-            Export CSV ({drawings.length} drawings, {selectedFields.length} fields)
+            Export CSV ({componentCount} components, {selectedFields.length} fields)
           </Button>
         </DialogActions>
       </Dialog>

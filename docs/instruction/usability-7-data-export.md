@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-Story 7.1 introduces client-side CSV export functionality that enables engineers to export drawing and component data with customizable field selection, real-time preview, and Excel-compatible hyperlink formulas. This feature supports the "export what you see" pattern, respecting all active page filters, and uses virtualization to handle hundreds of drawings efficiently without backend API changes.
+Story 7.1 (refactored by Story 7.1.1) introduces client-side CSV export functionality that enables engineers to export individual components with drawing context, featuring customizable field selection, real-time preview, and Excel-compatible hyperlink formulas. This component-centric export supports the "export what you see" pattern, respecting all active page filters, and uses virtualization to handle hundreds of components efficiently without backend API changes.
 
 ## Feature Catalog
 
@@ -24,21 +24,21 @@ Click "Export" button in toolbar (next to "Upload Drawings")
 # Field Selection (Manual UI Interaction)
 # - Expand accordion groups: Basic Drawing Info, Project Association, Component Data, Metadata
 # - Select individual fields or use group-level checkboxes
-# - Component Data fields are discovered dynamically from actual drawing data
+# - Component Data fields are discovered dynamically from actual component data
 # - Field count chip shows "X fields selected"
 
 # Preview & Download
 # - Real-time preview updates as fields are selected
-# - Preview shows virtualized table with all filtered drawings
-# - Click "Export CSV (X drawings, Y fields)" button
+# - Preview shows virtualized table with all components from filtered drawings
+# - Click "Export CSV (X components, Y fields)" button
 # - File downloads as: drawings-export-2025-10-02.csv
 ```
 
 **WHY USE THIS:** Solves the critical problem of extracting structured data from the system for external analysis. Engineers can customize exactly which fields to export, see a live preview before download, and open the CSV in Excel with working hyperlinks that navigate back to specific components in the application.
 
 **HOW AGENTS SHOULD USE:**
-- **Dev Agent:** Test field selection state management, verify virtualization performance with 500+ drawings, validate HYPERLINK formula generation, confirm dynamic component field discovery from actual data
-- **QA Agent:** Validate "export what you see" filter integration, test Excel hyperlink clickability (open CSV in Excel AND Google Sheets), verify data quality (dates formatted correctly, nulls as empty strings), test edge cases (zero drawings, zero fields selected, large datasets)
+- **Dev Agent:** Test field selection state management, verify virtualization performance with 500+ components (from ~10-20 drawings), validate HYPERLINK formula generation, confirm dynamic component field discovery from actual component data
+- **QA Agent:** Validate "export what you see" filter integration (filtered drawings → their components exported), test Excel hyperlink clickability (open CSV in Excel AND Google Sheets), verify data quality (dates formatted correctly, nulls as empty strings), test edge cases (zero components, zero fields selected, large component datasets), verify component count = CSV row count
 - **All Agents:** Use Export for generating test datasets, validating data integrity across development cycles, creating documentation examples
 
 ### 🎯 Excel-Compatible Hyperlinks (Story 7.1)
@@ -72,27 +72,27 @@ CSV cell contains: =HYPERLINK("http://localhost:3000/drawings/abc123/components/
 
 ### 🎯 Real-Time Preview with Virtualization (Story 7.1)
 
-**WHEN TO USE:** When previewing large exports (hundreds of drawings) before committing to download, ensuring selected fields match expectations.
+**WHEN TO USE:** When previewing large exports (hundreds of components from many drawings) before committing to download, ensuring selected fields match expectations.
 
 **AGENT EXECUTION SYNTAX:**
 ```bash
 # Preview Automatically Updates
 # - Select/deselect fields → preview columns update in real-time
-# - Preview shows "Showing all X drawings" count
-# - Virtualized rendering: only ~20 visible rows in DOM at any time
-# - Performance warning appears if drawings > 300: "Large dataset detected"
+# - Preview shows "Showing all X components" count (may be from fewer drawings)
+# - Virtualized rendering: only ~20 visible component rows in DOM at any time
+# - Performance warning appears if components > 300: "Large dataset detected (X components)"
 
 # Validation Commands
 # Open browser DevTools console
-Performance.memory.usedJSHeapSize  # Should stay under 100MB for 500 drawings
-document.querySelectorAll('[role="row"]').length  # Should be ~20-25 (virtualization proof)
+Performance.memory.usedJSHeapSize  # Should stay under 100MB for 500 components
+document.querySelectorAll('[role="row"]').length  # Should be ~20-25 component rows (virtualization proof)
 ```
 
-**WHY USE THIS:** Prevents accidental export of wrong data or fields. Engineers can verify exactly what will be exported before downloading, catching errors early. Virtualization ensures preview remains performant even with large datasets (500+ drawings).
+**WHY USE THIS:** Prevents accidental export of wrong data or fields. Engineers can verify exactly what will be exported before downloading, catching errors early. Virtualization ensures preview remains performant even with large datasets (500+ components, which may come from just 10-20 drawings with many components each).
 
 **HOW AGENTS SHOULD USE:**
-- **Dev Agent:** Verify react-window `FixedSizeList` implementation, test with 50/100/300/500 drawing datasets, confirm only visible rows render in DOM, validate warning threshold (300 drawings)
-- **QA Agent:** Test preview updates in real-time as fields toggle, verify virtualization with DevTools (DOM should have ~20 rows, not full dataset), confirm performance warning displays correctly
+- **Dev Agent:** Verify react-window `FixedSizeList` implementation, test with 50/100/300/500 component datasets (from varying numbers of drawings), confirm only visible component rows render in DOM, validate warning threshold (300 components)
+- **QA Agent:** Test preview updates in real-time as fields toggle, verify virtualization with DevTools (DOM should have ~20 component rows, not full dataset), confirm performance warning displays correctly at 300+ components
 - **All Agents:** Use preview to visually validate data before export in testing workflows
 
 ## Agent Execution Patterns
@@ -116,9 +116,9 @@ npm start                                   # Start dev server on localhost:3000
 # Performance Testing
 # Open DevTools Console
 Performance.memory.usedJSHeapSize          # Baseline memory usage
-# Export with 300 drawings → warning should appear
-# Export with 500 drawings → preview should remain responsive
-document.querySelectorAll('[role="row"]').length  # Should be ~20-25 rows (virtualization proof)
+# Export with 300 components → warning should appear
+# Export with 500 components (from ~10-20 drawings) → preview should remain responsive
+document.querySelectorAll('[role="row"]').length  # Should be ~20-25 component rows (virtualization proof)
 
 # Dependency Rebuild (if "Module not found: papaparse" error)
 docker-compose build --no-cache frontend   # Rebuild container with new dependencies
@@ -137,7 +137,7 @@ Click "Export" button
 Expand "Basic Drawing Info" accordion
 Select all fields in group (group checkbox)
 Verify preview shows selected columns
-Click "Export CSV (X drawings, Y fields)"
+Click "Export CSV (X components, Y fields)"
 Verify file downloads: drawings-export-YYYY-MM-DD.csv
 
 # Test 2: Filter Integration ("Export What You See")
@@ -145,8 +145,9 @@ Apply Project filter: Select specific project
 Apply Status filter: Select "Completed"
 Note drawing count in table (e.g., 23 drawings)
 Click "Export" button
-Verify preview shows same 23 drawings (not all drawings)
-Export CSV → verify downloaded file has 23 rows (+ 1 header)
+Verify preview shows ALL COMPONENTS from those 23 drawings (e.g., 127 components)
+Export CSV → verify downloaded file has 127 component rows (+ 1 header), NOT 23 rows
+# CRITICAL: Row count = component count, NOT drawing count
 
 # Test 3: Excel Hyperlink Validation (CRITICAL)
 Click "Export" button
@@ -159,20 +160,23 @@ Export CSV → open in Microsoft Excel
 # - Verify URL format: /drawings/:id/components/:componentId
 # Repeat test in Google Sheets (upload CSV, test links)
 
-# Test 4: Dynamic Component Fields
-# Ensure test data has components with various fields (piece_mark, dimensions, etc.)
+# Test 4: Component-Centric Data Model
+# Ensure test data has drawings with multiple components per drawing
 Click "Export" button
-Expand "Component Data" accordion
-# Verify dynamically discovered fields appear (beyond static fields)
-# Fields should be human-readable: "Piece Mark" not "piece_mark"
-Select component data fields
-Export CSV → verify component data columns populated correctly
+Expand "Component Data" accordion (should be PRIMARY/expanded by default in 7.1.1)
+Expand "Drawing Context" accordion (should show: drawing_id, drawing_file_name, etc.)
+# Verify dynamically discovered component fields appear
+# Verify drawing context fields available for selection
+Select both component and drawing context fields
+Export CSV → verify each row = 1 component with drawing context populated
+# Critical: Drawing with 5 components → 5 rows, each with same drawing_id/file_name
 
 # Test 5: Edge Cases
-# - Zero drawings: Apply filter with no results → Export button disabled
+# - Zero components: Drawings with no indexed components → Export button disabled OR shows 0 components
 # - Zero fields: Deselect all fields → Export button disabled
-# - Large dataset: Load 300+ drawings → warning message appears
-# - Null values: Export drawing with missing data → CSV shows empty strings (not "null")
+# - Large dataset: Load 300+ components (may be just 6-10 drawings) → warning message appears
+# - Null values: Export component with missing dimensions/specs → CSV shows empty strings (not "null")
+# - Drawing context integrity: Verify all components from same drawing have identical drawing_id/file_name
 ```
 
 ### 📋 SM/PO Agent Usage
@@ -189,20 +193,22 @@ Navigate to http://localhost:3000/drawings
 # AC 5: Preview shows virtualized table with selected fields only
 # AC 6: Apply filters → export respects filters (test by comparing counts)
 # AC 7: URL field exports as clickable hyperlink in Excel (open CSV to verify)
-# AC 8: Export button shows count: "Export CSV (X drawings, Y fields)"
+# AC 8: Export button shows count: "Export CSV (X components, Y fields)"
 # AC 9: Dates formatted as readable (MM/DD/YYYY HH:MM AM/PM), nulls as empty strings
-# AC 10: Performance warning appears for 300+ drawings
+# AC 10: Performance warning appears for 300+ components
 # AC 11: Success notification after download, dialog closes automatically
 
 # Story Completion Checklist
-# ✓ All 11 acceptance criteria validated
-# ✓ Unit tests passing (14/14)
+# ✓ All acceptance criteria validated (Story 7.1.1 - component-centric model)
+# ✓ Unit tests passing (all tests updated for component-centric data)
 # ✓ Excel hyperlink test passed (Excel AND Google Sheets)
-# ✓ Performance test passed (500 drawings, no lag)
-# ✓ Filter integration test passed ("export what you see")
-# ✓ Edge cases handled (zero drawings, zero fields, large datasets)
+# ✓ Performance test passed (500 components, no lag)
+# ✓ Filter integration test passed (filtered drawings → their components exported)
+# ✓ Edge cases handled (zero components, zero fields, large component datasets)
+# ✓ Component count validation: CSV row count = total component count (NOT drawing count)
+# ✓ Drawing context integrity: All components from same drawing have correct drawing_id
 
-# Mark story as "Ready for Review" in docs/stories/story-7.1.data-export-csv-functionality.md
+# Mark story as "Ready for Review" in docs/stories/story-7.1.1-csv-export-component-centric-refactor.md
 ```
 
 ## Cross-Platform Compatibility
@@ -229,10 +235,11 @@ docker-compose up -d frontend              # Restart frontend service
 curl http://localhost:3000                 # Verify frontend responds (200 OK)
 
 # Issue 2: Export button disabled (grayed out)
-# Cause: No drawings available to export OR no fields selected
-# Resolution 1: Check drawing count in table (should be > 0)
+# Cause: No components available to export (drawings with zero indexed components) OR no fields selected
+# Resolution 1: Check that filtered drawings have indexed components (not just empty drawings)
 # Resolution 2: Open Export dialog, select at least one field
-# Validation: Button should enable when drawings exist AND fields selected
+# Validation: Button should enable when components exist (not just drawings) AND fields selected
+# Note: Drawing count > 0 but component count = 0 → button remains disabled (correct behavior)
 
 # Issue 3: HYPERLINK formulas showing as plain text in Excel
 # Cause: CSV opened incorrectly or formula syntax error
@@ -259,6 +266,17 @@ curl http://localhost:3000                 # Verify frontend responds (200 OK)
 # Check Console for error messages
 # Common cause: Invalid data (circular references in JSON)
 # Fix: Check drawing data structure, ensure no circular object references
+
+# Issue 6: CSV has more rows than expected (more than drawing count)
+# Cause: Component-centric export - each component = 1 row (not each drawing)
+# Expected Behavior:
+# - 23 filtered drawings with varying component counts → CSV may have 100+ rows
+# - Drawing with 50 components → 50 rows in CSV (all with same drawing context)
+# Resolution: This is CORRECT behavior in Story 7.1.1
+# Validation:
+# - Count components in filtered drawings (not drawing count)
+# - CSV row count = total component count (+ 1 header row)
+# - Each row should have unique component_id but may share drawing_id
 ```
 
 ### Validation Commands
@@ -286,30 +304,30 @@ cat ~/Downloads/drawings-export-*.csv | head -5  # Check first 5 rows
 
 # Verify Virtualization Performance
 # Open browser DevTools Console
-# Navigate to /drawings with 300+ drawings
+# Navigate to /drawings with drawings containing 300+ total components
 # Click "Export" button
 Performance.memory.usedJSHeapSize          # Should be < 100MB
-document.querySelectorAll('[role="row"]').length  # Should be ~20-25 (not 300+)
-# Interpretation: Only visible rows rendered (virtualization working)
+document.querySelectorAll('[role="row"]').length  # Should be ~20-25 component rows (not 300+)
+# Interpretation: Only visible component rows rendered (virtualization working)
 ```
 
 ## Integration Points
 
 ### Frontend & Browser APIs
-- **Filter Integration:** Export respects active Project/Status filters via parent component's data passing ("export what you see" pattern)
+- **Filter Integration:** Export respects active Project/Status filters - exports ALL COMPONENTS from filtered drawings ("export what you see" pattern)
 - **CSV Download:** Standard browser download API (`URL.createObjectURL` + `link.click()`)
 
 ### Component Data
-- **Dynamic Fields:** Export discovers component fields from actual drawing data, not schema definitions
+- **Dynamic Fields:** Export discovers component fields from actual component data (not schema definitions), drawing context fields provided separately
 - **URL Generation:** HYPERLINK formulas use `/drawings/:id/components/:componentId` routing pattern
 
 ## Best Practices for BMAD Agents
 
 1. **Always test Excel hyperlink compatibility** with `View Component` field selected - open exported CSV in both Microsoft Excel AND Google Sheets to verify clickable links render correctly
-2. **Use "export what you see" for test data generation** - apply filters to isolate specific drawing sets, then export for targeted testing scenarios
+2. **Use "export what you see" for component data generation** - apply drawing filters to isolate specific projects/statuses, then export all components from those drawings for targeted testing scenarios
 3. **Validate dynamic field discovery** by testing with drawings that have different component data structures - verify field union behavior works correctly
 4. **Check preview virtualization performance** with `document.querySelectorAll('[role="row"]').length` to confirm only ~20-25 rows render (not full dataset)
-5. **Test edge cases systematically**: zero drawings, zero fields selected, 300+ drawings (warning threshold), null values in data
+5. **Test edge cases systematically**: zero components (drawings without indexed data), zero fields selected, 300+ components (warning threshold), null values in component data, drawing context integrity (same drawing_id for components from same drawing)
 6. **Rebuild containers after dependency changes** with `docker-compose build --no-cache frontend` when encountering "Module not found" errors for papaparse
 
 ---

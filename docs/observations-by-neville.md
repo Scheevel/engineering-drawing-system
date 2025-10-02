@@ -1,6 +1,6 @@
 <strikethrough>check /docs/stories/backlog and /docs/stories-archive/ to see if any of these observations are already accounted for in any of the existing stories</strikethrough>
 
-allow commands: pip, grep, npm start
+allow commands: pip, grep, npm start, npx esbuild
 
 make a yagni folder
 
@@ -17,14 +17,23 @@ I can't edit "piece markings" field on the component detail card
 
 schema settings take up too much real-estate
 
+/schema
+ - hot swappable. I create a schema, make the project schema, now everything in the project takes on that schema
+
 There used to be way of creating instances, so a drawing could have the same piece marking. That functionality has disappeared, it was story 1.5
 UX person. The entire schema selection part takes up too much of the form
 
-How do I assign a drawing to a project? Or multiple projects?
+/projects, should provide a way of seeing assigned drawings
+ - 
 
 /drawings, why is component count 0?
  - should provide a way of filtering by project
  - should provide a way of assigning to a project
+ - ability to assign a single drawing to multiple projectsd
 /projects, clicking on a project should provide a method of viewing all drawings
+
+/BMad:agents:deployer *smart-deploy @
+
+
 
 

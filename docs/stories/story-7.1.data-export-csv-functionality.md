@@ -713,6 +713,15 @@ No debug logs required - implementation completed without blocking issues
 - **Story 7.1 Status:** Implementation is functionally complete and code quality is high, but produces wrong data granularity for user workflows
 - **Code Reusability:** All UI components (ExportDialog, FieldGroupSelector, ExportPreview) can be reused with minor data transformation changes
 
+**✅ ISSUE RESOLVED (Story 7.1.1 - 2025-10-02):**
+- **Implementation Completed:** Story 7.1.1 successfully refactored CSV export to component-centric model
+- **Data Model:** Changed from 1 row = 1 drawing to 1 row = 1 component (with drawing context)
+- **Files Modified:** exportService.ts, exportFields.ts, ExportPreview.tsx, ExportDialog.tsx (4 files)
+- **Tests Updated:** All 16 unit tests passing (14 refactored + 2 new component-centric tests)
+- **Field Structure:** Component Data (primary, expanded), Drawing Context (secondary, collapsed with drawing_ prefix)
+- **User Impact:** Engineers can now export individual component rows for Excel analysis, pivot tables, and filtering
+- **Story 7.1 Status:** SUPERSEDED by Story 7.1.1 - implementation corrected to component-centric model
+
 ### File List
 
 **Files Created (7 new files, 892 lines):**

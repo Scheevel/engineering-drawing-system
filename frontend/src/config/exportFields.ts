@@ -1,78 +1,32 @@
 import { FieldGroup } from '../types/export.types';
 
 /**
- * Static field group definitions for CSV export
+ * Field group definitions for component-centric CSV export
  *
- * Note: Some fields (project_name, component_count, created_at, updated_at) may not
- * exist in the Drawing interface but are defined here for future extensibility.
- * The export service will handle missing fields gracefully.
+ * COMPONENT-CENTRIC MODEL (Story 7.1.1):
+ * - Primary entity: Components (each row = 1 component)
+ * - Secondary entity: Drawing context (parent drawing reference)
+ * - Component Data group is expanded by default
+ * - Drawing Context group is collapsed by default
+ *
+ * Dynamic component fields are added via getComponentDataFields() based on actual data.
  */
 export const EXPORT_FIELD_GROUPS: FieldGroup[] = [
   {
-    id: 'basic',
-    label: 'Basic Drawing Info',
-    defaultExpanded: true,
-    fields: [
-      {
-        key: 'id',
-        label: 'Drawing ID',
-        type: 'string',
-        group: 'basic'
-      },
-      {
-        key: 'file_name',
-        label: 'File Name',
-        type: 'string',
-        group: 'basic'
-      },
-      {
-        key: 'processing_status',
-        label: 'Status',
-        type: 'string',
-        group: 'basic'
-      },
-      {
-        key: 'file_size',
-        label: 'File Size (bytes)',
-        type: 'number',
-        group: 'basic'
-      },
-      {
-        key: 'upload_date',
-        label: 'Upload Date',
-        type: 'date',
-        group: 'basic'
-      }
-    ]
-  },
-  {
-    id: 'project',
-    label: 'Project Association',
-    defaultExpanded: false,
-    fields: [
-      {
-        key: 'project_id',
-        label: 'Project ID',
-        type: 'string',
-        group: 'project'
-      },
-      {
-        key: 'project_name',
-        label: 'Project Name',
-        type: 'string',
-        group: 'project'
-      }
-    ]
-  },
-  {
     id: 'components',
     label: 'Component Data',
-    defaultExpanded: false,
+    defaultExpanded: true,  // Primary data - expanded by default
     fields: [
       {
-        key: 'component_count',
-        label: 'Component Count',
-        type: 'number',
+        key: 'component_id',
+        label: 'Component ID',
+        type: 'string',
+        group: 'components'
+      },
+      {
+        key: 'component_piece_mark',
+        label: 'Piece Mark',
+        type: 'string',
         group: 'components'
       },
       {
@@ -81,43 +35,62 @@ export const EXPORT_FIELD_GROUPS: FieldGroup[] = [
         type: 'url',
         group: 'components'
       }
-      // Dynamic component fields will be added via getComponentDataFields()
+      // Dynamic component fields (dimensions, material, etc.) added via getComponentDataFields()
     ]
   },
   {
-    id: 'metadata',
-    label: 'Metadata & Processing',
+    id: 'drawing_context',
+    label: 'Drawing Context',
+    defaultExpanded: false,  // Secondary data - collapsed by default
+    fields: [
+      {
+        key: 'drawing_id',
+        label: 'Drawing ID',
+        type: 'string',
+        group: 'drawing_context'
+      },
+      {
+        key: 'drawing_file_name',
+        label: 'Drawing File Name',
+        type: 'string',
+        group: 'drawing_context'
+      },
+      {
+        key: 'drawing_project_name',
+        label: 'Project Name',
+        type: 'string',
+        group: 'drawing_context'
+      },
+      {
+        key: 'drawing_upload_date',
+        label: 'Upload Date',
+        type: 'date',
+        group: 'drawing_context'
+      },
+      {
+        key: 'drawing_processing_status',
+        label: 'Drawing Status',
+        type: 'string',
+        group: 'drawing_context'
+      }
+    ]
+  },
+  {
+    id: 'component_metadata',
+    label: 'Component Metadata',
     defaultExpanded: false,
     fields: [
       {
-        key: 'created_at',
-        label: 'Created At',
+        key: 'component_created_at',
+        label: 'Component Created At',
         type: 'date',
-        group: 'metadata'
+        group: 'component_metadata'
       },
       {
-        key: 'updated_at',
-        label: 'Updated At',
+        key: 'component_updated_at',
+        label: 'Component Updated At',
         type: 'date',
-        group: 'metadata'
-      },
-      {
-        key: 'drawing_type',
-        label: 'Drawing Type',
-        type: 'string',
-        group: 'metadata'
-      },
-      {
-        key: 'sheet_number',
-        label: 'Sheet Number',
-        type: 'string',
-        group: 'metadata'
-      },
-      {
-        key: 'processing_progress',
-        label: 'Processing Progress (%)',
-        type: 'number',
-        group: 'metadata'
+        group: 'component_metadata'
       }
     ]
   }
