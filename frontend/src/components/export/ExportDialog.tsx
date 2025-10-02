@@ -16,11 +16,11 @@ import {
   Close as CloseIcon,
   FileDownload as ExportIcon,
 } from '@mui/icons-material';
-import FieldGroupSelector from './FieldGroupSelector';
-import ExportPreview from './ExportPreview';
-import { EXPORT_FIELD_GROUPS } from '../../config/exportFields.config';
+import FieldGroupSelector from './FieldGroupSelector.tsx';
+import ExportPreview from './ExportPreview.tsx';
+import { EXPORT_FIELD_GROUPS } from '../../config/exportFields.ts';
 import { ExportField } from '../../types/export.types';
-import { safeExportDrawingsToCSV, getComponentDataFields } from '../../services/exportService';
+import { safeExportDrawingsToCSV, getComponentDataFields } from '../../services/exportService.ts';
 
 interface ExportDialogProps {
   open: boolean;

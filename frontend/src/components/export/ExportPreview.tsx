@@ -7,7 +7,7 @@ import {
   Alert,
 } from '@mui/material';
 import { ExportField } from '../../types/export.types';
-import { formatValue } from '../../services/exportService';
+import { formatValue } from '../../services/exportService.ts';
 
 interface ExportPreviewProps {
   drawings: any[];

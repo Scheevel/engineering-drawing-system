@@ -17,9 +17,9 @@ import {
   Category as ComponentIcon,
   Settings as MetadataIcon,
 } from '@mui/icons-material';
-import { EXPORT_FIELD_GROUPS } from '../../config/exportFields.config';
+import { EXPORT_FIELD_GROUPS } from '../../config/exportFields.ts';
 import { ExportField, FieldGroup } from '../../types/export.types';
-import { getComponentDataFields } from '../../services/exportService';
+import { getComponentDataFields } from '../../services/exportService.ts';
 
 interface FieldGroupSelectorProps {
   drawings: any[];
