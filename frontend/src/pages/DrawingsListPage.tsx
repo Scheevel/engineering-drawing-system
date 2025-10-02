@@ -100,7 +100,7 @@ const DrawingsListPage: React.FC = () => {
     },
   });
 
-  const drawings = drawingsData?.drawings || [];
+  const drawings = drawingsData?.items || [];
   const totalDrawings = drawingsData?.total || 0;
   const totalPages = Math.ceil(totalDrawings / 20);
 
