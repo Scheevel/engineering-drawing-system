@@ -1,8 +1,22 @@
 # Story 7.1: Data Export - CSV Functionality
 
+## ⚠️ CRITICAL NOTICE - DATA MODEL CORRECTION REQUIRED
+
+**This story has been SUPERSEDED by Story 7.1.1** due to incorrect data model granularity.
+
+**Issue Identified:** Story 7.1 implemented **drawing-centric** export (each row = 1 drawing with aggregated component data), but the application's core purpose is **component data indexing**. Users need to analyze individual components, not drawings.
+
+**Correction:** Story 7.1.1 refactors export to **component-centric** model (each row = 1 component with drawing context), enabling proper component-level analysis in Excel.
+
+**Implementation Status:** Story 7.1 code is complete and functional, but produces wrong data granularity for user workflows. Story 7.1.1 corrects this.
+
+**See:** [Story 7.1.1 - CSV Export Component-Centric Refactor](story-7.1.1-csv-export-component-centric-refactor.md)
+
+---
+
 ## Status
 
-**Status**: Ready for Review
+**Status**: ~~Ready for Review~~ **Superseded by Story 7.1.1** (Data model correction required)
 **Epic**: 7 - Data Export & Reporting
 **Sprint**: TBD
 **Assigned To**: TBD
@@ -10,6 +24,8 @@
 **Priority**: Medium (enhances user workflow efficiency)
 **Validated By**: Sarah (Product Owner)
 **Validation Date**: 2025-10-02
+**Superseded Date**: 2025-10-02
+**Superseded By**: Story 7.1.1
 
 ## Story
 
@@ -631,6 +647,7 @@ test('exports CSV with clickable hyperlinks', async ({ page }) => {
 |------|---------|-------------|--------|
 | 2025-10-02 | 1.0 | Initial story creation - CSV data export feature with preview, accordion field selection, URL hyperlinks, and data-driven component field discovery | BMad Master |
 | 2025-10-02 | 1.1 | Story validated and approved - Status updated to Ready. Quality score: 95/100. One minor type definition issue identified (DrawingListResponse) to be resolved during Task 1. No sharding required. | Sarah (Product Owner) |
+| 2025-10-02 | 1.2 | **SUPERSEDED BY STORY 7.1.1** - Data model granularity correction required. Story 7.1 implemented drawing-centric export, but application purpose requires component-centric export. Implementation is functionally complete but produces wrong data structure for user workflows. Story 7.1.1 refactors to component-centric model (each row = 1 component). | Mary (Business Analyst) |
 
 ---
 
@@ -684,9 +701,17 @@ No debug logs required - implementation completed without blocking issues
 - Added explicit extensions to imports (webpack resolution requirement)
 
 **Next Steps:**
-- QA agent should validate manual testing checklist
-- Verify URL hyperlinks work in Excel AND Google Sheets
-- Confirm routing pattern `/drawings/:id/components/:id` is correct
+- ~~QA agent should validate manual testing checklist~~ **BLOCKED - Story superseded by 7.1.1**
+- ~~Verify URL hyperlinks work in Excel AND Google Sheets~~ **BLOCKED - Story superseded by 7.1.1**
+- ~~Confirm routing pattern `/drawings/:id/components/:id` is correct~~ **BLOCKED - Story superseded by 7.1.1**
+
+**⚠️ DATA MODEL ISSUE IDENTIFIED (2025-10-02):**
+- **Root Cause:** Story 7.1 implemented drawing-centric export (each row = 1 drawing), but application's core purpose is component data indexing
+- **User Impact:** Engineers cannot analyze individual components in Excel without manual data transformation
+- **Correct Approach:** Component-centric export (each row = 1 component with drawing context)
+- **Resolution:** Story 7.1.1 refactors data model to component-centric structure
+- **Story 7.1 Status:** Implementation is functionally complete and code quality is high, but produces wrong data granularity for user workflows
+- **Code Reusability:** All UI components (ExportDialog, FieldGroupSelector, ExportPreview) can be reused with minor data transformation changes
 
 ### File List
 
