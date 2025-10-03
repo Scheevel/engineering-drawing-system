@@ -46,14 +46,16 @@ async def list_drawings(
     limit: int = Query(10, ge=1, le=100),
     project_id: Optional[str] = None,
     status: Optional[str] = None,
+    unassigned: bool = Query(False, description="Filter drawings with no project associations (Story 8.1a)"),
     db: Session = Depends(get_db)
 ):
-    """List drawings with pagination and filters"""
+    """List drawings with pagination and filters (Story 8.1a enhanced)"""
     drawings = await drawing_service.list_drawings(
         page=page,
         limit=limit,
         project_id=project_id,
         status=status,
+        unassigned=unassigned,
         db=db
     )
     return drawings

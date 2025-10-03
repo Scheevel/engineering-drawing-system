@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 from fastapi import UploadFile, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 import uuid
 import os
 import aiofiles
@@ -8,8 +8,9 @@ import logging
 import hashlib
 from datetime import datetime
 
-from app.models.database import Drawing
+from app.models.database import Drawing, drawing_project_associations
 from app.models.drawing import DrawingResponse, DrawingListResponse, ProcessingStatus, DrawingStatus
+from app.models.project import ProjectSummaryResponse
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -139,33 +140,53 @@ class DrawingService:
         limit: int = 10,
         project_id: Optional[str] = None,
         status: Optional[str] = None,
+        unassigned: bool = False,
         db: Session = None
     ) -> DrawingListResponse:
-        """List drawings with pagination and filters"""
+        """List drawings with pagination and filters (Story 8.1a enhanced)"""
         try:
             offset = (page - 1) * limit
-            
-            # Build query
-            query = db.query(Drawing)
-            
+
+            # Build query with eager loading for performance (Story 8.1a)
+            query = db.query(Drawing).options(
+                joinedload(Drawing.components),  # Eager load for components_extracted count
+                joinedload(Drawing.projects)     # Eager load for projects array
+            )
+
             # Apply filters
             if project_id:
-                query = query.filter(Drawing.project_id == uuid.UUID(project_id))
+                # Story 8.1a: Filter by junction table for many-to-many support
+                query = query.join(
+                    drawing_project_associations,
+                    Drawing.id == drawing_project_associations.c.drawing_id
+                ).filter(
+                    drawing_project_associations.c.project_id == uuid.UUID(project_id)
+                )
+
+            if unassigned:
+                # Story 8.1a: Filter drawings with no project associations
+                query = query.outerjoin(
+                    drawing_project_associations,
+                    Drawing.id == drawing_project_associations.c.drawing_id
+                ).filter(
+                    drawing_project_associations.c.project_id == None
+                )
+
             if status:
                 query = query.filter(Drawing.processing_status == status)
-            
+
             # Get total count
             total = query.count()
-            
+
             # Get paginated results
             drawings = query.offset(offset).limit(limit).all()
-            
-            # Convert to response models
+
+            # Convert to response models (Story 8.1a: include components_extracted + projects)
             items = []
             for drawing in drawings:
                 items.append(DrawingResponse(
                     id=str(drawing.id),
-                    project_id=str(drawing.project_id) if drawing.project_id else None,
+                    project_id=str(drawing.project_id) if drawing.project_id else None,  # Deprecated field
                     file_name=drawing.file_name,
                     file_path=drawing.file_path,
                     file_size=drawing.file_size,
@@ -176,9 +197,21 @@ class DrawingService:
                     processing_progress=drawing.processing_progress,
                     upload_date=drawing.upload_date,
                     error_message=drawing.error_message,
-                    metadata=drawing.drawing_metadata or {}
+                    metadata=drawing.drawing_metadata or {},
+                    # Story 8.1a Bug Fix: Add components_extracted count
+                    components_extracted=len(drawing.components),
+                    # Story 8.1a: Add projects array (many-to-many)
+                    projects=[
+                        ProjectSummaryResponse(
+                            id=str(p.id),
+                            name=p.name,
+                            client=p.client,
+                            location=p.location
+                        )
+                        for p in drawing.projects
+                    ]
                 ))
-            
+
             return DrawingListResponse(
                 items=items,
                 total=total,
@@ -187,7 +220,7 @@ class DrawingService:
                 has_next=(page * limit) < total,
                 has_prev=page > 1
             )
-            
+
         except Exception as e:
             logger.error(f"Error listing drawings: {str(e)}")
             raise HTTPException(status_code=500, detail=str(e))
