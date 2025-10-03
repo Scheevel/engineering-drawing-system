@@ -29,14 +29,15 @@ import {
   Description as DrawingIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { 
-  getProjects, 
-  createProject, 
-  updateProject, 
+import { useNavigate } from 'react-router-dom'; // Story 8.1b Phase 6
+import {
+  getProjects,
+  createProject,
+  updateProject,
   deleteProject,
   ProjectResponse,
   ProjectCreate,
-  ProjectUpdate 
+  ProjectUpdate
 } from '../services/api.ts';
 
 interface ProjectDialogData {
@@ -47,6 +48,7 @@ interface ProjectDialogData {
 }
 
 const ProjectsPage: React.FC = () => {
+  const navigate = useNavigate(); // Story 8.1b Phase 6
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<ProjectResponse | null>(null);
@@ -210,11 +212,18 @@ const ProjectsPage: React.FC = () => {
                 </TableRow>
               ) : (
                 projects?.map((project) => (
-                  <TableRow key={project.id} hover>
+                  <TableRow
+                    key={project.id}
+                    hover
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => navigate(`/projects/${project.id}`)}
+                  >
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={1}>
                         <FolderIcon color="primary" />
-                        <Typography variant="subtitle2">{project.name}</Typography>
+                        <Typography variant="subtitle2" color="primary.main">
+                          {project.name}
+                        </Typography>
                       </Box>
                     </TableCell>
                     <TableCell>{project.client || '-'}</TableCell>
@@ -231,7 +240,7 @@ const ProjectsPage: React.FC = () => {
                     <TableCell>
                       {new Date(project.created_at).toLocaleDateString()}
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" onClick={(e) => e.stopPropagation()}>
                       <Tooltip title="Edit Project">
                         <IconButton
                           size="small"

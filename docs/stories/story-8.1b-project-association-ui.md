@@ -542,27 +542,27 @@ Original Story 8.1 combined backend and frontend work (12-16 hours, 64 subtasks)
 
 ---
 
-### **Phase 6: Project Detail Page (AC5) (1.5 hours)**
+### **Phase 6: Project Detail Page (AC5) (1.5 hours)** ✅
 
-#### Task 6.1: Drawings Tab
-- [ ] Create "Drawings" tab in project detail page
-- [ ] Display project's drawings count
-- [ ] List drawings with project tags (reuse ProjectTags component)
-- [ ] Add "+ Add Drawings" button
+#### Task 6.1: Drawings Tab ✅
+- [x] Create "Drawings" tab in project detail page
+- [x] Display project's drawings count
+- [x] List drawings with project tags (reuse ProjectTags component)
+- [x] Add "+ Add Drawings" button
 
-#### Task 6.2: Add Drawings Dialog
-- [ ] Create modal dialog with all drawings list
-- [ ] Add search functionality (client-side filter)
-- [ ] Show current project assignments on each drawing
-- [ ] Add "Show Unassigned Only" quick filter
-- [ ] Multi-select checkboxes
-- [ ] Submit via `POST /api/v1/projects/{id}/drawings`
+#### Task 6.2: Add Drawings Dialog ✅
+- [x] Create modal dialog with all drawings list
+- [x] Add search functionality (client-side filter)
+- [x] Show current project assignments on each drawing
+- [x] Add "Show Unassigned Only" quick filter
+- [x] Multi-select checkboxes
+- [x] Submit via `POST /api/v1/projects/{id}/drawings`
 
-#### Task 6.3: Remove from Project
-- [ ] Add remove option for each drawing in project view
-- [ ] Confirmation dialog
-- [ ] Submit via `DELETE /api/v1/projects/{id}/drawings/{drawing_id}`
-- [ ] Refresh list after removal
+#### Task 6.3: Remove from Project ✅
+- [x] Add remove option for each drawing in project view
+- [x] Confirmation dialog
+- [x] Submit via `DELETE /api/v1/projects/{id}/drawings/{drawing_id}`
+- [x] Refresh list after removal
 
 ---
 
@@ -983,6 +983,38 @@ None yet - Phase 0 completed successfully without issues
 - TypeScript compilation: ✅ PASS (no errors, build succeeded)
 - Bundle size impact: +381 bytes (+0.09% from Phase 4, total +3.75KB)
 
+**Phase 6: Project Detail Page** ✅ (2025-10-03)
+- Created ProjectDetailPage component (Task 6.1):
+  - Tab-based interface with Drawings and Details tabs
+  - Project header with back button, name, and client info
+  - Summary cards displaying total drawings, created date, and location
+  - Drawings tab with table showing all project drawings
+  - Details tab with comprehensive project information
+  - Integration with AddDrawingsToProjectDialog
+  - Uses React Query for data fetching with React Router params
+- Created AddDrawingsToProjectDialog component (Task 6.2):
+  - Modal dialog with searchable list of ALL system drawings
+  - Client-side search filtering by file name
+  - "Unassigned Only" Switch toggle for quick filtering
+  - Multi-select checkboxes with "Select All" functionality
+  - Displays current project assignments for each drawing as chips
+  - Visual indication of drawings already in project (disabled checkboxes, success chip)
+  - Uses assignDrawingToProjects API via React Query mutation
+  - Shows selection count in info alert
+  - Invalidates queries on success for real-time updates
+- Implemented remove from project functionality (Task 6.3):
+  - Delete IconButton for each drawing in project view
+  - Native confirmation dialog before removal
+  - Uses removeDrawingFromProject API
+  - Invalidates multiple query keys for comprehensive refresh
+- Added route configuration:
+  - New route `/projects/:id` in App.tsx
+  - Made project names clickable in ProjectsPage with navigation
+  - Used stopPropagation on action buttons to prevent navigation when clicking edit/delete
+- TypeScript compilation: ✅ PASS (no errors, build succeeded after JSX fix)
+- Bundle size impact: Negligible (new page, lazy-loaded)
+- **Issue encountered**: JSX syntax error (closing Box tag with Typography) - fixed immediately
+
 ### File List
 
 **Phase 1 Files:**
@@ -1005,6 +1037,12 @@ None yet - Phase 0 completed successfully without issues
 
 **Phase 5 Files:**
 - `frontend/src/pages/DrawingsListPage.tsx` - Enhanced filters with multi-select, unassigned toggle, and URL persistence (Story 8.1b)
+
+**Phase 6 Files:**
+- `frontend/src/pages/ProjectDetailPage.tsx` - New project detail page with Drawings and Details tabs (Story 8.1b)
+- `frontend/src/components/AddDrawingsToProjectDialog.tsx` - Dialog for adding multiple drawings to project (Story 8.1b)
+- `frontend/src/App.tsx` - Added route for `/projects/:id` (Story 8.1b)
+- `frontend/src/pages/ProjectsPage.tsx` - Made project names clickable to navigate to detail page (Story 8.1b)
 
 ---
 

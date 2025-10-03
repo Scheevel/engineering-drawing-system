@@ -7,6 +7,7 @@ import DrawingViewer from './pages/DrawingViewer.tsx';
 import UploadPage from './pages/UploadPage.tsx';
 import ComponentEditor from './pages/ComponentEditor.tsx';
 import ProjectsPage from './pages/ProjectsPage.tsx';
+import ProjectDetailPage from './pages/ProjectDetailPage.tsx'; // Story 8.1b Phase 6
 import DrawingsListPage from './pages/DrawingsListPage.tsx';
 import ExportPage from './pages/ExportPage.tsx';
 import SchemaManagementPage from './pages/schema/SchemaManagementPage.tsx';
@@ -58,6 +59,7 @@ const App: React.FC = () => {
             <Route path="/search" element={<SearchPage />} />
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/projects/:id" element={<ProjectDetailPage />} /> {/* Story 8.1b Phase 6 */}
             <Route path="/drawings" element={<DrawingsListPage />} />
             <Route path="/drawings/:id" element={<DrawingViewer />} />
             <Route path="/drawing-viewer/:id" element={<DrawingViewer />} />
