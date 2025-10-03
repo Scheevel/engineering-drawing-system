@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, Text, ForeignKey, JSON, UniqueConstraint
+from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, Text, ForeignKey, JSON, UniqueConstraint, Table
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -6,6 +6,18 @@ from datetime import datetime
 import uuid
 
 Base = declarative_base()
+
+# Junction table for many-to-many relationship between drawings and projects (Story 8.1a)
+drawing_project_associations = Table(
+    'drawing_project_associations',
+    Base.metadata,
+    Column('id', UUID(as_uuid=True), primary_key=True, server_default="gen_random_uuid()"),
+    Column('drawing_id', UUID(as_uuid=True), ForeignKey('drawings.id', ondelete='CASCADE'), nullable=False),
+    Column('project_id', UUID(as_uuid=True), ForeignKey('projects.id', ondelete='CASCADE'), nullable=False),
+    Column('assigned_at', DateTime(timezone=True), server_default="NOW()", nullable=False),
+    Column('assigned_by', String(255), nullable=True),
+    UniqueConstraint('drawing_id', 'project_id', name='uq_drawing_project_association')
+)
 
 class Project(Base):
     __tablename__ = "projects"
@@ -19,7 +31,14 @@ class Project(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    drawings = relationship("Drawing", back_populates="project", cascade="all, delete-orphan")
+    # Story 8.1a: Many-to-many relationship via junction table
+    # CASCADE handled by junction table foreign key constraints
+    drawings = relationship(
+        "Drawing",
+        secondary=drawing_project_associations,
+        back_populates="projects",
+        lazy="selectin"  # Optimize N+1 queries
+    )
     saved_searches = relationship("SavedSearch", back_populates="project", cascade="all, delete-orphan")
     schemas = relationship("ComponentSchema", back_populates="project", cascade="all, delete-orphan")
 
@@ -75,6 +94,8 @@ class Drawing(Base):
     __tablename__ = "drawings"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # DEPRECATED: project_id will be removed in Phase C (Story 8.1a)
+    # Use `drawing.projects` relationship instead
     project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=True)
     file_name = Column(String(255), nullable=False)
     original_name = Column(String(255))
@@ -91,7 +112,16 @@ class Drawing(Base):
     drawing_metadata = Column(JSON)
     
     # Relationships
-    project = relationship("Project", back_populates="drawings")
+    # Story 8.1a: Many-to-many relationship via junction table
+    projects = relationship(
+        "Project",
+        secondary=drawing_project_associations,
+        back_populates="drawings",
+        lazy="selectin"  # Optimize N+1 queries
+    )
+    # DEPRECATED: Old one-to-many relationship (kept temporarily for Phase B compatibility)
+    # Will be removed in Phase C
+    project = relationship("Project", back_populates=None, foreign_keys=[project_id], viewonly=True)
     components = relationship("Component", back_populates="drawing", cascade="all, delete-orphan")
 
 class Component(Base):

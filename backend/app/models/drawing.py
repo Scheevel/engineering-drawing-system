@@ -44,7 +44,13 @@ class DrawingResponse(DrawingBase):
     error_message: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
     is_duplicate: Optional[bool] = False  # Flag to indicate if this is a duplicate
-    
+
+    # Story 8.1a: Many-to-many project associations
+    projects: List['ProjectSummaryResponse'] = Field(default_factory=list, description="Associated projects (many-to-many)")
+
+    # Story 8.1a Bug Fix: Component count field
+    components_extracted: int = Field(default=0, description="Number of components extracted from drawing")
+
     class Config:
         from_attributes = True
 
@@ -84,10 +90,12 @@ class ExportDrawingsResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# Import ComponentResponse and rebuild model to resolve forward references (Pydantic v2)
+# Import forward references and rebuild models to resolve them (Pydantic v2)
 try:
     from app.models.component import ComponentResponse
+    from app.models.project import ProjectSummaryResponse
     DrawingWithComponents.model_rebuild()
+    DrawingResponse.model_rebuild()
 except ImportError:
-    # ComponentResponse not yet defined during initial import
+    # ComponentResponse or ProjectSummaryResponse not yet defined during initial import
     pass

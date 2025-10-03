@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.drawing_service import DrawingService
 from app.models.drawing import DrawingResponse, DrawingListResponse
-from app.models.database import Component
+from app.models.project import ProjectSummaryResponse, AssignProjectsRequest, BulkAssignProjectsRequest, BulkRemoveProjectsRequest
+from app.models.database import Component, Project, drawing_project_associations
 import uuid
 import os
 
@@ -171,3 +172,224 @@ async def get_drawing_components(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# Story 8.1a: Project-Drawing Association Endpoints (Many-to-Many)
+
+@router.get("/{drawing_id}/projects", response_model=List[ProjectSummaryResponse])
+async def get_drawing_projects(
+    drawing_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get all projects associated with a drawing (Story 8.1a)"""
+    from app.models.database import Drawing as DrawingModel
+
+    # Verify drawing exists
+    drawing = db.query(DrawingModel).filter(DrawingModel.id == drawing_id).first()
+    if not drawing:
+        raise HTTPException(status_code=404, detail="Drawing not found")
+
+    # Get associated projects via junction table
+    projects = db.query(Project).join(
+        drawing_project_associations,
+        Project.id == drawing_project_associations.c.project_id
+    ).filter(
+        drawing_project_associations.c.drawing_id == drawing_id
+    ).all()
+
+    # Manually convert to response model (UUID to string conversion)
+    return [
+        ProjectSummaryResponse(
+            id=str(p.id),
+            name=p.name,
+            client=p.client,
+            location=p.location
+        )
+        for p in projects
+    ]
+
+@router.post("/{drawing_id}/projects", response_model=dict)
+async def assign_projects_to_drawing(
+    drawing_id: str,
+    request: AssignProjectsRequest,
+    db: Session = Depends(get_db)
+):
+    """Assign multiple projects to a drawing (Story 8.1a)"""
+    from app.models.database import Drawing as DrawingModel
+    from sqlalchemy import insert
+    from datetime import datetime
+
+    # Verify drawing exists
+    drawing = db.query(DrawingModel).filter(DrawingModel.id == drawing_id).first()
+    if not drawing:
+        raise HTTPException(status_code=404, detail="Drawing not found")
+
+    # Verify all projects exist
+    for project_id in request.project_ids:
+        project = db.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+
+    try:
+        # Create associations (idempotent - silently skip duplicates)
+        associations_created = 0
+        for project_id in request.project_ids:
+            # Check if association already exists
+            existing = db.execute(
+                drawing_project_associations.select().where(
+                    (drawing_project_associations.c.drawing_id == drawing_id) &
+                    (drawing_project_associations.c.project_id == project_id)
+                )
+            ).first()
+
+            if not existing:
+                db.execute(
+                    insert(drawing_project_associations).values(
+                        id=str(uuid.uuid4()),
+                        drawing_id=drawing_id,
+                        project_id=project_id,
+                        assigned_at=datetime.utcnow(),
+                        assigned_by="api"
+                    )
+                )
+                associations_created += 1
+
+        db.commit()
+        return {
+            "message": f"Successfully assigned {associations_created} project(s) to drawing",
+            "drawing_id": drawing_id,
+            "project_ids": request.project_ids,
+            "associations_created": associations_created
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to assign projects: {str(e)}")
+
+@router.delete("/{drawing_id}/projects/{project_id}")
+async def remove_project_from_drawing(
+    drawing_id: str,
+    project_id: str,
+    db: Session = Depends(get_db)
+):
+    """Remove a project association from a drawing (Story 8.1a)"""
+    from sqlalchemy import delete
+
+    try:
+        # Delete the association
+        result = db.execute(
+            delete(drawing_project_associations).where(
+                (drawing_project_associations.c.drawing_id == drawing_id) &
+                (drawing_project_associations.c.project_id == project_id)
+            )
+        )
+        db.commit()
+
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Association not found")
+
+        return {
+            "message": "Project association removed successfully",
+            "drawing_id": drawing_id,
+            "project_id": project_id
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to remove association: {str(e)}")
+
+@router.post("/bulk/assign-projects")
+async def bulk_assign_projects(
+    request: BulkAssignProjectsRequest,
+    db: Session = Depends(get_db)
+):
+    """Bulk assign projects to multiple drawings (Story 8.1a)
+
+    Atomic operation: All assignments succeed or all fail
+    """
+    from app.models.database import Drawing as DrawingModel
+    from sqlalchemy import insert
+    from datetime import datetime
+
+    # Verify all drawings exist
+    for drawing_id in request.drawing_ids:
+        drawing = db.query(DrawingModel).filter(DrawingModel.id == drawing_id).first()
+        if not drawing:
+            raise HTTPException(status_code=404, detail=f"Drawing {drawing_id} not found")
+
+    # Verify all projects exist
+    for project_id in request.project_ids:
+        project = db.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+
+    try:
+        # Create all associations in single transaction (atomic)
+        associations_created = 0
+        for drawing_id in request.drawing_ids:
+            for project_id in request.project_ids:
+                # Check if association already exists
+                existing = db.execute(
+                    drawing_project_associations.select().where(
+                        (drawing_project_associations.c.drawing_id == drawing_id) &
+                        (drawing_project_associations.c.project_id == project_id)
+                    )
+                ).first()
+
+                if not existing:
+                    db.execute(
+                        insert(drawing_project_associations).values(
+                            id=str(uuid.uuid4()),
+                            drawing_id=drawing_id,
+                            project_id=project_id,
+                            assigned_at=datetime.utcnow(),
+                            assigned_by="api_bulk"
+                        )
+                    )
+                    associations_created += 1
+
+        db.commit()
+        return {
+            "message": f"Successfully created {associations_created} associations",
+            "drawing_ids": request.drawing_ids,
+            "project_ids": request.project_ids,
+            "associations_created": associations_created,
+            "total_possible": len(request.drawing_ids) * len(request.project_ids)
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Bulk assign failed (rolled back): {str(e)}")
+
+@router.post("/bulk/remove-projects")
+async def bulk_remove_projects(
+    request: BulkRemoveProjectsRequest,
+    db: Session = Depends(get_db)
+):
+    """Bulk remove project associations from multiple drawings (Story 8.1a)
+
+    Atomic operation: All removals succeed or all fail
+    """
+    from sqlalchemy import delete
+
+    try:
+        # Delete all specified associations in single transaction (atomic)
+        associations_removed = 0
+        for drawing_id in request.drawing_ids:
+            for project_id in request.project_ids:
+                result = db.execute(
+                    delete(drawing_project_associations).where(
+                        (drawing_project_associations.c.drawing_id == drawing_id) &
+                        (drawing_project_associations.c.project_id == project_id)
+                    )
+                )
+                associations_removed += result.rowcount
+
+        db.commit()
+        return {
+            "message": f"Successfully removed {associations_removed} associations",
+            "drawing_ids": request.drawing_ids,
+            "project_ids": request.project_ids,
+            "associations_removed": associations_removed
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Bulk remove failed (rolled back): {str(e)}")

@@ -1,52 +1,70 @@
-<testsuites id="" name="" tests="2" failures="1" skipped="0" errors="0" time="6.112865">
-<testsuite name="export-story-7.3.spec.ts" timestamp="2025-10-03T15:29:39.020Z" hostname="chromium" tests="2" failures="1" skipped="0" time="7.454" errors="0">
-<testcase name="Export Page - Dynamic Schema Fields (Story 7.3) › should display schema fields in Component Data group" classname="export-story-7.3.spec.ts" time="3.075">
-<system-out>
-<![CDATA[=== DISCOVERED FIELDS ===
-[ [32m'Piece Mark(string)'[39m, [32m'Result(number)'[39m, [32m'Inspect(string)'[39m ]
-✅ SUCCESS: Schema fields (Inspect, Result) are visible!
-]]>
-</system-out>
-</testcase>
-<testcase name="Export Page - Dynamic Schema Fields (Story 7.3) › should show schema field values in preview when selected" classname="export-story-7.3.spec.ts" time="4.379">
-<failure message="export-story-7.3.spec.ts:64:7 should show schema field values in preview when selected" type="FAILURE">
-<![CDATA[  [chromium] › export-story-7.3.spec.ts:64:7 › Export Page - Dynamic Schema Fields (Story 7.3) › should show schema field values in preview when selected 
+<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="55.41031">
+<testsuite name="dashboard-tiles-visual.spec.ts" timestamp="2025-10-03T16:29:21.441Z" hostname="chromium" tests="1" failures="1" skipped="0" time="46.932" errors="0">
+<testcase name="Dashboard Tiles Visual Consistency › should have consistent title sizes across all tiles" classname="dashboard-tiles-visual.spec.ts" time="46.932">
+<failure message="dashboard-tiles-visual.spec.ts:8:7 should have consistent title sizes across all tiles" type="FAILURE">
+<![CDATA[  [chromium] › dashboard-tiles-visual.spec.ts:8:7 › Dashboard Tiles Visual Consistency › should have consistent title sizes across all tiles 
 
-    Error: expect(received).toContain(expected) // indexOf
+    Test timeout of 45000ms exceeded.
 
-    Expected substring: "F106"
-    Received string:    "
-        You need to enable JavaScript to run this app.
-        Engineering Drawing Index SystemDashboardProjectsSchema ManagementSearch ComponentsUpload DrawingsExport ComponentsExport Components to CSVRefresh DataExport CSV (71 components, 3 fields)Loaded 1 drawings with 71 components at 10/3/2025, 3:29:42 PMSelect Fields to Export3 fields selectedComponent Data(30 fields)Component ID(string)Piece Mark(string)View Component(url)Component Type(string)Description(string)Quantity(number)Material Type(string)Location X(number)Location Y(number)Bounding Box(string)Confidence Score(number)Review Status(string)Instance Identifier(string)Dimensions(string)Specifications(string)Drawing File Name(string)Sheet Number(string)Drawing Type(string)Project Name(string)Result(number)Inspect(string)Test Field 1759332552587(string)Test Field 1759333094538(string)Test Field 1759332552587 2(number)Test Field 1759333094538 2(number)Rapid Field 1 1759332559299(string)Rapid Field 1 1759333101102(string)Rapid Field 2 1759332559299(number)Rapid Field 2 1759333101102(number)Rapid Field 3 1759332559299(string)Drawing Context(5 fields)Drawing ID(string)Drawing File Name(string)Project Name(string)Upload Date(date)Drawing Status(string)Component Metadata(2 fields)Component Created At(date)Component Updated At(date)PreviewShowing all 71 componentsPiece MarkResultInspectC5——FA2——GR2——GZ23——O1——SA2——ZO0——ZO01——ZZ01——LG5——G23——G6——···
-    "
+    Error: locator.textContent: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for locator('h6:has-text("Quick Actions")').locator('..').locator('..').locator('> div').last().locator('> div').first().locator('h3')
 
-       95 |       // Verify F106 shows "Pass" and "Good" (not "—")
-       96 |       const previewText = await page.textContent('body');
-    >  97 |       expect(previewText).toContain('F106');
-          |                           ^
-       98 |       expect(previewText).toContain('Pass');
-       99 |       expect(previewText).toContain('Good');
-      100 |
-        at /Users/scheevel/Workstream/EVALUATIONS/engineering-drawing-system-standalone/frontend/e2e/export-story-7.3.spec.ts:97:27
+
+      45 |     for (let i = 0; i < await cards.count(); i++) {
+      46 |       const card = cards.nth(i);
+    > 47 |       const title = await card.locator('h3').textContent();
+         |                                              ^
+      48 |       const fileName = title?.toLowerCase().replace(/\s+/g, '-') || `card-${i}`;
+      49 |
+      50 |       await card.screenshot({
+        at /Users/scheevel/Workstream/EVALUATIONS/engineering-drawing-system-standalone/frontend/e2e/dashboard-tiles-visual.spec.ts:47:46
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/export-story-7.3-Export-Pa-f8dab-es-in-preview-when-selected-chromium/test-failed-1.png
+    ../test-results/dashboard-tiles-visual-Das-df514-itle-sizes-across-all-tiles-chromium/test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
     attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/export-story-7.3-Export-Pa-f8dab-es-in-preview-when-selected-chromium/video.webm
+    ../test-results/dashboard-tiles-visual-Das-df514-itle-sizes-across-all-tiles-chromium/video.webm
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ../test-results/export-story-7.3-Export-Pa-f8dab-es-in-preview-when-selected-chromium/error-context.md
+    Error Context: ../test-results/dashboard-tiles-visual-Das-df514-itle-sizes-across-all-tiles-chromium/error-context.md
 ]]>
 </failure>
 <system-out>
-<![CDATA[
-[[ATTACHMENT|export-story-7.3-Export-Pa-f8dab-es-in-preview-when-selected-chromium/test-failed-1.png]]
+<![CDATA[=== TILE TITLES ===
+[
+  [32m'Upload Drawings'[39m,
+  [32m'Search Components'[39m,
+  [32m'View Drawings'[39m,
+  [32m'System Reports'[39m
+]
 
-[[ATTACHMENT|export-story-7.3-Export-Pa-f8dab-es-in-preview-when-selected-chromium/video.webm]]
+Tile 1: "Upload Drawings"
+  Font Size: 18px
+  Font Weight: 500
+  Line Height: 28.8px
 
-[[ATTACHMENT|export-story-7.3-Export-Pa-f8dab-es-in-preview-when-selected-chromium/error-context.md]]
+Tile 2: "Search Components"
+  Font Size: 18px
+  Font Weight: 500
+  Line Height: 28.8px
+
+Tile 3: "View Drawings"
+  Font Size: 18px
+  Font Weight: 500
+  Line Height: 28.8px
+
+Tile 4: "System Reports"
+  Font Size: 18px
+  Font Weight: 500
+  Line Height: 28.8px
+
+[[ATTACHMENT|dashboard-tiles-visual-Das-df514-itle-sizes-across-all-tiles-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|dashboard-tiles-visual-Das-df514-itle-sizes-across-all-tiles-chromium/video.webm]]
+
+[[ATTACHMENT|dashboard-tiles-visual-Das-df514-itle-sizes-across-all-tiles-chromium/error-context.md]]
 ]]>
 </system-out>
 </testcase>
