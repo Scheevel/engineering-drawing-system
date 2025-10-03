@@ -61,8 +61,9 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
 
   // Combine static fields with dynamic component fields
   const allFields = useMemo(() => {
-    const dynamicComponentFields = getComponentDataFields(drawings);
     const staticFields = EXPORT_FIELD_GROUPS.flatMap(g => g.fields);
+    const staticFieldKeys = new Set(staticFields.map(f => f.key));
+    const dynamicComponentFields = getComponentDataFields(drawings, staticFieldKeys);
     return [...staticFields, ...dynamicComponentFields];
   }, [drawings]);
 

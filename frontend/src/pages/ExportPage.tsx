@@ -27,12 +27,12 @@ import {
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useQuery } from 'react-query';
-import { getExportDrawings } from '../services/api';
-import FieldGroupSelector from '../components/export/FieldGroupSelector';
-import ExportPreview from '../components/export/ExportPreview';
-import { EXPORT_FIELD_GROUPS } from '../config/exportFields';
+import { getExportDrawings } from '../services/api.ts';
+import FieldGroupSelector from '../components/export/FieldGroupSelector.tsx';
+import ExportPreview from '../components/export/ExportPreview.tsx';
+import { EXPORT_FIELD_GROUPS } from '../config/exportFields.ts';
 import { ExportField } from '../types/export.types';
-import { safeExportDrawingsToCSV, getComponentDataFields } from '../services/exportService';
+import { safeExportDrawingsToCSV, getComponentDataFields } from '../services/exportService.ts';
 
 const ExportPage: React.FC = () => {
   const [selectedFieldKeys, setSelectedFieldKeys] = useState<string[]>([]);
@@ -62,8 +62,9 @@ const ExportPage: React.FC = () => {
 
   // Combine static fields with dynamic component fields
   const allFields = useMemo(() => {
-    const dynamicComponentFields = getComponentDataFields(drawings);
     const staticFields = EXPORT_FIELD_GROUPS.flatMap(g => g.fields);
+    const staticFieldKeys = new Set(staticFields.map(f => f.key));
+    const dynamicComponentFields = getComponentDataFields(drawings, staticFieldKeys);
     return [...staticFields, ...dynamicComponentFields];
   }, [drawings]);
 

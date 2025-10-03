@@ -34,7 +34,10 @@ const FieldGroupSelector: React.FC<FieldGroupSelectorProps> = ({
 }) => {
   // Combine static fields with dynamic component fields
   const allFieldGroups = useMemo(() => {
-    const dynamicComponentFields = getComponentDataFields(drawings);
+    // Get static field keys to prevent duplicates
+    const staticFields = EXPORT_FIELD_GROUPS.flatMap(g => g.fields);
+    const staticFieldKeys = new Set(staticFields.map(f => f.key));
+    const dynamicComponentFields = getComponentDataFields(drawings, staticFieldKeys);
 
     return EXPORT_FIELD_GROUPS.map(group => {
       if (group.id === 'components') {

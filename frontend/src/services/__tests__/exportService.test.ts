@@ -128,6 +128,27 @@ describe('exportService', () => {
 
       expect(field?.label).toBe('Piece Mark'); // "piece_mark" → "Piece Mark"
     });
+
+    it('should exclude fields that already exist in static config', () => {
+      const drawings = [
+        {
+          components: [
+            {
+              piece_mark: 'C63', // This field exists in static config
+              custom_field: 'value', // This field does not
+            },
+          ],
+        },
+      ];
+
+      const existingFieldKeys = new Set(['component_piece_mark']);
+      const fields = getComponentDataFields(drawings, existingFieldKeys);
+
+      // Should only include custom_field, not piece_mark
+      expect(fields.length).toBe(1);
+      expect(fields.some(f => f.key === 'component_piece_mark')).toBe(false);
+      expect(fields.some(f => f.key === 'component_custom_field')).toBe(true);
+    });
   });
 
   describe('generateCSV', () => {

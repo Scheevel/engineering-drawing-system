@@ -32,7 +32,9 @@ UX person. The entire schema selection part takes up too much of the form
  - ability to assign a single drawing to multiple projectsd
 /projects, clicking on a project should provide a method of viewing all drawings
 
-/BMad:agents:deployer *smart-deploy @
+/BMad:agents:analyst *elicit a new feature request | refactoring. {general feature concept described}
+ 
+
 
 
 

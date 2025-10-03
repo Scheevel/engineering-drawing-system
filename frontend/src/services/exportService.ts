@@ -57,8 +57,11 @@ export const formatValue = (
 /**
  * Dynamically discover component data fields from actual drawing data
  * Data-driven approach: export what exists, not what schema defines
+ *
+ * @param drawings - Array of drawings with components
+ * @param existingFieldKeys - Optional set of existing field keys to exclude (prevents duplicates)
  */
-export const getComponentDataFields = (drawings: any[]): ExportField[] => {
+export const getComponentDataFields = (drawings: any[], existingFieldKeys?: Set<string>): ExportField[] => {
   const fields: ExportField[] = [];
   const discoveredKeys = new Set<string>();
 
@@ -67,17 +70,20 @@ export const getComponentDataFields = (drawings: any[]): ExportField[] => {
     if (drawing.components && drawing.components.length > 0) {
       drawing.components.forEach((component: any) => {
         Object.keys(component).forEach(key => {
-          // Exclude internal/system keys
+          const fieldKey = `component_${key}`;
+
+          // Exclude internal/system keys and fields that already exist in static config
           if (
             !discoveredKeys.has(key) &&
             key !== 'id' &&
             key !== 'drawing_id' &&
             key !== 'created_at' &&
-            key !== 'updated_at'
+            key !== 'updated_at' &&
+            (!existingFieldKeys || !existingFieldKeys.has(fieldKey))
           ) {
             discoveredKeys.add(key);
             fields.push({
-              key: `component_${key}`,
+              key: fieldKey,
               label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), // "piece_mark" → "Piece Mark"
               type: typeof component[key] === 'number' ? 'number' : 'string',
               group: 'components'
