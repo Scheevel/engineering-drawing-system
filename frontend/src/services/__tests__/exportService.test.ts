@@ -149,6 +149,126 @@ describe('exportService', () => {
       expect(fields.some(f => f.key === 'component_piece_mark')).toBe(false);
       expect(fields.some(f => f.key === 'component_custom_field')).toBe(true);
     });
+
+    // Story 7.3 - Dynamic Schema Field Discovery Tests
+    it('should discover fields from dynamic_data (Story 7.3)', () => {
+      const drawings = [
+        {
+          components: [
+            {
+              id: 'comp1',
+              piece_mark: 'F106',
+              dynamic_data: {
+                inspect: 'Pass',
+                result: 'Good',
+              },
+            },
+          ],
+        },
+      ];
+
+      const fields = getComponentDataFields(drawings);
+
+      // Should discover both dynamic_data fields
+      expect(fields.some(f => f.key === 'component_inspect')).toBe(true);
+      expect(fields.some(f => f.key === 'component_result')).toBe(true);
+
+      // Check labels are formatted correctly
+      const inspectField = fields.find(f => f.key === 'component_inspect');
+      const resultField = fields.find(f => f.key === 'component_result');
+      expect(inspectField?.label).toBe('Inspect');
+      expect(resultField?.label).toBe('Result');
+    });
+
+    it('should handle mixed schemas across components (sparse matrix pattern)', () => {
+      const drawings = [
+        {
+          components: [
+            {
+              id: 'comp1',
+              piece_mark: 'F106',
+              dynamic_data: { inspect: 'Pass', result: 'Good' },
+            },
+            {
+              id: 'comp2',
+              piece_mark: 'G204',
+              dynamic_data: { thickness: '10mm' },
+            },
+            {
+              id: 'comp3',
+              piece_mark: 'B55',
+              dynamic_data: {}, // Empty dynamic_data
+            },
+          ],
+        },
+      ];
+
+      const fields = getComponentDataFields(drawings);
+
+      // Should discover union of all fields
+      expect(fields.some(f => f.key === 'component_inspect')).toBe(true);
+      expect(fields.some(f => f.key === 'component_result')).toBe(true);
+      expect(fields.some(f => f.key === 'component_thickness')).toBe(true);
+    });
+
+    it('should handle components without dynamic_data (backward compatibility)', () => {
+      const drawings = [
+        {
+          components: [
+            { id: 'comp1', piece_mark: 'C63' }, // No dynamic_data field
+            { id: 'comp2', piece_mark: 'G14', dynamic_data: null }, // Null dynamic_data
+          ],
+        },
+      ];
+
+      const fields = getComponentDataFields(drawings);
+
+      // Should not crash and should still discover regular fields
+      expect(fields.some(f => f.key === 'component_piece_mark')).toBe(true);
+    });
+
+    it('should infer types correctly for dynamic_data fields', () => {
+      const drawings = [
+        {
+          components: [
+            {
+              id: 'comp1',
+              dynamic_data: {
+                text_field: 'text value',
+                number_field: 42,
+              },
+            },
+          ],
+        },
+      ];
+
+      const fields = getComponentDataFields(drawings);
+
+      const textField = fields.find(f => f.key === 'component_text_field');
+      const numberField = fields.find(f => f.key === 'component_number_field');
+
+      expect(textField?.type).toBe('string');
+      expect(numberField?.type).toBe('number');
+    });
+
+    it('should not discover dynamic_data itself as a field', () => {
+      const drawings = [
+        {
+          components: [
+            {
+              id: 'comp1',
+              piece_mark: 'F106',
+              dynamic_data: { inspect: 'Pass' },
+            },
+          ],
+        },
+      ];
+
+      const fields = getComponentDataFields(drawings);
+
+      // dynamic_data itself should be excluded
+      expect(fields.some(f => f.key === 'component_dynamic_data')).toBe(false);
+    });
   });
 
   describe('generateCSV', () => {
@@ -246,6 +366,121 @@ describe('exportService', () => {
       expect(csv).toContain('draw1');
       expect(csv).toContain('test.jpg');
       expect(csv).toContain('Project A');
+    });
+
+    // Story 7.3 - CSV Generation with dynamic_data Tests
+    it('should export dynamic_data fields as separate columns (Story 7.3)', () => {
+      const drawings = [
+        {
+          id: 'draw1',
+          file_name: 'test.jpg',
+          components: [
+            {
+              id: 'comp1',
+              piece_mark: 'F106',
+              dynamic_data: {
+                inspect: 'Pass',
+                result: 'Good',
+              },
+            },
+          ],
+        },
+      ];
+
+      const selectedFields: ExportField[] = [
+        { key: 'component_piece_mark', label: 'Piece Mark', type: 'string', group: 'components' },
+        { key: 'component_inspect', label: 'Inspect', type: 'string', group: 'components' },
+        { key: 'component_result', label: 'Result', type: 'string', group: 'components' },
+      ];
+
+      const csv = generateCSV(drawings, selectedFields);
+
+      // Should have headers
+      expect(csv).toContain('Piece Mark');
+      expect(csv).toContain('Inspect');
+      expect(csv).toContain('Result');
+
+      // Should have values from dynamic_data
+      expect(csv).toContain('F106');
+      expect(csv).toContain('Pass');
+      expect(csv).toContain('Good');
+    });
+
+    it('should handle sparse matrix data (mixed schemas) in CSV', () => {
+      const drawings = [
+        {
+          id: 'draw1',
+          file_name: 'test.jpg',
+          components: [
+            {
+              id: 'comp1',
+              piece_mark: 'F106',
+              dynamic_data: { inspect: 'Pass', result: 'Good' },
+            },
+            {
+              id: 'comp2',
+              piece_mark: 'G204',
+              dynamic_data: { thickness: '10mm' },
+            },
+            {
+              id: 'comp3',
+              piece_mark: 'B55',
+              dynamic_data: {}, // No fields
+            },
+          ],
+        },
+      ];
+
+      const selectedFields: ExportField[] = [
+        { key: 'component_piece_mark', label: 'Piece Mark', type: 'string', group: 'components' },
+        { key: 'component_inspect', label: 'Inspect', type: 'string', group: 'components' },
+        { key: 'component_result', label: 'Result', type: 'string', group: 'components' },
+        { key: 'component_thickness', label: 'Thickness', type: 'string', group: 'components' },
+      ];
+
+      const csv = generateCSV(drawings, selectedFields);
+
+      // Should have 3 component rows + 1 header = 4 lines
+      const lines = csv.split('\n').filter(line => line.trim());
+      expect(lines.length).toBe(4);
+
+      // F106 should have inspect and result, but no thickness
+      expect(csv).toContain('F106');
+      expect(csv).toContain('Pass');
+      expect(csv).toContain('Good');
+
+      // G204 should have thickness, but no inspect/result
+      expect(csv).toContain('G204');
+      expect(csv).toContain('10mm');
+
+      // B55 should appear but with empty fields
+      expect(csv).toContain('B55');
+    });
+
+    it('should handle components without dynamic_data in CSV (backward compatibility)', () => {
+      const drawings = [
+        {
+          id: 'draw1',
+          file_name: 'test.jpg',
+          components: [
+            {
+              id: 'comp1',
+              piece_mark: 'C63',
+              // No dynamic_data field
+            },
+          ],
+        },
+      ];
+
+      const selectedFields: ExportField[] = [
+        { key: 'component_piece_mark', label: 'Piece Mark', type: 'string', group: 'components' },
+      ];
+
+      const csv = generateCSV(drawings, selectedFields);
+
+      // Should still work without crashing
+      expect(csv).toContain('Piece Mark');
+      expect(csv).toContain('C63');
     });
   });
 

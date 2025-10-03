@@ -1,0 +1,357 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e6]: Engineering Drawing Index System
+  - generic [ref=e8]:
+    - generic [ref=e10]:
+      - button [ref=e12] [cursor=pointer]:
+        - img [ref=e13] [cursor=pointer]
+      - separator [ref=e15]
+      - list [ref=e16]:
+        - listitem "Dashboard" [ref=e17]:
+          - button "Dashboard" [ref=e18] [cursor=pointer]:
+            - img [ref=e20] [cursor=pointer]
+            - generic:
+              - generic: Dashboard
+        - listitem "Projects" [ref=e22]:
+          - button "Projects" [ref=e23] [cursor=pointer]:
+            - img [ref=e25] [cursor=pointer]
+            - generic:
+              - generic: Projects
+        - listitem "Schema Management" [ref=e27]:
+          - button "Schema Management" [ref=e28] [cursor=pointer]:
+            - img [ref=e30] [cursor=pointer]
+            - generic:
+              - generic: Schema Management
+        - listitem "Search Components" [ref=e32]:
+          - button "Search Components" [ref=e33] [cursor=pointer]:
+            - img [ref=e35] [cursor=pointer]
+            - generic:
+              - generic: Search Components
+        - listitem "Upload Drawings" [ref=e37]:
+          - button "Upload Drawings" [ref=e38] [cursor=pointer]:
+            - img [ref=e40] [cursor=pointer]
+            - generic:
+              - generic: Upload Drawings
+        - listitem "Export Components" [ref=e42]:
+          - button "Export Components" [ref=e43] [cursor=pointer]:
+            - img [ref=e45] [cursor=pointer]
+            - generic:
+              - generic: Export Components
+    - main [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - heading "Export Components to CSV" [level=1] [ref=e51]
+            - generic [ref=e52]:
+              - button "Refresh Data" [ref=e53] [cursor=pointer]:
+                - img [ref=e55] [cursor=pointer]
+                - text: Refresh Data
+              - button "Export CSV (71 components, 3 fields)" [ref=e57] [cursor=pointer]:
+                - img [ref=e59] [cursor=pointer]
+                - text: Export CSV (71 components, 3 fields)
+          - paragraph [ref=e61]: Loaded 1 drawings with 71 components at 10/3/2025, 3:29:42 PM
+        - generic [ref=e62]:
+          - heading "Select Fields to Export" [level=6] [ref=e63]
+          - generic [ref=e64]:
+            - generic [ref=e67]: 3 fields selected
+            - generic [ref=e68]:
+              - button "Component Data (30 fields)" [expanded] [ref=e69] [cursor=pointer]:
+                - generic [ref=e70] [cursor=pointer]:
+                  - img [ref=e71] [cursor=pointer]
+                  - generic [ref=e75] [cursor=pointer]:
+                    - checkbox [ref=e76] [cursor=pointer]
+                    - img [ref=e77] [cursor=pointer]
+                  - heading "Component Data" [level=6] [ref=e79] [cursor=pointer]
+                  - generic [ref=e80] [cursor=pointer]: (30 fields)
+                - img [ref=e82] [cursor=pointer]
+              - region [ref=e87]:
+                - generic [ref=e89]:
+                  - generic [ref=e90] [cursor=pointer]:
+                    - generic [ref=e91] [cursor=pointer]:
+                      - checkbox "Component ID(string)" [ref=e92] [cursor=pointer]
+                      - img [ref=e93] [cursor=pointer]
+                    - paragraph [ref=e95] [cursor=pointer]:
+                      - text: Component ID
+                      - generic [ref=e96] [cursor=pointer]: (string)
+                  - generic [ref=e97] [cursor=pointer]:
+                    - generic [ref=e98] [cursor=pointer]:
+                      - checkbox "Piece Mark(string)" [checked] [ref=e99] [cursor=pointer]
+                      - img [ref=e100] [cursor=pointer]
+                    - paragraph [ref=e102] [cursor=pointer]:
+                      - text: Piece Mark
+                      - generic [ref=e103] [cursor=pointer]: (string)
+                  - generic [ref=e104] [cursor=pointer]:
+                    - generic [ref=e105] [cursor=pointer]:
+                      - checkbox "View Component(url)" [ref=e106] [cursor=pointer]
+                      - img [ref=e107] [cursor=pointer]
+                    - paragraph [ref=e109] [cursor=pointer]:
+                      - text: View Component
+                      - generic [ref=e110] [cursor=pointer]: (url)
+                  - generic [ref=e111] [cursor=pointer]:
+                    - generic [ref=e112] [cursor=pointer]:
+                      - checkbox "Component Type(string)" [ref=e113] [cursor=pointer]
+                      - img [ref=e114] [cursor=pointer]
+                    - paragraph [ref=e116] [cursor=pointer]:
+                      - text: Component Type
+                      - generic [ref=e117] [cursor=pointer]: (string)
+                  - generic [ref=e118] [cursor=pointer]:
+                    - generic [ref=e119] [cursor=pointer]:
+                      - checkbox "Description(string)" [ref=e120] [cursor=pointer]
+                      - img [ref=e121] [cursor=pointer]
+                    - paragraph [ref=e123] [cursor=pointer]:
+                      - text: Description
+                      - generic [ref=e124] [cursor=pointer]: (string)
+                  - generic [ref=e125] [cursor=pointer]:
+                    - generic [ref=e126] [cursor=pointer]:
+                      - checkbox "Quantity(number)" [ref=e127] [cursor=pointer]
+                      - img [ref=e128] [cursor=pointer]
+                    - paragraph [ref=e130] [cursor=pointer]:
+                      - text: Quantity
+                      - generic [ref=e131] [cursor=pointer]: (number)
+                  - generic [ref=e132] [cursor=pointer]:
+                    - generic [ref=e133] [cursor=pointer]:
+                      - checkbox "Material Type(string)" [ref=e134] [cursor=pointer]
+                      - img [ref=e135] [cursor=pointer]
+                    - paragraph [ref=e137] [cursor=pointer]:
+                      - text: Material Type
+                      - generic [ref=e138] [cursor=pointer]: (string)
+                  - generic [ref=e139] [cursor=pointer]:
+                    - generic [ref=e140] [cursor=pointer]:
+                      - checkbox "Location X(number)" [ref=e141] [cursor=pointer]
+                      - img [ref=e142] [cursor=pointer]
+                    - paragraph [ref=e144] [cursor=pointer]:
+                      - text: Location X
+                      - generic [ref=e145] [cursor=pointer]: (number)
+                  - generic [ref=e146] [cursor=pointer]:
+                    - generic [ref=e147] [cursor=pointer]:
+                      - checkbox "Location Y(number)" [ref=e148] [cursor=pointer]
+                      - img [ref=e149] [cursor=pointer]
+                    - paragraph [ref=e151] [cursor=pointer]:
+                      - text: Location Y
+                      - generic [ref=e152] [cursor=pointer]: (number)
+                  - generic [ref=e153] [cursor=pointer]:
+                    - generic [ref=e154] [cursor=pointer]:
+                      - checkbox "Bounding Box(string)" [ref=e155] [cursor=pointer]
+                      - img [ref=e156] [cursor=pointer]
+                    - paragraph [ref=e158] [cursor=pointer]:
+                      - text: Bounding Box
+                      - generic [ref=e159] [cursor=pointer]: (string)
+                  - generic [ref=e160] [cursor=pointer]:
+                    - generic [ref=e161] [cursor=pointer]:
+                      - checkbox "Confidence Score(number)" [ref=e162] [cursor=pointer]
+                      - img [ref=e163] [cursor=pointer]
+                    - paragraph [ref=e165] [cursor=pointer]:
+                      - text: Confidence Score
+                      - generic [ref=e166] [cursor=pointer]: (number)
+                  - generic [ref=e167] [cursor=pointer]:
+                    - generic [ref=e168] [cursor=pointer]:
+                      - checkbox "Review Status(string)" [ref=e169] [cursor=pointer]
+                      - img [ref=e170] [cursor=pointer]
+                    - paragraph [ref=e172] [cursor=pointer]:
+                      - text: Review Status
+                      - generic [ref=e173] [cursor=pointer]: (string)
+                  - generic [ref=e174] [cursor=pointer]:
+                    - generic [ref=e175] [cursor=pointer]:
+                      - checkbox "Instance Identifier(string)" [ref=e176] [cursor=pointer]
+                      - img [ref=e177] [cursor=pointer]
+                    - paragraph [ref=e179] [cursor=pointer]:
+                      - text: Instance Identifier
+                      - generic [ref=e180] [cursor=pointer]: (string)
+                  - generic [ref=e181] [cursor=pointer]:
+                    - generic [ref=e182] [cursor=pointer]:
+                      - checkbox "Dimensions(string)" [ref=e183] [cursor=pointer]
+                      - img [ref=e184] [cursor=pointer]
+                    - paragraph [ref=e186] [cursor=pointer]:
+                      - text: Dimensions
+                      - generic [ref=e187] [cursor=pointer]: (string)
+                  - generic [ref=e188] [cursor=pointer]:
+                    - generic [ref=e189] [cursor=pointer]:
+                      - checkbox "Specifications(string)" [ref=e190] [cursor=pointer]
+                      - img [ref=e191] [cursor=pointer]
+                    - paragraph [ref=e193] [cursor=pointer]:
+                      - text: Specifications
+                      - generic [ref=e194] [cursor=pointer]: (string)
+                  - generic [ref=e195] [cursor=pointer]:
+                    - generic [ref=e196] [cursor=pointer]:
+                      - checkbox "Drawing File Name(string)" [ref=e197] [cursor=pointer]
+                      - img [ref=e198] [cursor=pointer]
+                    - paragraph [ref=e200] [cursor=pointer]:
+                      - text: Drawing File Name
+                      - generic [ref=e201] [cursor=pointer]: (string)
+                  - generic [ref=e202] [cursor=pointer]:
+                    - generic [ref=e203] [cursor=pointer]:
+                      - checkbox "Sheet Number(string)" [ref=e204] [cursor=pointer]
+                      - img [ref=e205] [cursor=pointer]
+                    - paragraph [ref=e207] [cursor=pointer]:
+                      - text: Sheet Number
+                      - generic [ref=e208] [cursor=pointer]: (string)
+                  - generic [ref=e209] [cursor=pointer]:
+                    - generic [ref=e210] [cursor=pointer]:
+                      - checkbox "Drawing Type(string)" [ref=e211] [cursor=pointer]
+                      - img [ref=e212] [cursor=pointer]
+                    - paragraph [ref=e214] [cursor=pointer]:
+                      - text: Drawing Type
+                      - generic [ref=e215] [cursor=pointer]: (string)
+                  - generic [ref=e216] [cursor=pointer]:
+                    - generic [ref=e217] [cursor=pointer]:
+                      - checkbox "Project Name(string)" [ref=e218] [cursor=pointer]
+                      - img [ref=e219] [cursor=pointer]
+                    - paragraph [ref=e221] [cursor=pointer]:
+                      - text: Project Name
+                      - generic [ref=e222] [cursor=pointer]: (string)
+                  - generic [ref=e223] [cursor=pointer]:
+                    - generic [ref=e224] [cursor=pointer]:
+                      - checkbox "Result(number)" [checked] [active] [ref=e225] [cursor=pointer]
+                      - img [ref=e226] [cursor=pointer]
+                    - paragraph [ref=e228] [cursor=pointer]:
+                      - text: Result
+                      - generic [ref=e229] [cursor=pointer]: (number)
+                  - generic [ref=e230] [cursor=pointer]:
+                    - generic [ref=e231] [cursor=pointer]:
+                      - checkbox "Inspect(string)" [checked] [ref=e232] [cursor=pointer]
+                      - img [ref=e233] [cursor=pointer]
+                    - paragraph [ref=e235] [cursor=pointer]:
+                      - text: Inspect
+                      - generic [ref=e236] [cursor=pointer]: (string)
+                  - generic [ref=e237] [cursor=pointer]:
+                    - generic [ref=e238] [cursor=pointer]:
+                      - checkbox "Test Field 1759332552587(string)" [ref=e239] [cursor=pointer]
+                      - img [ref=e240] [cursor=pointer]
+                    - paragraph [ref=e242] [cursor=pointer]:
+                      - text: Test Field 1759332552587
+                      - generic [ref=e243] [cursor=pointer]: (string)
+                  - generic [ref=e244] [cursor=pointer]:
+                    - generic [ref=e245] [cursor=pointer]:
+                      - checkbox "Test Field 1759333094538(string)" [ref=e246] [cursor=pointer]
+                      - img [ref=e247] [cursor=pointer]
+                    - paragraph [ref=e249] [cursor=pointer]:
+                      - text: Test Field 1759333094538
+                      - generic [ref=e250] [cursor=pointer]: (string)
+                  - generic [ref=e251] [cursor=pointer]:
+                    - generic [ref=e252] [cursor=pointer]:
+                      - checkbox "Test Field 1759332552587 2(number)" [ref=e253] [cursor=pointer]
+                      - img [ref=e254] [cursor=pointer]
+                    - paragraph [ref=e256] [cursor=pointer]:
+                      - text: Test Field 1759332552587 2
+                      - generic [ref=e257] [cursor=pointer]: (number)
+                  - generic [ref=e258] [cursor=pointer]:
+                    - generic [ref=e259] [cursor=pointer]:
+                      - checkbox "Test Field 1759333094538 2(number)" [ref=e260] [cursor=pointer]
+                      - img [ref=e261] [cursor=pointer]
+                    - paragraph [ref=e263] [cursor=pointer]:
+                      - text: Test Field 1759333094538 2
+                      - generic [ref=e264] [cursor=pointer]: (number)
+                  - generic [ref=e265] [cursor=pointer]:
+                    - generic [ref=e266] [cursor=pointer]:
+                      - checkbox "Rapid Field 1 1759332559299(string)" [ref=e267] [cursor=pointer]
+                      - img [ref=e268] [cursor=pointer]
+                    - paragraph [ref=e270] [cursor=pointer]:
+                      - text: Rapid Field 1 1759332559299
+                      - generic [ref=e271] [cursor=pointer]: (string)
+                  - generic [ref=e272] [cursor=pointer]:
+                    - generic [ref=e273] [cursor=pointer]:
+                      - checkbox "Rapid Field 1 1759333101102(string)" [ref=e274] [cursor=pointer]
+                      - img [ref=e275] [cursor=pointer]
+                    - paragraph [ref=e277] [cursor=pointer]:
+                      - text: Rapid Field 1 1759333101102
+                      - generic [ref=e278] [cursor=pointer]: (string)
+                  - generic [ref=e279] [cursor=pointer]:
+                    - generic [ref=e280] [cursor=pointer]:
+                      - checkbox "Rapid Field 2 1759332559299(number)" [ref=e281] [cursor=pointer]
+                      - img [ref=e282] [cursor=pointer]
+                    - paragraph [ref=e284] [cursor=pointer]:
+                      - text: Rapid Field 2 1759332559299
+                      - generic [ref=e285] [cursor=pointer]: (number)
+                  - generic [ref=e286] [cursor=pointer]:
+                    - generic [ref=e287] [cursor=pointer]:
+                      - checkbox "Rapid Field 2 1759333101102(number)" [ref=e288] [cursor=pointer]
+                      - img [ref=e289] [cursor=pointer]
+                    - paragraph [ref=e291] [cursor=pointer]:
+                      - text: Rapid Field 2 1759333101102
+                      - generic [ref=e292] [cursor=pointer]: (number)
+                  - generic [ref=e293] [cursor=pointer]:
+                    - generic [ref=e294] [cursor=pointer]:
+                      - checkbox "Rapid Field 3 1759332559299(string)" [ref=e295] [cursor=pointer]
+                      - img [ref=e296] [cursor=pointer]
+                    - paragraph [ref=e298] [cursor=pointer]:
+                      - text: Rapid Field 3 1759332559299
+                      - generic [ref=e299] [cursor=pointer]: (string)
+            - button "Drawing Context (5 fields)" [ref=e301] [cursor=pointer]:
+              - generic [ref=e302] [cursor=pointer]:
+                - generic [ref=e303] [cursor=pointer]:
+                  - checkbox [ref=e304] [cursor=pointer]
+                  - img [ref=e305] [cursor=pointer]
+                - heading "Drawing Context" [level=6] [ref=e307] [cursor=pointer]
+                - generic [ref=e308] [cursor=pointer]: (5 fields)
+              - img [ref=e310] [cursor=pointer]
+            - button "Component Metadata (2 fields)" [ref=e313] [cursor=pointer]:
+              - generic [ref=e314] [cursor=pointer]:
+                - generic [ref=e315] [cursor=pointer]:
+                  - checkbox [ref=e316] [cursor=pointer]
+                  - img [ref=e317] [cursor=pointer]
+                - heading "Component Metadata" [level=6] [ref=e319] [cursor=pointer]
+                - generic [ref=e320] [cursor=pointer]: (2 fields)
+              - img [ref=e322] [cursor=pointer]
+        - generic [ref=e324]:
+          - heading "Preview" [level=6] [ref=e325]
+          - separator [ref=e326]
+          - generic [ref=e327]:
+            - paragraph [ref=e329]: Showing all 71 components
+            - generic [ref=e330]:
+              - generic [ref=e331]:
+                - heading "Piece Mark" [level=6] [ref=e333]
+                - heading "Result" [level=6] [ref=e335]
+                - heading "Inspect" [level=6] [ref=e337]
+              - generic [ref=e339]:
+                - generic [ref=e340]:
+                  - paragraph [ref=e342]: C5
+                  - paragraph [ref=e344]: —
+                  - paragraph [ref=e346]: —
+                - generic [ref=e347]:
+                  - paragraph [ref=e349]: FA2
+                  - paragraph [ref=e351]: —
+                  - paragraph [ref=e353]: —
+                - generic [ref=e354]:
+                  - paragraph [ref=e356]: GR2
+                  - paragraph [ref=e358]: —
+                  - paragraph [ref=e360]: —
+                - generic [ref=e361]:
+                  - paragraph [ref=e363]: GZ23
+                  - paragraph [ref=e365]: —
+                  - paragraph [ref=e367]: —
+                - generic [ref=e368]:
+                  - paragraph [ref=e370]: O1
+                  - paragraph [ref=e372]: —
+                  - paragraph [ref=e374]: —
+                - generic [ref=e375]:
+                  - paragraph [ref=e377]: SA2
+                  - paragraph [ref=e379]: —
+                  - paragraph [ref=e381]: —
+                - generic [ref=e382]:
+                  - paragraph [ref=e384]: ZO0
+                  - paragraph [ref=e386]: —
+                  - paragraph [ref=e388]: —
+                - generic [ref=e389]:
+                  - paragraph [ref=e391]: ZO01
+                  - paragraph [ref=e393]: —
+                  - paragraph [ref=e395]: —
+                - generic [ref=e396]:
+                  - paragraph [ref=e398]: ZZ01
+                  - paragraph [ref=e400]: —
+                  - paragraph [ref=e402]: —
+                - generic [ref=e403]:
+                  - paragraph [ref=e405]: LG5
+                  - paragraph [ref=e407]: —
+                  - paragraph [ref=e409]: —
+                - generic [ref=e410]:
+                  - paragraph [ref=e412]: G23
+                  - paragraph [ref=e414]: —
+                  - paragraph [ref=e416]: —
+                - generic [ref=e417]:
+                  - paragraph [ref=e419]: G6
+                  - paragraph [ref=e421]: —
+                  - paragraph [ref=e423]: —
+```

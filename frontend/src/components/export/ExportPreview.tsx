@@ -49,7 +49,8 @@ const ExportPreview: React.FC<ExportPreviewProps> = ({
           // Handle component fields (primary data)
           if (field.key.startsWith('component_')) {
             const componentKey = field.key.replace('component_', '');
-            value = component[componentKey];
+            // Check top-level first, then check dynamic_data (for flexible schema fields)
+            value = component[componentKey] || component.dynamic_data?.[componentKey];
           }
           // Handle drawing context fields (prefixed with 'drawing_')
           else if (field.key.startsWith('drawing_')) {

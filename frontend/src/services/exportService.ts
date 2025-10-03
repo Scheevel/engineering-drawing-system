@@ -69,6 +69,7 @@ export const getComponentDataFields = (drawings: any[], existingFieldKeys?: Set<
   drawings.forEach(drawing => {
     if (drawing.components && drawing.components.length > 0) {
       drawing.components.forEach((component: any) => {
+        // Discover top-level component fields
         Object.keys(component).forEach(key => {
           const fieldKey = `component_${key}`;
 
@@ -79,6 +80,7 @@ export const getComponentDataFields = (drawings: any[], existingFieldKeys?: Set<
             key !== 'drawing_id' &&
             key !== 'created_at' &&
             key !== 'updated_at' &&
+            key !== 'dynamic_data' && // Exclude dynamic_data itself (we'll introspect it separately)
             (!existingFieldKeys || !existingFieldKeys.has(fieldKey))
           ) {
             discoveredKeys.add(key);
@@ -90,6 +92,28 @@ export const getComponentDataFields = (drawings: any[], existingFieldKeys?: Set<
             });
           }
         });
+
+        // Discover nested fields from dynamic_data (flexible schema fields)
+        // Sparse Matrix Pattern: CSV will contain union of ALL fields discovered across ALL components
+        // Components without a field will have empty cells in that column
+        if (component.dynamic_data && typeof component.dynamic_data === 'object') {
+          Object.keys(component.dynamic_data).forEach(key => {
+            const fieldKey = `component_${key}`;
+
+            if (
+              !discoveredKeys.has(key) &&
+              (!existingFieldKeys || !existingFieldKeys.has(fieldKey))
+            ) {
+              discoveredKeys.add(key);
+              fields.push({
+                key: fieldKey,
+                label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                type: typeof component.dynamic_data[key] === 'number' ? 'number' : 'string',
+                group: 'components'
+              });
+            }
+          });
+        }
       });
     }
   });
@@ -117,7 +141,8 @@ export const generateCSV = (
         // Handle component fields (primary data)
         if (field.key.startsWith('component_')) {
           const componentKey = field.key.replace('component_', '');
-          value = component[componentKey];
+          // Check top-level first, then check dynamic_data (for flexible schema fields)
+          value = component[componentKey] || component.dynamic_data?.[componentKey];
         }
         // Handle drawing context fields (prefixed with 'drawing_')
         else if (field.key.startsWith('drawing_')) {

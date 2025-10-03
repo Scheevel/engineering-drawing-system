@@ -1,116 +1,52 @@
-<testsuites id="" name="" tests="2" failures="2" skipped="0" errors="0" time="67.718965">
-<testsuite name="3.13-add-multiselect-field-to-schema.spec.ts" timestamp="2025-10-01T15:57:55.539Z" hostname="chromium" tests="2" failures="2" skipped="0" time="62.916" errors="0">
-<testcase name="Story 3.13: Add Multi-Select Field to Schema › Create a multi-select field and validate it is saved" classname="3.13-add-multiselect-field-to-schema.spec.ts" time="31.409">
-<failure message="3.13-add-multiselect-field-to-schema.spec.ts:141:7 Create a multi-select field and validate it is saved" type="FAILURE">
-<![CDATA[  [chromium] › 3.13-add-multiselect-field-to-schema.spec.ts:141:7 › Story 3.13: Add Multi-Select Field to Schema › Create a multi-select field and validate it is saved 
-
-    Test timeout of 30000ms exceeded.
-
-    Error: locator.click: Test timeout of 30000ms exceeded.
-    Call log:
-      - waiting for getByRole('dialog').getByRole('button', { name: /save|add/i })
-        - locator resolved to <button disabled id=":r6l:" tabindex="-1" type="submit" class="MuiButtonBase-root MuiButton-root MuiLoadingButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary Mui-disabled MuiButton-root MuiLoadingButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-1ckne7y-MuiButtonBase-root-MuiButton-root-MuiLoadingButton-root">…</button>
-      - attempting click action
-        2 × waiting for element to be visible, enabled and stable
-          - element is not enabled
-        - retrying click action
-        - waiting 20ms
-        2 × waiting for element to be visible, enabled and stable
-          - element is not enabled
-        - retrying click action
-          - waiting 100ms
-        50 × waiting for element to be visible, enabled and stable
-           - element is not enabled
-         - retrying click action
-           - waiting 500ms
-
-
-      75 |   async saveField() {
-      76 |     // Click save button in dialog
-    > 77 |     await this.page.getByRole('dialog').getByRole('button', { name: /save|add/i }).click();
-         |                                                                                    ^
-      78 |   }
-      79 |
-      80 |   async waitForDialogClosed() {
-        at SchemaEditPage.saveField (/Users/scheevel/Workstream/EVALUATIONS/engineering-drawing-system-standalone/frontend/e2e/3.13-add-multiselect-field-to-schema.spec.ts:77:84)
-        at /Users/scheevel/Workstream/EVALUATIONS/engineering-drawing-system-standalone/frontend/e2e/3.13-add-multiselect-field-to-schema.spec.ts:179:22
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/3.13-add-multiselect-field-3b046-ld-and-validate-it-is-saved-chromium/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/3.13-add-multiselect-field-3b046-ld-and-validate-it-is-saved-chromium/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ../test-results/3.13-add-multiselect-field-3b046-ld-and-validate-it-is-saved-chromium/error-context.md
-]]>
-</failure>
+<testsuites id="" name="" tests="2" failures="1" skipped="0" errors="0" time="6.112865">
+<testsuite name="export-story-7.3.spec.ts" timestamp="2025-10-03T15:29:39.020Z" hostname="chromium" tests="2" failures="1" skipped="0" time="7.454" errors="0">
+<testcase name="Export Page - Dynamic Schema Fields (Story 7.3) › should display schema fields in Component Data group" classname="export-story-7.3.spec.ts" time="3.075">
 <system-out>
-<![CDATA[Editing schema: console-test-1759328811643
-Initial field count: 13
-
-[[ATTACHMENT|3.13-add-multiselect-field-3b046-ld-and-validate-it-is-saved-chromium/test-failed-1.png]]
-
-[[ATTACHMENT|3.13-add-multiselect-field-3b046-ld-and-validate-it-is-saved-chromium/video.webm]]
-
-[[ATTACHMENT|3.13-add-multiselect-field-3b046-ld-and-validate-it-is-saved-chromium/error-context.md]]
+<![CDATA[=== DISCOVERED FIELDS ===
+[ [32m'Piece Mark(string)'[39m, [32m'Result(number)'[39m, [32m'Inspect(string)'[39m ]
+✅ SUCCESS: Schema fields (Inspect, Result) are visible!
 ]]>
 </system-out>
 </testcase>
-<testcase name="Story 3.13: Add Multi-Select Field to Schema › Create multiple multi-select fields sequentially" classname="3.13-add-multiselect-field-to-schema.spec.ts" time="31.507">
-<failure message="3.13-add-multiselect-field-to-schema.spec.ts:231:7 Create multiple multi-select fields sequentially" type="FAILURE">
-<![CDATA[  [chromium] › 3.13-add-multiselect-field-to-schema.spec.ts:231:7 › Story 3.13: Add Multi-Select Field to Schema › Create multiple multi-select fields sequentially 
+<testcase name="Export Page - Dynamic Schema Fields (Story 7.3) › should show schema field values in preview when selected" classname="export-story-7.3.spec.ts" time="4.379">
+<failure message="export-story-7.3.spec.ts:64:7 should show schema field values in preview when selected" type="FAILURE">
+<![CDATA[  [chromium] › export-story-7.3.spec.ts:64:7 › Export Page - Dynamic Schema Fields (Story 7.3) › should show schema field values in preview when selected 
 
-    Test timeout of 30000ms exceeded.
+    Error: expect(received).toContain(expected) // indexOf
 
-    Error: locator.click: Test timeout of 30000ms exceeded.
-    Call log:
-      - waiting for getByRole('dialog').getByRole('button', { name: /save|add/i })
-        - locator resolved to <button disabled id=":r6l:" tabindex="-1" type="submit" class="MuiButtonBase-root MuiButton-root MuiLoadingButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary Mui-disabled MuiButton-root MuiLoadingButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-1ckne7y-MuiButtonBase-root-MuiButton-root-MuiLoadingButton-root">…</button>
-      - attempting click action
-        2 × waiting for element to be visible, enabled and stable
-          - element is not enabled
-        - retrying click action
-        - waiting 20ms
-        2 × waiting for element to be visible, enabled and stable
-          - element is not enabled
-        - retrying click action
-          - waiting 100ms
-        51 × waiting for element to be visible, enabled and stable
-           - element is not enabled
-         - retrying click action
-           - waiting 500ms
+    Expected substring: "F106"
+    Received string:    "
+        You need to enable JavaScript to run this app.
+        Engineering Drawing Index SystemDashboardProjectsSchema ManagementSearch ComponentsUpload DrawingsExport ComponentsExport Components to CSVRefresh DataExport CSV (71 components, 3 fields)Loaded 1 drawings with 71 components at 10/3/2025, 3:29:42 PMSelect Fields to Export3 fields selectedComponent Data(30 fields)Component ID(string)Piece Mark(string)View Component(url)Component Type(string)Description(string)Quantity(number)Material Type(string)Location X(number)Location Y(number)Bounding Box(string)Confidence Score(number)Review Status(string)Instance Identifier(string)Dimensions(string)Specifications(string)Drawing File Name(string)Sheet Number(string)Drawing Type(string)Project Name(string)Result(number)Inspect(string)Test Field 1759332552587(string)Test Field 1759333094538(string)Test Field 1759332552587 2(number)Test Field 1759333094538 2(number)Rapid Field 1 1759332559299(string)Rapid Field 1 1759333101102(string)Rapid Field 2 1759332559299(number)Rapid Field 2 1759333101102(number)Rapid Field 3 1759332559299(string)Drawing Context(5 fields)Drawing ID(string)Drawing File Name(string)Project Name(string)Upload Date(date)Drawing Status(string)Component Metadata(2 fields)Component Created At(date)Component Updated At(date)PreviewShowing all 71 componentsPiece MarkResultInspectC5——FA2——GR2——GZ23——O1——SA2——ZO0——ZO01——ZZ01——LG5——G23——G6——···
+    "
 
-
-      75 |   async saveField() {
-      76 |     // Click save button in dialog
-    > 77 |     await this.page.getByRole('dialog').getByRole('button', { name: /save|add/i }).click();
-         |                                                                                    ^
-      78 |   }
-      79 |
-      80 |   async waitForDialogClosed() {
-        at SchemaEditPage.saveField (/Users/scheevel/Workstream/EVALUATIONS/engineering-drawing-system-standalone/frontend/e2e/3.13-add-multiselect-field-to-schema.spec.ts:77:84)
-        at /Users/scheevel/Workstream/EVALUATIONS/engineering-drawing-system-standalone/frontend/e2e/3.13-add-multiselect-field-to-schema.spec.ts:257:24
+       95 |       // Verify F106 shows "Pass" and "Good" (not "—")
+       96 |       const previewText = await page.textContent('body');
+    >  97 |       expect(previewText).toContain('F106');
+          |                           ^
+       98 |       expect(previewText).toContain('Pass');
+       99 |       expect(previewText).toContain('Good');
+      100 |
+        at /Users/scheevel/Workstream/EVALUATIONS/engineering-drawing-system-standalone/frontend/e2e/export-story-7.3.spec.ts:97:27
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/3.13-add-multiselect-field-ff4b5--select-fields-sequentially-chromium/test-failed-1.png
+    ../test-results/export-story-7.3-Export-Pa-f8dab-es-in-preview-when-selected-chromium/test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
     attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/3.13-add-multiselect-field-ff4b5--select-fields-sequentially-chromium/video.webm
+    ../test-results/export-story-7.3-Export-Pa-f8dab-es-in-preview-when-selected-chromium/video.webm
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ../test-results/3.13-add-multiselect-field-ff4b5--select-fields-sequentially-chromium/error-context.md
+    Error Context: ../test-results/export-story-7.3-Export-Pa-f8dab-es-in-preview-when-selected-chromium/error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|3.13-add-multiselect-field-ff4b5--select-fields-sequentially-chromium/test-failed-1.png]]
+[[ATTACHMENT|export-story-7.3-Export-Pa-f8dab-es-in-preview-when-selected-chromium/test-failed-1.png]]
 
-[[ATTACHMENT|3.13-add-multiselect-field-ff4b5--select-fields-sequentially-chromium/video.webm]]
+[[ATTACHMENT|export-story-7.3-Export-Pa-f8dab-es-in-preview-when-selected-chromium/video.webm]]
 
-[[ATTACHMENT|3.13-add-multiselect-field-ff4b5--select-fields-sequentially-chromium/error-context.md]]
+[[ATTACHMENT|export-story-7.3-Export-Pa-f8dab-es-in-preview-when-selected-chromium/error-context.md]]
 ]]>
 </system-out>
 </testcase>

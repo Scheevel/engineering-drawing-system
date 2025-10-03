@@ -1,40 +1,12 @@
 <strikethrough>check /docs/stories/backlog and /docs/stories-archive/ to see if any of these observations are already accounted for in any of the existing stories</strikethrough>
 
-allow commands: pip, grep, npm start, npx esbuild
+allow commands: 
 
 make a yagni folder
 
-At the "/drawings" route, my expectation is that a clickable list of saved drawings would be visible 
+/BMad:agents:bmad-orchestrator launch `deployer` agent as configured in `.bmad-core/agents/deployer.md` and *smart-deploy command @
 
-If the default schema is truly hardcoded, then it should be static and not editable
-
-How do I delete a schema?
-what purpose does the looking glass serve?
-Just "save" is sufficient No need for "save & return" button
-The feature to delete a field from schema fails
-
-I can't edit "piece markings" field on the component detail card
-
-schema settings take up too much real-estate
-
-/schema
- - hot swappable. I create a schema, make the project schema, now everything in the project takes on that schema
-
-There used to be way of creating instances, so a drawing could have the same piece marking. That functionality has disappeared, it was story 1.5
-UX person. The entire schema selection part takes up too much of the form
-
-/projects, should provide a way of seeing assigned drawings
- - 
-
-/drawings, why is component count 0?
- - should provide a way of filtering by project
- - should provide a way of assigning to a project
- - ability to assign a single drawing to multiple projectsd
-/projects, clicking on a project should provide a method of viewing all drawings
-
-/BMad:agents:analyst *elicit a new feature request | refactoring. {general feature concept described}
- 
-
+ commit all changes as "known good check point"
 
 
 
