@@ -2,16 +2,19 @@
 
 ## Status
 
-**Status**: Ready for Development ✅ (after 8.1a complete)
+**Status**: ✅ Ready for Development
 **Epic**: 8 - Project Management & Organization
 **Sprint**: TBD
 **Assigned To**: TBD
-**Estimated Effort**: 6-8 hours
+**Estimated Effort**: 6-8 hours (9 phases including backend verification)
 **Priority**: High
-**Dependencies**: **Story 8.1a (Backend Foundation) MUST BE COMPLETE**
+**Dependencies**: **Story 8.1a (Backend Foundation) MUST BE COMPLETE** - Verify via Task 0 before starting
 **Story Type**: Feature (UI/UX)
 **Created By**: Bob (Scrum Master) - Sharded from original Story 8.1
 **Creation Date**: 2025-10-03
+**Validated By**: Sarah (PO) + Bob (SM)
+**Validation Date**: 2025-10-03
+**Implementation Readiness Score**: 10/10
 
 ---
 
@@ -401,33 +404,64 @@ Original Story 8.1 combined backend and frontend work (12-16 hours, 64 subtasks)
 
 ## Tasks / Subtasks
 
-### **Phase 1: TypeScript Types & API Client (1 hour)**
+### **Phase 0: Backend Readiness Verification (15 minutes)**
 
-#### Task 1.1: TypeScript Interfaces
-- [ ] Create `ProjectSummary` interface (id, name, code)
-- [ ] Update `Drawing` interface to include `projects: ProjectSummary[]`
-- [ ] Create `BulkAssignRequest` and `BulkRemoveRequest` types
-- [ ] Update existing interfaces if needed
+**CRITICAL**: Verify Story 8.1a backend is deployed and functional before starting implementation.
 
-#### Task 1.2: API Client Methods
-- [ ] Add `getDrawingProjects(drawingId)` to api.ts
-- [ ] Add `assignDrawingToProjects(drawingId, projectIds)` to api.ts
-- [ ] Add `removeDrawingFromProject(drawingId, projectId)` to api.ts
-- [ ] Add `bulkAssignDrawingsToProjects(drawingIds, projectIds)` to api.ts
-- [ ] Add `bulkRemoveDrawingsFromProjects(drawingIds, projectIds)` to api.ts
-- [ ] Add `getProjectDrawings(projectId, filters)` to api.ts
+#### Task 0.1: Verify Backend API Accessibility
+- [x] Confirm backend API accessible at `http://localhost:8001`
+- [x] Test API health endpoint: `curl http://localhost:8001/api/v1/system/health`
+- [x] Verify API documentation available: `http://localhost:8001/docs`
+
+#### Task 0.2: Run Story 8.1a Verification Checklist
+- [x] **Component count fixed**: `curl http://localhost:8001/api/v1/drawings | jq '.items[0].components_extracted'`
+  - Expected: `71` (not `0`) - ✅ CONFIRMED: 71 components
+- [x] **Projects array present**: `curl http://localhost:8001/api/v1/drawings | jq '.items[0].projects'`
+  - Expected: `[{"id": "uuid", "name": "Project Name", ...}]` - ✅ CONFIRMED: projects array working
+- [x] **Drawing projects endpoint**: `curl http://localhost:8001/api/v1/drawings/{id}/projects`
+  - Expected: `200 OK` with projects array - ✅ CONFIRMED: endpoint functional
+- [x] **Bulk assign endpoint**: `curl -X POST http://localhost:8001/api/v1/drawings/bulk/assign-projects`
+  - Expected: Endpoint exists (may return validation error, that's OK) - ✅ CONFIRMED: endpoint exists with validation
+
+#### Task 0.3: Document Backend Version
+- [x] Record backend Git commit hash or version - **62a267c** (Story 8.1a Tasks 1.5-1.6)
+- [x] Document Story 8.1a completion date - **2025-10-03**
+- [x] Confirm Story 8.1a QA gate passed (check `docs/qa/gates/8.1a-backend-foundation-bug-fix.yml`) - **PASS** (Conditional, Score 7.3/10)
+- [x] Note any known issues or deviations from 8.1a spec - **Task 1.7 (testing) incomplete but acceptable**
+
+**HALT CONDITION**: If any verification fails, STOP and escalate to team. Do not proceed with UI implementation until backend is confirmed working.
 
 ---
 
-### **Phase 2: Upload Flow (AC1) (1 hour)**
+### **Phase 1: TypeScript Types & API Client (1 hour)** ✅
 
-#### Task 2.1: Upload Form Enhancement
-- [ ] Add "Assign to Projects" multi-select to upload form
-- [ ] Use Material-UI Autocomplete with `multiple` prop
-- [ ] Fetch projects list for dropdown (use React Query)
-- [ ] Handle optional project_ids in upload submission
-- [ ] Update upload API call to include project_ids
-- [ ] Test upload with/without project assignment
+#### Task 1.1: TypeScript Interfaces ✅
+- [x] Create `ProjectSummary` interface (id, name, code)
+- [x] Update `Drawing` interface to include `projects: ProjectSummary[]`
+- [x] Create `BulkAssignRequest` and `BulkRemoveRequest` types
+- [x] Update existing interfaces if needed
+
+#### Task 1.2: API Client Methods ✅
+- [x] Add `getDrawingProjects(drawingId)` to api.ts
+- [x] Add `assignDrawingToProjects(drawingId, projectIds)` to api.ts
+- [x] Add `removeDrawingFromProject(drawingId, projectId)` to api.ts
+- [x] Add `bulkAssignDrawingsToProjects(drawingIds, projectIds)` to api.ts
+- [x] Add `bulkRemoveDrawingsFromProjects(drawingIds, projectIds)` to api.ts
+- [x] Add `getProjectDrawings(projectId, filters)` to api.ts
+
+---
+
+### **Phase 2: Upload Flow (AC1) (1 hour)** ✅
+
+#### Task 2.1: Upload Form Enhancement ✅
+- [x] **Review existing [UploadDrawingPage.tsx](frontend/src/pages/UploadDrawingPage.tsx) for form patterns**
+- [x] Match styling and validation patterns from existing upload form
+- [x] Add "Assign to Projects" multi-select to upload form
+- [x] Use Material-UI Autocomplete with `multiple` prop
+- [x] Fetch projects list for dropdown (use React Query)
+- [x] Handle optional project_ids in upload submission
+- [x] Update upload API call to include project_ids
+- [x] Test upload with/without project assignment
 
 ---
 
@@ -677,6 +711,85 @@ const updateFilter = (key: string, value: string) => {
 - Familiar UX patterns reduce learning curve
 - Mobile-friendly (collapsible toolbar)
 
+### Security Considerations
+
+**Authentication & Authorization:**
+- Rely on backend JWT validation (from Story 8.1a)
+- All API calls include authentication headers via api.ts client
+- Backend enforces project access controls (if implemented)
+
+**Input Validation:**
+- All UUIDs validated by backend API endpoints
+- Material-UI Autocomplete prevents injection in project names
+- No client-side SQL or direct database access
+
+**XSS Prevention:**
+- Material-UI components auto-escape user-generated content
+- Project names rendered via `{project.name}` (React auto-escapes)
+- No `dangerouslySetInnerHTML` usage
+
+**CSRF Protection:**
+- Backend API uses JWT tokens (stateless, CSRF-resistant)
+- No session cookies requiring CSRF tokens
+
+**Rate Limiting:**
+- Backend enforces rate limits on bulk operations (Story 8.1a)
+- Frontend does not implement additional throttling
+
+**Error Handling:**
+- API errors sanitized before display (avoid exposing stack traces)
+- Generic error messages for security-related failures
+
+### Testing Setup
+
+**Test Framework Configuration:**
+- **Unit/Component Tests**: Jest + React Testing Library (existing project setup)
+- **E2E Tests**: Playwright (per frontend test configuration)
+- **Test Runner**: `npm test` for unit tests, `npx playwright test` for E2E
+
+**API Mocking Strategy:**
+- Use MSW (Mock Service Worker) for API endpoint stubbing
+- Mock all 8 backend endpoints from Story 8.1a:
+  ```typescript
+  // frontend/src/services/__mocks__/handlers.ts
+  rest.get('/api/v1/drawings', (req, res, ctx) => {
+    return res(ctx.json({ items: mockDrawings }));
+  });
+  rest.post('/api/v1/drawings/bulk/assign-projects', (req, res, ctx) => {
+    return res(ctx.json({ success: true }));
+  });
+  ```
+
+**Test Data Setup:**
+- Create test utilities in `frontend/test-utils/projectTestData.ts`
+- Provide mock drawings with various project assignment states:
+  ```typescript
+  export const mockDrawings = [
+    { id: '1', file_name: 'Drawing-001.pdf', projects: [mockProject1, mockProject2] },
+    { id: '2', file_name: 'Drawing-002.pdf', projects: [] }, // unassigned
+  ];
+  ```
+
+**Running Tests:**
+```bash
+# Unit and component tests
+npm test
+
+# E2E tests (requires backend running)
+npx playwright test
+
+# E2E tests in headed mode (visual debugging)
+npx playwright test --headed
+
+# Test coverage report
+npm test -- --coverage
+```
+
+**Test Environment:**
+- Backend API should be running on `http://localhost:8001` for E2E tests
+- Use `.env.test` for test-specific configuration
+- Playwright config in `playwright.config.ts`
+
 ---
 
 ## Definition of Done
@@ -738,11 +851,89 @@ curl -X POST http://localhost:8001/api/v1/drawings/bulk/assign-projects
 
 ---
 
+## Dev Agent Record
+
+### Agent Model Used
+
+**Model**: Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
+**Agent**: James (Full Stack Developer)
+**Start Date**: 2025-10-03
+
+### Debug Log References
+
+None yet - Phase 0 completed successfully without issues
+
+### Completion Notes
+
+**Phase 0: Backend Readiness Verification** ✅ (2025-10-03)
+- Verified backend API health and accessibility
+- Confirmed Story 8.1a backend changes deployed:
+  - Component count bug fix: `components_extracted` returns 71 (not 0)
+  - Projects array present in drawing responses
+  - New API endpoints operational:
+    - `GET /drawings/{id}/projects` returns project list
+    - `POST /drawings/bulk/assign-projects` exists with validation
+- Backend version: Git commit `62a267c` (Story 8.1a Tasks 1.5-1.6)
+- QA gate: PASS (Conditional, Score 7.3/10)
+- Known limitation: Task 1.7 (backend testing) incomplete but acceptable
+- **DECISION**: All prerequisites met, proceeding with Phase 1
+
+**Phase 1: TypeScript Types & API Client** ✅ (2025-10-03)
+- Added TypeScript interfaces (Task 1.1):
+  - `ProjectSummary` interface: id, name, client, location
+  - `BulkAssignRequest` interface: drawing_ids, project_ids
+  - `BulkRemoveRequest` interface: drawing_ids, project_ids
+  - Updated `Drawing` interface with `projects: ProjectSummary[]` and `components_extracted: number`
+  - Updated `DrawingResponse` interface with matching fields
+- Added API client methods (Task 1.2):
+  - `getDrawingProjects(drawingId)` - GET /drawings/{id}/projects
+  - `assignDrawingToProjects(drawingId, projectIds)` - POST /drawings/{id}/projects
+  - `removeDrawingFromProject(drawingId, projectId)` - DELETE /drawings/{id}/projects/{project_id}
+  - `bulkAssignDrawingsToProjects(request)` - POST /drawings/bulk/assign-projects
+  - `bulkRemoveDrawingsFromProjects(request)` - POST /drawings/bulk/remove-projects
+  - `getProjectDrawings(projectId, filters)` - GET /projects/{id}/drawings
+- TypeScript compilation: ✅ PASS (no errors, build succeeded)
+- Bundle size impact: +843 bytes (acceptable)
+
+**Phase 2: Upload Flow Enhancement** ✅ (2025-10-03)
+- Updated `uploadDrawing` API function to support both single and multiple project IDs
+  - Backward compatible with legacy `projectId` parameter
+  - New `projectIds` array parameter for many-to-many support
+- Enhanced DrawingUpload component with multi-select Autocomplete:
+  - Replaced single-select dropdown with Material-UI Autocomplete (multiple mode)
+  - Changed state from `projectId` (string) to `selectedProjectIds` (string[])
+  - Updated createProjectMutation to add new projects to selection
+  - Upload now supports assigning drawings to multiple projects simultaneously
+  - Added helper function `getSelectedProjectNames()` for display
+  - Improved UX with Chip tags showing selected projects
+- TypeScript compilation: ✅ PASS (no errors, build succeeded)
+- Bundle size impact: +298 bytes (+0.07% from Phase 1, total +1.14KB)
+
+### File List
+
+**Phase 1 Files:**
+- `frontend/src/services/api.ts` - Added TypeScript interfaces and 6 API client methods (Story 8.1b)
+
+**Phase 2 Files:**
+- `frontend/src/services/api.ts` - Updated uploadDrawing to support project_ids array (Story 8.1b)
+- `frontend/src/components/DrawingUpload.tsx` - Replaced single-select with multi-select Autocomplete (Story 8.1b)
+
+---
+
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2025-10-03 | 1.0 | Sharded from Story 8.1, UI-only scope | Bob (Scrum Master) |
+| 2025-10-03 | 1.1 | PO validation complete (8.0/10 conditional go), 6 improvements recommended | Sarah (PO) |
+| 2025-10-03 | 1.2 | Applied PO recommendations: Added Dev Agent Record, QA Results, Security Considerations, Testing Setup, Task 0 (Backend Verification), Task 2.1 pattern reference | Bob (Scrum Master) |
+| 2025-10-03 | 1.3 | SM checklist validation complete (10/10 ready), status updated to Ready for Development | Bob (Scrum Master) |
+
+---
+
+## QA Results
+
+_This section will be populated by the QA agent after story completion._
 
 ---
 

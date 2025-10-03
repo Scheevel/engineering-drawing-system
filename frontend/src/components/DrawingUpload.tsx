@@ -23,6 +23,7 @@ import {
   DialogActions,
   TextField,
   CircularProgress,
+  Autocomplete,
 } from '@mui/material';
 import {
   CloudUpload as CloudUploadIcon,
@@ -53,7 +54,7 @@ interface UploadFile {
 const DrawingUpload: React.FC = () => {
   const queryClient = useQueryClient();
   const [files, setFiles] = useState<UploadFile[]>([]);
-  const [projectId, setProjectId] = useState<string>('unassigned');
+  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]); // Story 8.1b: Many-to-many support
   const [createProjectDialogOpen, setCreateProjectDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [showOrganizeDialog, setShowOrganizeDialog] = useState(false);
@@ -71,7 +72,8 @@ const DrawingUpload: React.FC = () => {
   const createProjectMutation = useMutation(createProject, {
     onSuccess: (newProject) => {
       queryClient.invalidateQueries('projects');
-      setProjectId(newProject.id);
+      // Story 8.1b: Add new project to selection
+      setSelectedProjectIds(prev => [...prev, newProject.id]);
       setCreateProjectDialogOpen(false);
       setNewProjectName('');
     },
@@ -116,7 +118,12 @@ const DrawingUpload: React.FC = () => {
         );
       }, 200);
 
-      const result = await uploadDrawing(uploadFile.file, projectId === 'unassigned' ? undefined : projectId);
+      // Story 8.1b: Pass projectIds array for many-to-many support
+      const result = await uploadDrawing(
+        uploadFile.file,
+        undefined, // Legacy projectId parameter (not used)
+        selectedProjectIds.length > 0 ? selectedProjectIds : undefined
+      );
 
       clearInterval(progressInterval);
 
@@ -170,35 +177,29 @@ const DrawingUpload: React.FC = () => {
       createProjectMutation.mutate({ name: newProjectName.trim() });
     }
   };
-  
-  const handleProjectChange = (value: string) => {
-    if (value === 'create-new') {
-      setCreateProjectDialogOpen(true);
-    } else {
-      setProjectId(value);
-    }
-  };
-  
+
   const handleOrganizeDrawings = () => {
     setShowOrganizeDialog(true);
   };
-  
+
   const handleOrganizeComplete = () => {
     setShowOrganizeDialog(false);
     // Optionally clear completed files after organization
     clearCompleted();
   };
-  
+
   const getSuccessfulDrawingNames = () => {
     return files
       .filter(f => f.status === 'success')
       .map(f => f.file.name);
   };
-  
-  const getProjectDisplayName = (projectId: string) => {
-    if (projectId === 'unassigned') return 'Unassigned';
-    const project = projects.find(p => p.id === projectId);
-    return project ? project.name : 'Unknown Project';
+
+  // Story 8.1b: Get selected project names for display
+  const getSelectedProjectNames = () => {
+    return selectedProjectIds
+      .map(id => projects.find(p => p.id === id)?.name)
+      .filter(Boolean)
+      .join(', ');
   };
 
   const getFileIcon = (status: UploadFile['status']) => {
@@ -240,45 +241,66 @@ const DrawingUpload: React.FC = () => {
 
   return (
     <Box>
-      {/* Project Selection */}
+      {/* Story 8.1b: Project Selection - Multi-select Support */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
           Project Assignment
         </Typography>
-        <FormControl fullWidth size="medium">
-          <InputLabel>Assign drawings to project</InputLabel>
-          <Select
-            value={projectId}
-            label="Assign drawings to project"
-            onChange={(e) => handleProjectChange(e.target.value)}
-            startAdornment={<FolderIcon sx={{ mr: 1, color: 'action.active' }} />}
+        <Stack spacing={2}>
+          <Autocomplete
+            multiple
+            options={projects}
+            getOptionLabel={(option) => option.name}
+            value={projects.filter(p => selectedProjectIds.includes(p.id))}
+            onChange={(event, newValue) => {
+              setSelectedProjectIds(newValue.map(p => p.id));
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Assign to Projects (optional)"
+                placeholder="Select one or more projects"
+                helperText="Leave empty to upload without project assignment"
+              />
+            )}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip
+                  label={option.name}
+                  {...getTagProps({ index })}
+                  color="primary"
+                  size="small"
+                  icon={<FolderIcon />}
+                />
+              ))
+            }
+            renderOption={(props, option) => (
+              <Box component="li" {...props}>
+                <FolderIcon sx={{ mr: 1, color: 'primary.main' }} />
+                {option.name}
+                {option.drawing_count !== undefined && (
+                  <Chip size="small" label={option.drawing_count} sx={{ ml: 'auto' }} />
+                )}
+              </Box>
+            )}
+            loading={loadingProjects}
+            disabled={loadingProjects}
+          />
+
+          <Button
+            startIcon={<AddIcon />}
+            onClick={() => setCreateProjectDialogOpen(true)}
+            variant="outlined"
+            size="small"
+            sx={{ alignSelf: 'flex-start' }}
           >
-            <MenuItem value="unassigned">
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <FolderOpen sx={{ color: 'text.secondary' }} />
-                Unassigned
-              </Box>
-            </MenuItem>
-            {projects.map((project) => (
-              <MenuItem key={project.id} value={project.id}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <FolderIcon color="primary" />
-                  {project.name}
-                  <Chip size="small" label={project.drawing_count} sx={{ ml: 'auto' }} />
-                </Box>
-              </MenuItem>
-            ))}
-            <MenuItem value="create-new">
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main' }}>
-                <AddIcon />
-                Create New Project...
-              </Box>
-            </MenuItem>
-          </Select>
-        </FormControl>
-        {projectId !== 'unassigned' && (
+            Create New Project
+          </Button>
+        </Stack>
+
+        {selectedProjectIds.length > 0 && (
           <Alert severity="info" sx={{ mt: 2 }}>
-            All uploaded drawings will be assigned to: <strong>{getProjectDisplayName(projectId)}</strong>
+            All uploaded drawings will be assigned to: <strong>{getSelectedProjectNames()}</strong>
           </Alert>
         )}
       </Paper>

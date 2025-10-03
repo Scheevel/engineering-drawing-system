@@ -38,8 +38,10 @@ export interface Drawing {
   processing_progress: number;
   upload_date: string;
   file_size?: number;
-  project_id?: string;
+  project_id?: string; // Deprecated - use projects array (Story 8.1a)
   is_duplicate?: boolean;
+  projects?: ProjectSummary[]; // Story 8.1b - many-to-many project associations
+  components_extracted?: number; // Story 8.1a bug fix
 }
 
 export type DrawingListResponse = {
@@ -83,7 +85,8 @@ export interface DrawingResponse {
   file_size?: number;
   upload_date: string;
   processing_status: string;
-  components_extracted: number;
+  components_extracted: number; // Story 8.1a bug fix
+  projects?: ProjectSummary[]; // Story 8.1b - many-to-many project associations
 }
 
 export interface Component {
@@ -220,11 +223,34 @@ export interface SavedSearchListResponse {
   max_searches_per_project: number;
 }
 
+// Project-Drawing Association Types (Story 8.1b)
+export interface ProjectSummary {
+  id: string;
+  name: string;
+  client?: string;
+  location?: string;
+}
+
+export interface BulkAssignRequest {
+  drawing_ids: string[];
+  project_ids: string[];
+}
+
+export interface BulkRemoveRequest {
+  drawing_ids: string[];
+  project_ids: string[];
+}
+
 // Drawing API
-export const uploadDrawing = async (file: File, projectId?: string): Promise<Drawing> => {
+export const uploadDrawing = async (file: File, projectId?: string, projectIds?: string[]): Promise<Drawing> => {
   const formData = new FormData();
   formData.append('file', file);
-  if (projectId) {
+
+  // Story 8.1b: Support many-to-many project associations
+  // If projectIds array is provided, use it; otherwise fall back to legacy single projectId
+  if (projectIds && projectIds.length > 0) {
+    projectIds.forEach(id => formData.append('project_ids', id));
+  } else if (projectId) {
     formData.append('project_id', projectId);
   }
 
@@ -615,6 +641,41 @@ export const assignDrawingsToProject = async (drawingIds: string[], projectId?: 
     drawing_ids: drawingIds,
     project_id: projectId
   });
+  return response.data;
+};
+
+// Project-Drawing Association API functions (Story 8.1b)
+export const getDrawingProjects = async (drawingId: string): Promise<ProjectSummary[]> => {
+  const response = await api.get(`/drawings/${drawingId}/projects`);
+  return response.data;
+};
+
+export const assignDrawingToProjects = async (drawingId: string, projectIds: string[]): Promise<void> => {
+  await api.post(`/drawings/${drawingId}/projects`, { project_ids: projectIds });
+};
+
+export const removeDrawingFromProject = async (drawingId: string, projectId: string): Promise<void> => {
+  await api.delete(`/drawings/${drawingId}/projects/${projectId}`);
+};
+
+export const bulkAssignDrawingsToProjects = async (request: BulkAssignRequest): Promise<void> => {
+  await api.post('/drawings/bulk/assign-projects', request);
+};
+
+export const bulkRemoveDrawingsFromProjects = async (request: BulkRemoveRequest): Promise<void> => {
+  await api.post('/drawings/bulk/remove-projects', request);
+};
+
+export const getProjectDrawings = async (
+  projectId: string,
+  filters?: { processing_status?: string; page?: number; limit?: number }
+): Promise<PaginatedResponse<Drawing>> => {
+  const params = new URLSearchParams();
+  if (filters?.processing_status) params.append('processing_status', filters.processing_status);
+  if (filters?.page) params.append('page', filters.page.toString());
+  if (filters?.limit) params.append('limit', filters.limit.toString());
+
+  const response = await api.get(`/projects/${projectId}/drawings${params.toString() ? `?${params.toString()}` : ''}`);
   return response.data;
 };
 
