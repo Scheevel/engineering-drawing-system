@@ -4,12 +4,6 @@ import {
   Chip,
   IconButton,
   Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -19,6 +13,8 @@ import {
 } from '@mui/icons-material';
 import { useMutation, useQueryClient } from 'react-query';
 import { removeDrawingFromProject, type ProjectSummary } from '../services/api.ts';
+import { useSnackbar } from '../contexts/SnackbarContext.tsx';
+import ConfirmDialog from './ConfirmDialog.tsx';
 
 interface ProjectTagsProps {
   drawingId: string;
@@ -34,16 +30,22 @@ const ProjectTags: React.FC<ProjectTagsProps> = ({
   compact = false,
 }) => {
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useSnackbar();
   const [confirmRemove, setConfirmRemove] = useState<{projectId: string; projectName: string} | null>(null);
 
   // Remove project mutation
   const removeMutation = useMutation(
     ({ projectId }: { projectId: string }) => removeDrawingFromProject(drawingId, projectId),
     {
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
         queryClient.invalidateQueries('drawings');
         queryClient.invalidateQueries('projects');
+        const projectName = confirmRemove?.projectName || 'project';
+        showSuccess(`Drawing removed from ${projectName}`);
         setConfirmRemove(null);
+      },
+      onError: (error: any) => {
+        showError(error?.message || 'Failed to remove drawing from project');
       },
     }
   );
@@ -106,30 +108,16 @@ const ProjectTags: React.FC<ProjectTagsProps> = ({
       </Box>
 
       {/* Confirm Remove Dialog */}
-      <Dialog
+      <ConfirmDialog
         open={!!confirmRemove}
-        onClose={() => setConfirmRemove(null)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle>Remove from Project?</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to remove this drawing from project <strong>{confirmRemove?.projectName}</strong>?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmRemove(null)}>Cancel</Button>
-          <Button
-            onClick={handleConfirmRemove}
-            color="error"
-            variant="contained"
-            disabled={removeMutation.isLoading}
-          >
-            {removeMutation.isLoading ? 'Removing...' : 'Remove'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        title="Remove from Project?"
+        message={`Are you sure you want to remove this drawing from project "${confirmRemove?.projectName}"?`}
+        confirmText="Remove"
+        onConfirm={handleConfirmRemove}
+        onCancel={() => setConfirmRemove(null)}
+        loading={removeMutation.isLoading}
+        severity="error"
+      />
     </Box>
   );
 };

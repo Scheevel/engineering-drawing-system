@@ -566,24 +566,24 @@ Original Story 8.1 combined backend and frontend work (12-16 hours, 64 subtasks)
 
 ---
 
-### **Phase 7: UI Polish & Feedback (AC6) (1 hour)**
+### **Phase 7: UI Polish & Feedback (AC6) (1 hour)** ✅
 
-#### Task 7.1: Loading States
-- [ ] Add CircularProgress spinners during API calls
-- [ ] Add Skeleton loaders for drawings list
-- [ ] Disable buttons during operations
-- [ ] Show "Saving..." text on submit buttons
+#### Task 7.1: Loading States ✅
+- [x] Add CircularProgress spinners during API calls
+- [x] Add Skeleton loaders for drawings list (existing from React Query)
+- [x] Disable buttons during operations
+- [x] Show "Saving..." text on submit buttons
 
-#### Task 7.2: Toast Notifications
-- [ ] Implement success toasts (Snackbar + Alert)
-- [ ] Implement error toasts with error messages
-- [ ] Auto-dismiss after 5 seconds
-- [ ] Allow manual dismiss
+#### Task 7.2: Toast Notifications ✅
+- [x] Implement success toasts (Snackbar + Alert)
+- [x] Implement error toasts with error messages
+- [x] Auto-dismiss after 5 seconds
+- [x] Allow manual dismiss
 
-#### Task 7.3: Confirmation Dialogs
-- [ ] Create reusable confirmation dialog component
-- [ ] Use for all destructive actions (remove assignments)
-- [ ] Include context in dialog text (drawing name, project name)
+#### Task 7.3: Confirmation Dialogs ✅
+- [x] Create reusable confirmation dialog component
+- [x] Use for all destructive actions (remove assignments)
+- [x] Include context in dialog text (drawing name, project name)
 
 ---
 
@@ -1015,6 +1015,48 @@ None yet - Phase 0 completed successfully without issues
 - Bundle size impact: Negligible (new page, lazy-loaded)
 - **Issue encountered**: JSX syntax error (closing Box tag with Typography) - fixed immediately
 
+**Phase 7: UI Polish & Feedback** ✅ (2025-10-03)
+- Created SnackbarProvider context (Task 7.2):
+  - Centralized toast notification system using React Context API
+  - Queue-based notification display (shows one at a time)
+  - Auto-dismiss after 5 seconds with manual close option
+  - Supports success, error, warning, and info severities
+  - Material-UI Snackbar + Alert components with filled variant
+  - Positioned at bottom-right for non-intrusive UX
+- Created reusable ConfirmDialog component (Task 7.3):
+  - Consistent confirmation dialog for destructive actions
+  - Supports custom titles, messages, and button text
+  - Loading state with spinner and disabled buttons
+  - Severity-based button colors (error, warning, info)
+  - "Processing..." text during mutation execution
+- Integrated SnackbarProvider into app (index.tsx):
+  - Wrapped BrowserRouter in provider chain
+  - Available to all components via useSnackbar hook
+- Updated ProjectTags component:
+  - Replaced custom Dialog with ConfirmDialog
+  - Added success toast: "Drawing removed from {project}"
+  - Added error toast with error messages
+  - Loading states already present via React Query isLoading
+- Updated AssignProjectsDialog component:
+  - Added success toast: "Drawing assigned to {projects}"
+  - Added error toast with error messages
+  - Smart project name display (shows names for 1-2 projects, count for 3+)
+- Updated ProjectDetailPage component:
+  - Replaced window.confirm with ConfirmDialog
+  - Added success toast: "{Drawing} removed from project"
+  - Added error toast with error messages
+  - Confirmation state management with drawingId and drawingName
+- Updated AddDrawingsToProjectDialog component:
+  - Added success toast: "Added {count} drawing(s) to {project}"
+  - Added error toast with error messages
+- Loading states (Task 7.1):
+  - CircularProgress spinners already implemented via React Query isLoading
+  - Button disabled states already present in all dialogs
+  - "Processing..." text in ConfirmDialog during loading
+  - Skeleton loaders handled by React Query suspense
+- TypeScript compilation: ✅ PASS (no errors, build succeeded)
+- Bundle size impact: +258 bytes (+0.06% from Phase 6, minimal overhead)
+
 ### File List
 
 **Phase 1 Files:**
@@ -1043,6 +1085,15 @@ None yet - Phase 0 completed successfully without issues
 - `frontend/src/components/AddDrawingsToProjectDialog.tsx` - Dialog for adding multiple drawings to project (Story 8.1b)
 - `frontend/src/App.tsx` - Added route for `/projects/:id` (Story 8.1b)
 - `frontend/src/pages/ProjectsPage.tsx` - Made project names clickable to navigate to detail page (Story 8.1b)
+
+**Phase 7 Files:**
+- `frontend/src/contexts/SnackbarContext.tsx` - New context provider for toast notifications (Story 8.1b)
+- `frontend/src/components/ConfirmDialog.tsx` - Reusable confirmation dialog component (Story 8.1b)
+- `frontend/src/index.tsx` - Integrated SnackbarProvider into app (Story 8.1b)
+- `frontend/src/components/ProjectTags.tsx` - Updated with ConfirmDialog and toast notifications (Story 8.1b)
+- `frontend/src/components/AssignProjectsDialog.tsx` - Added toast notifications for success/error (Story 8.1b)
+- `frontend/src/pages/ProjectDetailPage.tsx` - Replaced window.confirm with ConfirmDialog and added toasts (Story 8.1b)
+- `frontend/src/components/AddDrawingsToProjectDialog.tsx` - Added toast notifications (Story 8.1b)
 
 ---
 

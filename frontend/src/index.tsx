@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { ThemeProvider, createTheme, alpha } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { SnackbarProvider } from './contexts/SnackbarContext.tsx';
 import App from './App.tsx';
 
 const queryClient = new QueryClient({
@@ -374,9 +375,11 @@ root.render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <SnackbarProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </SnackbarProvider>
       </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>

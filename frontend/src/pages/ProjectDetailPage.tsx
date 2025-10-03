@@ -40,6 +40,8 @@ import {
 } from '../services/api.ts';
 import ProjectTags from '../components/ProjectTags.tsx';
 import AddDrawingsToProjectDialog from '../components/AddDrawingsToProjectDialog.tsx';
+import { useSnackbar } from '../contexts/SnackbarContext.tsx';
+import ConfirmDialog from '../components/ConfirmDialog.tsx';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -67,8 +69,10 @@ const ProjectDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useSnackbar();
   const [currentTab, setCurrentTab] = useState(0);
   const [addDrawingsDialogOpen, setAddDrawingsDialogOpen] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState<{drawingId: string; drawingName: string} | null>(null);
 
   // Fetch project details
   const { data: project, isLoading: loadingProject, error: projectError } = useQuery<ProjectResponse>(
@@ -109,13 +113,24 @@ const ProjectDetailPage: React.FC = () => {
         queryClient.invalidateQueries(['project-drawings', id]);
         queryClient.invalidateQueries(['project', id]);
         queryClient.invalidateQueries('drawings');
+        const drawingName = confirmRemove?.drawingName || 'Drawing';
+        showSuccess(`${drawingName} removed from project`);
+        setConfirmRemove(null);
+      },
+      onError: (error: any) => {
+        showError(error?.message || 'Failed to remove drawing from project');
+        setConfirmRemove(null);
       },
     }
   );
 
   const handleRemoveDrawing = (drawingId: string, drawingName: string) => {
-    if (window.confirm(`Remove "${drawingName}" from this project?`)) {
-      removeMutation.mutate({ drawingId });
+    setConfirmRemove({ drawingId, drawingName });
+  };
+
+  const handleConfirmRemove = () => {
+    if (confirmRemove) {
+      removeMutation.mutate({ drawingId: confirmRemove.drawingId });
     }
   };
 
@@ -367,6 +382,18 @@ const ProjectDetailPage: React.FC = () => {
           projectName={project.name}
         />
       )}
+
+      {/* Confirm Remove Dialog */}
+      <ConfirmDialog
+        open={!!confirmRemove}
+        title="Remove Drawing from Project?"
+        message={`Are you sure you want to remove "${confirmRemove?.drawingName}" from this project?`}
+        confirmText="Remove"
+        onConfirm={handleConfirmRemove}
+        onCancel={() => setConfirmRemove(null)}
+        loading={removeMutation.isLoading}
+        severity="error"
+      />
     </Box>
   );
 };

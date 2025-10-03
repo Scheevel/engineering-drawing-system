@@ -20,6 +20,7 @@ import {
   type ProjectResponse,
   type ProjectSummary
 } from '../services/api.ts';
+import { useSnackbar } from '../contexts/SnackbarContext.tsx';
 
 interface AssignProjectsDialogProps {
   open: boolean;
@@ -37,6 +38,7 @@ const AssignProjectsDialog: React.FC<AssignProjectsDialogProps> = ({
   currentProjects = [],
 }) => {
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useSnackbar();
   const [selectedProjects, setSelectedProjects] = useState<ProjectResponse[]>([]);
 
   // Fetch all projects
@@ -56,7 +58,15 @@ const AssignProjectsDialog: React.FC<AssignProjectsDialogProps> = ({
       onSuccess: () => {
         queryClient.invalidateQueries('drawings');
         queryClient.invalidateQueries('projects');
+        const count = selectedProjects.length;
+        const projectNames = selectedProjects.length <= 2
+          ? selectedProjects.map(p => p.name).join(' and ')
+          : `${count} projects`;
+        showSuccess(`Drawing assigned to ${projectNames}`);
         handleClose();
+      },
+      onError: (error: any) => {
+        showError(error?.message || 'Failed to assign projects. Please try again.');
       },
     }
   );

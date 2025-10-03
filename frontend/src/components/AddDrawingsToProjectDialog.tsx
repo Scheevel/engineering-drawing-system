@@ -28,6 +28,7 @@ import {
   assignDrawingToProjects,
   type Drawing,
 } from '../services/api.ts';
+import { useSnackbar } from '../contexts/SnackbarContext.tsx';
 
 interface AddDrawingsToProjectDialogProps {
   open: boolean;
@@ -43,6 +44,7 @@ const AddDrawingsToProjectDialog: React.FC<AddDrawingsToProjectDialogProps> = ({
   projectName,
 }) => {
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useSnackbar();
   const [selectedDrawings, setSelectedDrawings] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [unassignedOnly, setUnassignedOnly] = useState(false);
@@ -96,7 +98,12 @@ const AddDrawingsToProjectDialog: React.FC<AddDrawingsToProjectDialogProps> = ({
         queryClient.invalidateQueries(['project-drawings', projectId]);
         queryClient.invalidateQueries(['project', projectId]);
         queryClient.invalidateQueries('drawings');
+        const count = selectedDrawings.length;
+        showSuccess(`Added ${count} drawing${count !== 1 ? 's' : ''} to ${projectName}`);
         handleClose();
+      },
+      onError: (error: any) => {
+        showError(error?.message || 'Failed to add drawings to project');
       },
     }
   );
