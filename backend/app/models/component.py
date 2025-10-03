@@ -156,7 +156,8 @@ class ComponentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     instance_identifier: Optional[str] = None
-    
+    dynamic_data: Optional[Dict[str, Any]] = {}  # Story 7.3: Flexible schema fields
+
     # Related data
     dimensions: List[DimensionResponse] = []
     specifications: List[SpecificationResponse] = []

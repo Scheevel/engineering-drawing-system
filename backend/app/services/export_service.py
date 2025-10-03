@@ -326,6 +326,7 @@ class ExportService:
                         "created_at": component.created_at,
                         "updated_at": component.updated_at,
                         "instance_identifier": component.instance_identifier,
+                        "dynamic_data": component.dynamic_data or {},  # Story 7.3: Include flexible schema fields
                         "dimensions": [DimensionResponse.from_orm(dim) for dim in component.dimensions] if component.dimensions else [],
                         "specifications": [SpecificationResponse.from_orm(spec) for spec in component.specifications] if component.specifications else [],
                     }
