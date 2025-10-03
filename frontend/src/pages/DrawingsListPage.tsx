@@ -47,6 +47,8 @@ import {
 } from '../services/api.ts';
 import DrawingReassignDialog from '../components/DrawingReassignDialog.tsx';
 import ExportDialog from '../components/export/ExportDialog.tsx';
+import ProjectTags from '../components/ProjectTags.tsx'; // Story 8.1b
+import AssignProjectsDialog from '../components/AssignProjectsDialog.tsx'; // Story 8.1b
 
 interface DrawingFilters {
   projectId: string;
@@ -64,6 +66,12 @@ const DrawingsListPage: React.FC = () => {
     status: 'all',
   });
   const [page, setPage] = useState(1);
+  // Story 8.1b: Assign projects dialog state
+  const [assignProjectsDialog, setAssignProjectsDialog] = useState<{
+    open: boolean;
+    drawingId: string;
+    drawingName?: string;
+  } | null>(null);
 
   // Fetch drawings with filters
   const { 
@@ -140,12 +148,6 @@ const DrawingsListPage: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this drawing? This action cannot be undone.')) {
       deleteMutation.mutate(drawingId);
     }
-  };
-
-  const getProjectName = (projectId?: string) => {
-    if (!projectId) return 'Unassigned';
-    const project = projects.find(p => p.id === projectId);
-    return project?.name || 'Unknown Project';
   };
 
   const getStatusChip = (status: string, processingProgress?: number) => {
@@ -239,7 +241,8 @@ const DrawingsListPage: React.FC = () => {
                 Assigned
               </Typography>
               <Typography variant="h4" color="success.main">
-                {drawings.filter(d => d.project_id).length}
+                {/* Story 8.1b: Count drawings with at least one project */}
+                {drawings.filter(d => d.projects && d.projects.length > 0).length}
               </Typography>
             </CardContent>
           </Card>
@@ -251,7 +254,8 @@ const DrawingsListPage: React.FC = () => {
                 Unassigned
               </Typography>
               <Typography variant="h4" color="warning.main">
-                {drawings.filter(d => !d.project_id).length}
+                {/* Story 8.1b: Count drawings with no projects */}
+                {drawings.filter(d => !d.projects || d.projects.length === 0).length}
               </Typography>
             </CardContent>
           </Card>
@@ -409,19 +413,17 @@ const DrawingsListPage: React.FC = () => {
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {drawing.project_id ? (
-                          <>
-                            <FolderIcon color="primary" fontSize="small" />
-                            {getProjectName(drawing.project_id)}
-                          </>
-                        ) : (
-                          <>
-                            <FolderOpenIcon sx={{ color: 'text.secondary' }} fontSize="small" />
-                            <Typography color="text.secondary">Unassigned</Typography>
-                          </>
-                        )}
-                      </Box>
+                      {/* Story 8.1b: Many-to-many project associations */}
+                      <ProjectTags
+                        drawingId={drawing.id}
+                        projects={drawing.projects}
+                        onAssignClick={() => setAssignProjectsDialog({
+                          open: true,
+                          drawingId: drawing.id,
+                          drawingName: drawing.original_name || drawing.file_name,
+                        })}
+                        compact
+                      />
                     </TableCell>
                     <TableCell>
                       {getStatusChip(drawing.processing_status, drawing.processing_progress)}
@@ -501,6 +503,17 @@ const DrawingsListPage: React.FC = () => {
         drawings={drawings}
         onClose={() => setExportDialogOpen(false)}
       />
+
+      {/* Story 8.1b: Assign Projects Dialog */}
+      {assignProjectsDialog && (
+        <AssignProjectsDialog
+          open={assignProjectsDialog.open}
+          onClose={() => setAssignProjectsDialog(null)}
+          drawingId={assignProjectsDialog.drawingId}
+          drawingName={assignProjectsDialog.drawingName}
+          currentProjects={drawings.find(d => d.id === assignProjectsDialog.drawingId)?.projects}
+        />
+      )}
     </Box>
   );
 };

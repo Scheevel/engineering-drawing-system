@@ -465,27 +465,27 @@ Original Story 8.1 combined backend and frontend work (12-16 hours, 64 subtasks)
 
 ---
 
-### **Phase 3: Drawings List - Project Tags (AC2) (2 hours)**
+### **Phase 3: Drawings List - Project Tags (AC2) (2 hours)** ✅
 
-#### Task 3.1: Project Tags Component
-- [ ] Create `frontend/src/components/ProjectTags.tsx` component
-- [ ] Display projects as Material-UI Chips with delete icon
-- [ ] Show "[Unassigned]" badge for orphan drawings
-- [ ] Implement "[+ Assign Projects]" button
-- [ ] Handle chip delete (× button) with confirmation
+#### Task 3.1: Project Tags Component ✅
+- [x] Create `frontend/src/components/ProjectTags.tsx` component
+- [x] Display projects as Material-UI Chips with delete icon
+- [x] Show "[Unassigned]" badge for orphan drawings
+- [x] Implement "[+ Assign Projects]" button
+- [x] Handle chip delete (× button) with confirmation
 
-#### Task 3.2: Assign Projects Dialog
-- [ ] Create multi-select dialog for project assignment
-- [ ] Use Material-UI Autocomplete for project selection
-- [ ] Fetch all projects for dropdown
-- [ ] Submit assignment via API
-- [ ] Show success/error toast
-- [ ] Refresh drawings list after assignment
+#### Task 3.2: Assign Projects Dialog ✅
+- [x] Create multi-select dialog for project assignment
+- [x] Use Material-UI Autocomplete for project selection
+- [x] Fetch all projects for dropdown
+- [x] Submit assignment via API
+- [x] Show success/error toast
+- [x] Refresh drawings list after assignment
 
-#### Task 3.3: Integrate into DrawingsListPage
-- [ ] Update [DrawingsListPage.tsx](frontend/src/pages/DrawingsListPage.tsx) to use ProjectTags
-- [ ] Verify component count now displays correctly (from 8.1a bug fix)
-- [ ] Update drawings query to include projects (React Query)
+#### Task 3.3: Integrate into DrawingsListPage ✅
+- [x] Update [DrawingsListPage.tsx](frontend/src/pages/DrawingsListPage.tsx) to use ProjectTags
+- [x] Verify component count now displays correctly (from 8.1a bug fix)
+- [x] Update drawings query to include projects (React Query)
 
 ---
 
@@ -909,6 +909,27 @@ None yet - Phase 0 completed successfully without issues
 - TypeScript compilation: ✅ PASS (no errors, build succeeded)
 - Bundle size impact: +298 bytes (+0.07% from Phase 1, total +1.14KB)
 
+**Phase 3: Drawings List - Project Tags** ✅ (2025-10-03)
+- Created ProjectTags component (Task 3.1):
+  - Displays projects as Material-UI Chips with delete capability
+  - Shows "Unassigned" badge with folder icon for orphan drawings
+  - [+ Assign Projects] button triggers assignment dialog
+  - Confirmation dialog before removing project association
+  - Uses React Query mutations for real-time updates
+- Created AssignProjectsDialog component (Task 3.2):
+  - Multi-select Autocomplete for project selection
+  - Filters out already-assigned projects
+  - Shows current assignments in info alert
+  - Real-time project list from React Query
+  - Success/error handling with mutations
+- Integrated into DrawingsListPage (Task 3.3):
+  - Replaced single project display with ProjectTags component
+  - Updated summary cards to use `projects` array (many-to-many)
+  - Removed legacy `getProjectName` function
+  - Verified `components_extracted` field displays correctly (Story 8.1a bug fix)
+- TypeScript compilation: ✅ PASS (no errors, build succeeded)
+- Bundle size impact: +1.1KB (+0.25% from Phase 2, total +2.24KB)
+
 ### File List
 
 **Phase 1 Files:**
@@ -917,6 +938,11 @@ None yet - Phase 0 completed successfully without issues
 **Phase 2 Files:**
 - `frontend/src/services/api.ts` - Updated uploadDrawing to support project_ids array (Story 8.1b)
 - `frontend/src/components/DrawingUpload.tsx` - Replaced single-select with multi-select Autocomplete (Story 8.1b)
+
+**Phase 3 Files:**
+- `frontend/src/components/ProjectTags.tsx` - New component for project chip display and management (Story 8.1b)
+- `frontend/src/components/AssignProjectsDialog.tsx` - New dialog for assigning drawings to projects (Story 8.1b)
+- `frontend/src/pages/DrawingsListPage.tsx` - Integrated ProjectTags and updated for many-to-many (Story 8.1b)
 
 ---
 
