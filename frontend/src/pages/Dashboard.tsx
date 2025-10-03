@@ -82,7 +82,15 @@ const Dashboard: React.FC = () => {
                     <Box sx={{ color: action.color, mb: 2 }}>
                       {action.icon}
                     </Box>
-                    <Typography variant="h6" component="h3" gutterBottom>
+                    <Typography
+                      variant="h6"
+                      component="h3"
+                      gutterBottom
+                      sx={{
+                        WebkitFontSmoothing: 'antialiased',
+                        MozOsxFontSmoothing: 'grayscale'
+                      }}
+                    >
                       {action.title}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
