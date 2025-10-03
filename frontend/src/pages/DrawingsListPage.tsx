@@ -31,7 +31,6 @@ import {
   Description as DrawingIcon,
   Folder as FolderIcon,
   FolderOpen as FolderOpenIcon,
-  SwapHoriz as ReassignIcon,
   FilterList as FilterIcon,
   Upload as UploadIcon,
   FileDownload as ExportIcon,
@@ -49,6 +48,9 @@ import DrawingReassignDialog from '../components/DrawingReassignDialog.tsx';
 import ExportDialog from '../components/export/ExportDialog.tsx';
 import ProjectTags from '../components/ProjectTags.tsx'; // Story 8.1b
 import AssignProjectsDialog from '../components/AssignProjectsDialog.tsx'; // Story 8.1b
+import BulkActionsToolbar from '../components/BulkActionsToolbar.tsx'; // Story 8.1b Phase 4
+import BulkAssignProjectsDialog from '../components/BulkAssignProjectsDialog.tsx'; // Story 8.1b Phase 4
+import BulkRemoveProjectsDialog from '../components/BulkRemoveProjectsDialog.tsx'; // Story 8.1b Phase 4
 
 interface DrawingFilters {
   projectId: string;
@@ -72,6 +74,9 @@ const DrawingsListPage: React.FC = () => {
     drawingId: string;
     drawingName?: string;
   } | null>(null);
+  // Story 8.1b Phase 4: Bulk operation dialogs
+  const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false);
+  const [bulkRemoveDialogOpen, setBulkRemoveDialogOpen] = useState(false);
 
   // Fetch drawings with filters
   const { 
@@ -128,12 +133,6 @@ const DrawingsListPage: React.FC = () => {
       setSelectedDrawings(prev => [...prev, drawingId]);
     } else {
       setSelectedDrawings(prev => prev.filter(id => id !== drawingId));
-    }
-  };
-
-  const handleReassignSelected = () => {
-    if (selectedDrawings.length > 0) {
-      setReassignDialogOpen(true);
     }
   };
 
@@ -320,25 +319,13 @@ const DrawingsListPage: React.FC = () => {
         </Stack>
       </Paper>
 
-      {/* Selection Actions */}
-      {selectedDrawings.length > 0 && (
-        <Alert 
-          severity="info" 
-          sx={{ mb: 2 }}
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              startIcon={<ReassignIcon />}
-              onClick={handleReassignSelected}
-            >
-              Reassign ({selectedDrawings.length})
-            </Button>
-          }
-        >
-          {selectedDrawings.length} drawing{selectedDrawings.length > 1 ? 's' : ''} selected
-        </Alert>
-      )}
+      {/* Story 8.1b Phase 4: Bulk Actions Toolbar */}
+      <BulkActionsToolbar
+        selectedCount={selectedDrawings.length}
+        onClearSelection={() => setSelectedDrawings([])}
+        onBulkAssign={() => setBulkAssignDialogOpen(true)}
+        onBulkRemove={() => setBulkRemoveDialogOpen(true)}
+      />
 
       {/* Drawings Table */}
       <Paper>
@@ -514,6 +501,31 @@ const DrawingsListPage: React.FC = () => {
           currentProjects={drawings.find(d => d.id === assignProjectsDialog.drawingId)?.projects}
         />
       )}
+
+      {/* Story 8.1b Phase 4: Bulk Assign Projects Dialog */}
+      <BulkAssignProjectsDialog
+        open={bulkAssignDialogOpen}
+        onClose={() => {
+          setBulkAssignDialogOpen(false);
+          setSelectedDrawings([]);
+        }}
+        drawingIds={selectedDrawings}
+        drawingNames={selectedDrawings.map(id => {
+          const drawing = drawings.find(d => d.id === id);
+          return drawing?.original_name || drawing?.file_name || 'Unknown';
+        })}
+      />
+
+      {/* Story 8.1b Phase 4: Bulk Remove Projects Dialog */}
+      <BulkRemoveProjectsDialog
+        open={bulkRemoveDialogOpen}
+        onClose={() => {
+          setBulkRemoveDialogOpen(false);
+          setSelectedDrawings([]);
+        }}
+        drawingIds={selectedDrawings}
+        drawings={drawings}
+      />
     </Box>
   );
 };

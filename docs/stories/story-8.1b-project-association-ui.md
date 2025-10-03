@@ -489,35 +489,35 @@ Original Story 8.1 combined backend and frontend work (12-16 hours, 64 subtasks)
 
 ---
 
-### **Phase 4: Bulk Operations Toolbar (AC3) (2 hours)**
+### **Phase 4: Bulk Operations Toolbar (AC3) (2 hours)** ✅
 
-#### Task 4.1: Bulk Selection State
-- [ ] Add checkbox column to drawings list
-- [ ] Implement selection state management (useState)
-- [ ] Track selected drawing IDs
-- [ ] Show/hide toolbar based on selection count
+#### Task 4.1: Bulk Selection State ✅
+- [x] Add checkbox column to drawings list
+- [x] Implement selection state management (useState)
+- [x] Track selected drawing IDs
+- [x] Show/hide toolbar based on selection count
 
-#### Task 4.2: Bulk Actions Toolbar Component
-- [ ] Create `frontend/src/components/BulkActionsToolbar.tsx`
-- [ ] Sticky/floating toolbar at top of page (position: sticky)
-- [ ] Display selected count
-- [ ] Add "Assign to Projects" button
-- [ ] Add "Remove from Projects" button
-- [ ] Add "Clear Selection" button
+#### Task 4.2: Bulk Actions Toolbar Component ✅
+- [x] Create `frontend/src/components/BulkActionsToolbar.tsx`
+- [x] Sticky/floating toolbar at top of page (position: sticky)
+- [x] Display selected count
+- [x] Add "Assign to Projects" button
+- [x] Add "Remove from Projects" button
+- [x] Add "Clear Selection" button
 
-#### Task 4.3: Bulk Assign Dialog
-- [ ] Create dialog for bulk project assignment
-- [ ] Multi-select autocomplete for projects
-- [ ] Submit to `POST /api/v1/drawings/bulk/assign-projects`
-- [ ] Atomic operation (all succeed or all fail)
-- [ ] Success toast with count
+#### Task 4.3: Bulk Assign Dialog ✅
+- [x] Create dialog for bulk project assignment
+- [x] Multi-select autocomplete for projects
+- [x] Submit to `POST /api/v1/drawings/bulk/assign-projects`
+- [x] Atomic operation (all succeed or all fail)
+- [x] Success toast with count
 
-#### Task 4.4: Bulk Remove Dialog
-- [ ] Create dialog for bulk project removal
-- [ ] Show only projects common to selected drawings
-- [ ] Submit to `POST /api/v1/drawings/bulk/remove-projects`
-- [ ] Confirmation dialog before removal
-- [ ] Success toast with count
+#### Task 4.4: Bulk Remove Dialog ✅
+- [x] Create dialog for bulk project removal
+- [x] Show only projects common to selected drawings
+- [x] Submit to `POST /api/v1/drawings/bulk/remove-projects`
+- [x] Confirmation dialog before removal
+- [x] Success toast with count
 
 ---
 
@@ -930,6 +930,33 @@ None yet - Phase 0 completed successfully without issues
 - TypeScript compilation: ✅ PASS (no errors, build succeeded)
 - Bundle size impact: +1.1KB (+0.25% from Phase 2, total +2.24KB)
 
+**Phase 4: Bulk Operations Toolbar** ✅ (2025-10-03)
+- Created BulkActionsToolbar component (Task 4.2):
+  - Sticky toolbar with primary color theme
+  - Shows selected count and clear button
+  - "Assign to Projects" and "Remove from Projects" buttons
+  - Auto-hides when selection count is 0
+- Created BulkAssignProjectsDialog component (Task 4.3):
+  - Multi-select Autocomplete for project selection
+  - Uses bulkAssignDrawingsToProjects API method
+  - Atomic operation via backend (all succeed or all fail)
+  - Success/error alerts with operation count
+  - Clears selection on success
+- Created BulkRemoveProjectsDialog component (Task 4.4):
+  - Smart detection of common projects across selected drawings
+  - Only shows projects that ALL selected drawings share
+  - Warning alert if no common projects found
+  - Uses bulkRemoveDrawingsFromProjects API method
+  - Confirmation warnings before removal
+  - Clears selection on success
+- Integrated into DrawingsListPage (Task 4.1):
+  - Replaced old Alert-based selection UI with BulkActionsToolbar
+  - Added bulk operation dialog state management
+  - Removed unused handleReassignSelected function and ReassignIcon import
+  - Selection state already existed (checkboxes in table)
+- TypeScript compilation: ✅ PASS (no errors, build succeeded)
+- Bundle size impact: +1.13KB (+0.25% from Phase 3, total +3.37KB)
+
 ### File List
 
 **Phase 1 Files:**
@@ -943,6 +970,12 @@ None yet - Phase 0 completed successfully without issues
 - `frontend/src/components/ProjectTags.tsx` - New component for project chip display and management (Story 8.1b)
 - `frontend/src/components/AssignProjectsDialog.tsx` - New dialog for assigning drawings to projects (Story 8.1b)
 - `frontend/src/pages/DrawingsListPage.tsx` - Integrated ProjectTags and updated for many-to-many (Story 8.1b)
+
+**Phase 4 Files:**
+- `frontend/src/components/BulkActionsToolbar.tsx` - New sticky toolbar for bulk operations (Story 8.1b)
+- `frontend/src/components/BulkAssignProjectsDialog.tsx` - Bulk project assignment dialog (Story 8.1b)
+- `frontend/src/components/BulkRemoveProjectsDialog.tsx` - Bulk project removal with common project detection (Story 8.1b)
+- `frontend/src/pages/DrawingsListPage.tsx` - Integrated bulk operations toolbar and dialogs (Story 8.1b)
 
 ---
 
