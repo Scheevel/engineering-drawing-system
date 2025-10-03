@@ -521,24 +521,24 @@ Original Story 8.1 combined backend and frontend work (12-16 hours, 64 subtasks)
 
 ---
 
-### **Phase 5: Filters (AC4) (1 hour)**
+### **Phase 5: Filters (AC4) (1 hour)** ✅
 
-#### Task 5.1: Project Filter Dropdown
-- [ ] Add "Filter by Project" multi-select to filter section
-- [ ] Use Material-UI Select or Autocomplete
-- [ ] Update drawings query with `?project_id=` param
-- [ ] Show active filter chips
+#### Task 5.1: Project Filter Dropdown ✅
+- [x] Add "Filter by Project" multi-select to filter section
+- [x] Use Material-UI Select or Autocomplete
+- [x] Update drawings query with `?project_id=` param
+- [x] Show active filter chips
 
-#### Task 5.2: Unassigned Filter Toggle
-- [ ] Add "Show Unassigned Only" checkbox
-- [ ] Update drawings query with `?unassigned=true` param
-- [ ] Show active filter indicator
+#### Task 5.2: Unassigned Filter Toggle ✅
+- [x] Add "Show Unassigned Only" checkbox
+- [x] Update drawings query with `?unassigned=true` param
+- [x] Show active filter indicator
 
-#### Task 5.3: Filter State Management
-- [ ] Use URL query params for filter state (React Router useSearchParams)
-- [ ] Persist filters across page reloads
-- [ ] Clear filters functionality
-- [ ] Update "Showing X of Y drawings" count
+#### Task 5.3: Filter State Management ✅
+- [x] Use URL query params for filter state (React Router useSearchParams)
+- [x] Persist filters across page reloads
+- [x] Clear filters functionality
+- [x] Update "Showing X of Y drawings" count
 
 ---
 
@@ -957,6 +957,32 @@ None yet - Phase 0 completed successfully without issues
 - TypeScript compilation: ✅ PASS (no errors, build succeeded)
 - Bundle size impact: +1.13KB (+0.25% from Phase 3, total +3.37KB)
 
+**Phase 5: Enhanced Filters with URL Persistence** ✅ (2025-10-03)
+- Enhanced filter state management (Task 5.3):
+  - Updated DrawingFilters interface with projectIds array and unassignedOnly boolean
+  - Implemented URL query param persistence using useSearchParams hook
+  - Filters persist across page reloads via URL (?projects=id1,id2&status=completed&unassigned=true)
+  - useEffect syncs filter state to URL automatically
+- Implemented multi-select project filter (Task 5.1):
+  - Replaced single-select dropdown with Material-UI Autocomplete (multiple mode)
+  - Shows selected projects as chips with folder icons
+  - Disables when "Unassigned Only" is active
+  - Active filter chips display below filter controls
+- Implemented unassigned-only toggle (Task 5.2):
+  - Switch component with warning color theme
+  - Clears project filter when enabled (mutual exclusivity)
+  - Updates query to use project_id: null for unassigned drawings
+- Added Clear Filters button:
+  - Appears when any filters are active
+  - Resets all filters to default state
+- Updated drawings query logic:
+  - Handles unassignedOnly flag with project_id: null
+  - Supports multi-project filter (currently uses first project due to backend limitations)
+  - Maintains backward compatibility with existing API
+- Cleaned up unused FolderOpenIcon import
+- TypeScript compilation: ✅ PASS (no errors, build succeeded)
+- Bundle size impact: +381 bytes (+0.09% from Phase 4, total +3.75KB)
+
 ### File List
 
 **Phase 1 Files:**
@@ -976,6 +1002,9 @@ None yet - Phase 0 completed successfully without issues
 - `frontend/src/components/BulkAssignProjectsDialog.tsx` - Bulk project assignment dialog (Story 8.1b)
 - `frontend/src/components/BulkRemoveProjectsDialog.tsx` - Bulk project removal with common project detection (Story 8.1b)
 - `frontend/src/pages/DrawingsListPage.tsx` - Integrated bulk operations toolbar and dialogs (Story 8.1b)
+
+**Phase 5 Files:**
+- `frontend/src/pages/DrawingsListPage.tsx` - Enhanced filters with multi-select, unassigned toggle, and URL persistence (Story 8.1b)
 
 ---
 

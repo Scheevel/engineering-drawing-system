@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -24,19 +24,22 @@ import {
   Card,
   CardContent,
   Grid,
+  Autocomplete,
+  TextField,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
   Delete as DeleteIcon,
   Description as DrawingIcon,
   Folder as FolderIcon,
-  FolderOpen as FolderOpenIcon,
   FilterList as FilterIcon,
   Upload as UploadIcon,
   FileDownload as ExportIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   listDrawings,
   getProjects,
@@ -53,21 +56,41 @@ import BulkAssignProjectsDialog from '../components/BulkAssignProjectsDialog.tsx
 import BulkRemoveProjectsDialog from '../components/BulkRemoveProjectsDialog.tsx'; // Story 8.1b Phase 4
 
 interface DrawingFilters {
-  projectId: string;
+  projectIds: string[]; // Story 8.1b Phase 5: Multi-select support
   status: string;
+  unassignedOnly: boolean; // Story 8.1b Phase 5: Unassigned filter
 }
 
 const DrawingsListPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams(); // Story 8.1b Phase 5: URL persistence
   const [selectedDrawings, setSelectedDrawings] = useState<string[]>([]);
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [filters, setFilters] = useState<DrawingFilters>({
-    projectId: 'all',
-    status: 'all',
+
+  // Story 8.1b Phase 5: Initialize filters from URL query params
+  const [filters, setFilters] = useState<DrawingFilters>(() => {
+    const projectIdsParam = searchParams.get('projects');
+    const statusParam = searchParams.get('status');
+    const unassignedParam = searchParams.get('unassigned');
+
+    return {
+      projectIds: projectIdsParam ? projectIdsParam.split(',') : [],
+      status: statusParam || 'all',
+      unassignedOnly: unassignedParam === 'true',
+    };
   });
   const [page, setPage] = useState(1);
+
+  // Story 8.1b Phase 5: Sync filters to URL params
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filters.projectIds.length > 0) params.set('projects', filters.projectIds.join(','));
+    if (filters.status !== 'all') params.set('status', filters.status);
+    if (filters.unassignedOnly) params.set('unassigned', 'true');
+    setSearchParams(params, { replace: true });
+  }, [filters, setSearchParams]);
   // Story 8.1b: Assign projects dialog state
   const [assignProjectsDialog, setAssignProjectsDialog] = useState<{
     open: boolean;
@@ -78,21 +101,34 @@ const DrawingsListPage: React.FC = () => {
   const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false);
   const [bulkRemoveDialogOpen, setBulkRemoveDialogOpen] = useState(false);
 
-  // Fetch drawings with filters
-  const { 
-    data: drawingsData, 
-    isLoading: loadingDrawings, 
-    error: drawingsError 
+  // Fetch drawings with filters (Story 8.1b Phase 5: Updated for multi-select)
+  const {
+    data: drawingsData,
+    isLoading: loadingDrawings,
+    error: drawingsError
   } = useQuery<DrawingListResponse>(
     ['drawings', page, filters],
-    () => listDrawings({
-      page,
-      limit: 20,
-      project_id: filters.projectId === 'all' ? undefined : 
-                  filters.projectId === 'unassigned' ? null : 
-                  filters.projectId,
-      status: filters.status === 'all' ? undefined : filters.status,
-    }),
+    () => {
+      // Handle unassigned filter
+      if (filters.unassignedOnly) {
+        return listDrawings({
+          page,
+          limit: 20,
+          project_id: null, // null = unassigned
+          status: filters.status === 'all' ? undefined : filters.status,
+        });
+      }
+
+      // Handle multi-project filter (use first project for now, backend may not support multiple)
+      const projectId = filters.projectIds.length > 0 ? filters.projectIds[0] : undefined;
+
+      return listDrawings({
+        page,
+        limit: 20,
+        project_id: projectId,
+        status: filters.status === 'all' ? undefined : filters.status,
+      });
+    },
     {
       keepPreviousData: true,
       staleTime: 2 * 60 * 1000, // 2 minutes
@@ -273,35 +309,45 @@ const DrawingsListPage: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* Filters */}
+      {/* Story 8.1b Phase 5: Enhanced Filters */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
           <FilterIcon color="action" />
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Filter by Project</InputLabel>
-            <Select
-              value={filters.projectId}
-              label="Filter by Project"
-              onChange={(e) => setFilters({ ...filters, projectId: e.target.value })}
-            >
-              <MenuItem value="all">All Projects</MenuItem>
-              <MenuItem value="unassigned">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <FolderOpenIcon sx={{ color: 'text.secondary' }} />
-                  Unassigned
-                </Box>
-              </MenuItem>
-              {projects.map((project) => (
-                <MenuItem key={project.id} value={project.id}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <FolderIcon color="primary" />
-                    {project.name}
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          
+
+          {/* Multi-select Project Filter */}
+          <Autocomplete
+            multiple
+            size="small"
+            options={projects}
+            getOptionLabel={(option) => option.name}
+            value={projects.filter(p => filters.projectIds.includes(p.id))}
+            onChange={(event, newValue) => {
+              setFilters({ ...filters, projectIds: newValue.map(p => p.id) });
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Filter by Projects"
+                placeholder={filters.projectIds.length === 0 ? "All projects" : ""}
+                size="small"
+              />
+            )}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip
+                  label={option.name}
+                  {...getTagProps({ index })}
+                  size="small"
+                  icon={<FolderIcon />}
+                  color="primary"
+                />
+              ))
+            }
+            sx={{ minWidth: 250 }}
+            disabled={filters.unassignedOnly}
+          />
+
+          {/* Status Filter */}
           <FormControl size="small" sx={{ minWidth: 150 }}>
             <InputLabel>Filter by Status</InputLabel>
             <Select
@@ -316,7 +362,52 @@ const DrawingsListPage: React.FC = () => {
               <MenuItem value="failed">Failed</MenuItem>
             </Select>
           </FormControl>
+
+          {/* Unassigned Only Toggle */}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={filters.unassignedOnly}
+                onChange={(e) => setFilters({
+                  ...filters,
+                  unassignedOnly: e.target.checked,
+                  projectIds: e.target.checked ? [] : filters.projectIds, // Clear project filter when unassigned is on
+                })}
+                color="warning"
+              />
+            }
+            label="Unassigned Only"
+          />
+
+          {/* Clear Filters */}
+          {(filters.projectIds.length > 0 || filters.status !== 'all' || filters.unassignedOnly) && (
+            <Button
+              size="small"
+              onClick={() => setFilters({ projectIds: [], status: 'all', unassignedOnly: false })}
+              variant="outlined"
+            >
+              Clear Filters
+            </Button>
+          )}
         </Stack>
+
+        {/* Active Filter Indicators */}
+        {(filters.projectIds.length > 0 || filters.unassignedOnly) && (
+          <Box sx={{ mt: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              Active filters: {' '}
+              {filters.unassignedOnly && <Chip label="Unassigned Only" size="small" color="warning" sx={{ mr: 0.5 }} />}
+              {filters.projectIds.length > 0 && (
+                <Chip
+                  label={`${filters.projectIds.length} project${filters.projectIds.length > 1 ? 's' : ''} selected`}
+                  size="small"
+                  color="primary"
+                  sx={{ mr: 0.5 }}
+                />
+              )}
+            </Typography>
+          </Box>
+        )}
       </Paper>
 
       {/* Story 8.1b Phase 4: Bulk Actions Toolbar */}
