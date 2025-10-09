@@ -98,15 +98,24 @@ async def get_project(
             updated_at=project.updated_at,
             drawing_count=len(project.drawings),
             drawings=[
-                {
-                    "id": str(drawing.id),
-                    "file_name": drawing.file_name,
-                    "original_name": drawing.original_name,
-                    "file_size": drawing.file_size,
-                    "upload_date": drawing.upload_date,
-                    "processing_status": drawing.processing_status,
-                    "components_extracted": len(drawing.components)
-                }
+                DrawingResponse(
+                    id=str(drawing.id),
+                    file_name=drawing.file_name,
+                    file_path=drawing.file_path,
+                    file_size=drawing.file_size,
+                    drawing_type=drawing.drawing_type,
+                    sheet_number=drawing.sheet_number,
+                    drawing_date=drawing.drawing_date,
+                    project_id=str(drawing.project_id) if drawing.project_id else None,
+                    processing_status=drawing.processing_status,
+                    processing_progress=drawing.processing_progress or 0,
+                    upload_date=drawing.upload_date,
+                    error_message=drawing.error_message,
+                    metadata=drawing.drawing_metadata,
+                    is_duplicate=False,
+                    projects=[],  # Omit for performance (avoid circular loading)
+                    components_extracted=len(drawing.components) if drawing.components else 0
+                )
                 for drawing in project.drawings
             ]
         )

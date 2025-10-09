@@ -280,7 +280,7 @@ export const listDrawings = async (params: {
   has_next: boolean;
   has_prev: boolean;
 }> => {
-  const response = await api.get('/drawings', { params });
+  const response = await api.get('/drawings/', { params });
   return response.data;
 };
 

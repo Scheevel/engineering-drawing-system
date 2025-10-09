@@ -49,10 +49,10 @@ const AddDrawingsToProjectDialog: React.FC<AddDrawingsToProjectDialogProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [unassignedOnly, setUnassignedOnly] = useState(false);
 
-  // Fetch all drawings
+  // Fetch all drawings (use max allowed limit of 100)
   const { data: drawingsData, isLoading } = useQuery(
     ['all-drawings-for-assignment'],
-    () => listDrawings({ limit: 1000 }), // Get all drawings
+    () => listDrawings({ limit: 100 }), // Backend max limit is 100
     {
       enabled: open,
       staleTime: 1 * 60 * 1000,

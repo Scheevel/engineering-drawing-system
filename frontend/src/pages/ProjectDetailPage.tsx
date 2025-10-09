@@ -100,7 +100,8 @@ const ProjectDetailPage: React.FC = () => {
     }
   );
 
-  const drawings = drawingsData?.items || [];
+  // Backend returns array directly (not paginated), handle both formats
+  const drawings = Array.isArray(drawingsData) ? drawingsData : (drawingsData?.items || []);
 
   // Remove drawing mutation
   const removeMutation = useMutation(
