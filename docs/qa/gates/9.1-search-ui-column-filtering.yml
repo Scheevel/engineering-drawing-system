@@ -1,0 +1,422 @@
+schema: 1
+story: '9.1'
+story_title: 'Search UI Refactoring - Column-Based Filtering & Confidence Display'
+gate: PENDING
+status_reason: 'Awaiting implementation and QA review'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-10-08T00:00:00Z'
+
+quality_score: null
+expires: null
+
+# This gate checklist will be used during implementation and QA review
+# Update this file as implementation progresses
+
+acceptance_criteria_checklist:
+  ac1_minimized_search_section:
+    description: 'Search section displays only 3 controls: Search box, Scope button, Sort dropdown'
+    verification_steps:
+      - check: 'Component Type dropdown removed from SearchPage.tsx lines 661-677'
+      - check: 'Project dropdown removed from SearchPage.tsx lines 679-704'
+      - check: 'Instance Identifier field removed from SearchPage.tsx lines 706-716'
+      - check: 'Clear Filters button removed from SearchPage.tsx lines 718-732'
+      - check: 'Grid layout reduced from 6 items to 3 items'
+      - check: 'Full-text search box with autocomplete preserved'
+      - check: 'Search Scope button preserved and functional'
+      - check: 'Sort By dropdown preserved and functional'
+      - check: 'Responsive layout works on mobile/tablet (breakpoints verified)'
+    status: PENDING
+
+  ac2_sortable_column_headers:
+    description: 'Data columns (Piece Mark, Type, Quantity, Confidence) are sortable'
+    verification_steps:
+      - check: 'TableSortLabel imported and applied to Piece Mark header'
+      - check: 'TableSortLabel imported and applied to Type header'
+      - check: 'TableSortLabel imported and applied to Quantity header'
+      - check: 'TableSortLabel imported and applied to Confidence header'
+      - check: 'Drawing and Project headers remain non-sortable (static)'
+      - check: 'Clicking header toggles sort: No Sort → Asc → Desc → No Sort'
+      - check: 'Active sort column shows visual indicator (▲ or ▼)'
+      - check: 'Sort state syncs to URL query param (?sort=confidence_desc)'
+      - check: 'SORT_OPTIONS array extended with new sort options'
+      - check: 'Sort By dropdown includes all sort options'
+    status: PENDING
+
+  ac3_confidence_column_quartile_filtering:
+    description: 'Confidence column filterable by quartiles with color indicators'
+    verification_steps:
+      - check: 'ConfidenceIndicator component created and displays percentage'
+      - check: 'Color-coded indicators implemented: Red (0-25%), Orange (25-50%), Yellow (50-75%), Green (75-100%)'
+      - check: 'ConfidenceColumnHeader component created with filter menu'
+      - check: 'Filter menu displays 5 options: All, 0-25%, 25-50%, 50-75%, 75-100%'
+      - check: 'Selecting quartile updates search results via API'
+      - check: 'Quartile selection syncs to URL (?confidence_quartile=4)'
+      - check: 'Active filter indicator shown in column header'
+      - check: 'Active filter badge displayed below table: [Confidence: 75-100% ×]'
+      - check: 'Confidence ranges mapped correctly to API params (confidence_min, confidence_max)'
+      - check: 'SearchResultRow updated to use ConfidenceIndicator'
+      - check: 'Tooltip shows exact confidence value on hover'
+    status: PENDING
+
+  ac4_column_header_filtering_type_project:
+    description: 'Type and Project columns filterable via header menus'
+    verification_steps:
+      - check: 'FilterableColumnHeader component created (reusable)'
+      - check: 'Type column header replaced with FilterableColumnHeader'
+      - check: 'Type filter menu displays all component types from componentTypesData'
+      - check: 'Type filter supports multi-select with checkboxes'
+      - check: 'Type filter includes search box for filtering long lists'
+      - check: 'Type filter syncs to URL (?type=wide_flange,channel)'
+      - check: 'Project column header replaced with FilterableColumnHeader'
+      - check: 'Project filter menu displays all projects'
+      - check: 'Project filter includes "Unassigned" option'
+      - check: 'Project filter supports multi-select with checkboxes'
+      - check: 'Project filter syncs to URL (?project=uuid1,uuid2)'
+      - check: 'Active filter badges display below table'
+      - check: 'Filter badges show type labels (not IDs)'
+      - check: 'Filter badges show project names (not UUIDs)'
+      - check: 'Individual chip delete updates URL params'
+      - check: 'Clear All Filters button resets all filters'
+    status: PENDING
+
+  ac5_backwards_compatibility:
+    description: 'Legacy URLs with old query params still work'
+    verification_steps:
+      - check: 'Migration logic implemented in useEffect'
+      - check: 'Old ?componentType=wide_flange converts to ?type=wide_flange'
+      - check: 'Old ?projectId=uuid converts to ?project=uuid'
+      - check: 'URL migration uses replace strategy (no history pollution)'
+      - check: 'Corrupted/invalid URL params handled gracefully'
+      - check: 'All filter state persists via URL across page reloads'
+      - check: 'Browser back/forward buttons work correctly with filter state'
+      - check: 'Shared URLs preserve exact filter configuration'
+    status: PENDING
+
+evidence:
+  tests_reviewed: null
+  risks_identified: null
+  trace:
+    ac_covered: []
+    ac_gaps: []
+
+# Non-functional requirements validation
+nfr_validation:
+  security:
+    status: PENDING
+    checks:
+      - 'No XSS vulnerabilities in filter values (Material-UI auto-escaping)'
+      - 'URL params properly sanitized before API calls'
+      - 'No injection risks in component type or project filters'
+      - 'No sensitive data exposed in confidence indicators'
+    notes: ''
+
+  performance:
+    status: PENDING
+    checks:
+      - 'Bundle size impact < 3KB (new components: ConfidenceIndicator, FilterableColumnHeader, ConfidenceColumnHeader)'
+      - 'No performance regression in table rendering (100+ results)'
+      - 'Filter state changes trigger efficient React Query cache updates'
+      - 'URL param updates debounced to prevent excessive history entries'
+      - 'Filter menu rendering optimized (virtualized lists if > 100 options)'
+    benchmarks:
+      - metric: 'Bundle size increase'
+        target: '< 3KB'
+        actual: null
+      - metric: 'Table render time (100 results)'
+        target: '< 500ms'
+        actual: null
+      - metric: 'Filter menu open time'
+        target: '< 100ms'
+        actual: null
+    notes: ''
+
+  usability:
+    status: PENDING
+    checks:
+      - 'Column header click areas are large enough (mobile: min 44x44px)'
+      - 'Filter menus positioned correctly (no viewport overflow)'
+      - 'Active filters clearly visible (badges contrast ratio > 4.5:1)'
+      - 'Sort indicators clearly visible (icons + ARIA labels)'
+      - 'Color-coded confidence indicators distinguishable for colorblind users (use shapes/patterns too)'
+      - 'Keyboard navigation works for all filter controls (Tab, Enter, Escape)'
+      - 'Screen reader announces filter state changes (ARIA live regions)'
+    notes: ''
+
+  reliability:
+    status: PENDING
+    checks:
+      - 'API errors during filtering show user-friendly messages'
+      - 'Empty filter results show "No results" message (not blank screen)'
+      - 'Filter state recovers gracefully from API failures'
+      - 'URL params validated on mount (handle malformed URLs)'
+      - 'Loading states prevent user confusion during filter changes'
+    notes: ''
+
+  maintainability:
+    status: PENDING
+    checks:
+      - 'TypeScript interfaces defined for all filter types'
+      - 'Reusable FilterableColumnHeader component documented'
+      - 'Filter state management centralized (not scattered across components)'
+      - 'URL param helpers extracted to utility functions'
+      - 'Component naming follows project conventions'
+      - 'No code duplication between Type and Project filter logic'
+    notes: ''
+
+# Risk assessment specific to this refactoring
+risk_areas:
+  high_risk:
+    - area: 'Breaking changes to existing search functionality'
+      mitigation: 'Implement backwards compatibility for old URL params. Test all existing search workflows.'
+      test_coverage_required: 'E2E tests for legacy URL migration'
+
+    - area: 'Backend API may not support new confidence_min/max or array params'
+      mitigation: 'Verify API capabilities before implementation. Plan client-side workarounds if needed.'
+      test_coverage_required: 'Integration tests with actual backend API'
+
+  medium_risk:
+    - area: 'Performance degradation with complex filters (multiple active filters + sort)'
+      mitigation: 'Profile React Query cache behavior. Add performance tests for worst-case scenarios.'
+      test_coverage_required: 'Performance benchmarks with 500+ results and 5+ active filters'
+
+    - area: 'Accessibility issues with color-only confidence indicators'
+      mitigation: 'Use color + icon/shape for colorblind users. Add ARIA labels and tooltips.'
+      test_coverage_required: 'Accessibility audit with axe-core, manual screen reader testing'
+
+  low_risk:
+    - area: 'Mobile UX with smaller tap targets on column headers'
+      mitigation: 'Ensure min 44x44px tap targets. Test on actual mobile devices.'
+      test_coverage_required: 'Responsive design testing on mobile breakpoints'
+
+    - area: 'URL length limits with many active filters'
+      mitigation: 'Monitor URL length. Consider alternative state storage if > 2000 chars.'
+      test_coverage_required: 'Edge case testing with maximum filters applied'
+
+# Test requirements
+test_requirements:
+  unit_tests:
+    - component: 'ConfidenceIndicator'
+      scenarios:
+        - 'Displays correct color for each quartile range'
+        - 'Shows percentage text with proper formatting'
+        - 'Handles null/undefined confidence gracefully'
+        - 'Tooltip displays exact value'
+
+    - component: 'ConfidenceColumnHeader'
+      scenarios:
+        - 'Opens filter menu on click'
+        - 'Displays all quartile options with color indicators'
+        - 'Emits filter change events correctly'
+        - 'Shows active filter indicator when quartile selected'
+
+    - component: 'FilterableColumnHeader'
+      scenarios:
+        - 'Opens filter menu on click'
+        - 'Multi-select checkboxes work correctly'
+        - 'Search box filters options list'
+        - 'Shows selected count in header'
+        - 'Emits filter change events with correct values'
+
+  integration_tests:
+    - workflow: 'Apply confidence quartile filter'
+      steps:
+        - 'Click Confidence header'
+        - 'Select 75-100% quartile'
+        - 'Verify API called with confidence_min=0.75, confidence_max=1.0'
+        - 'Verify results filtered correctly'
+        - 'Verify URL updated with ?confidence_quartile=4'
+
+    - workflow: 'Apply multi-select Type filter'
+      steps:
+        - 'Click Type header'
+        - 'Select Wide Flange and Channel'
+        - 'Verify API called with component_type array'
+        - 'Verify results filtered correctly'
+        - 'Verify URL updated with ?type=wide_flange,channel'
+        - 'Verify filter badge displays: [Type: Wide Flange, Channel ×]'
+
+    - workflow: 'Sort by Confidence'
+      steps:
+        - 'Click Confidence header once (sort ascending)'
+        - 'Verify results sorted 0% → 100%'
+        - 'Click again (sort descending)'
+        - 'Verify results sorted 100% → 0%'
+        - 'Click again (clear sort)'
+        - 'Verify results return to relevance order'
+
+  e2e_tests:
+    - scenario: 'Complete filtering workflow'
+      steps:
+        - 'Navigate to /search'
+        - 'Enter search query "beam"'
+        - 'Apply confidence filter: 75-100%'
+        - 'Apply type filter: Wide Flange'
+        - 'Sort by quantity descending'
+        - 'Verify results match all criteria'
+        - 'Verify URL contains all filter params'
+        - 'Reload page'
+        - 'Verify all filters persist'
+
+    - scenario: 'Legacy URL migration'
+      steps:
+        - 'Navigate to /search?query=beam&componentType=wide_flange&projectId=uuid'
+        - 'Verify URL migrates to /search?query=beam&type=wide_flange&project=uuid'
+        - 'Verify filters applied correctly'
+        - 'Verify no console errors'
+
+    - scenario: 'Clear filters workflow'
+      steps:
+        - 'Apply multiple filters (confidence, type, project)'
+        - 'Verify filter badges display'
+        - 'Click individual filter chip × button'
+        - 'Verify filter removed and results updated'
+        - 'Click Clear All Filters button'
+        - 'Verify all filters cleared'
+        - 'Verify URL params removed'
+
+# Code quality checks
+code_quality_checks:
+  typescript:
+    - 'No TypeScript compilation errors'
+    - 'All filter state types properly defined'
+    - 'No usage of "any" type in filter logic'
+    - 'Props interfaces for all new components'
+
+  react_best_practices:
+    - 'useCallback for filter handlers (prevent unnecessary re-renders)'
+    - 'useMemo for filter transformations (URL params → filters)'
+    - 'React.memo for FilterableColumnHeader (prevent re-render on unrelated state changes)'
+    - 'No prop drilling (use Context if filter state needed deeply)'
+
+  material_ui:
+    - 'Consistent use of theme spacing (no hardcoded px values)'
+    - 'Proper use of Material-UI breakpoints for responsive design'
+    - 'ARIA labels on all interactive elements'
+    - 'Keyboard navigation support (onKeyDown handlers)'
+
+  performance:
+    - 'Filter state updates batched (avoid multiple React Query calls)'
+    - 'URL param updates debounced (avoid history spam)'
+    - 'Table re-renders minimized (proper React Query keys)'
+
+# Accessibility requirements (WCAG 2.1 Level AA)
+accessibility_requirements:
+  - standard: 'WCAG 2.1 Level AA'
+    checks:
+      - criterion: '1.4.3 Contrast (Minimum)'
+        requirement: 'Filter badges have contrast ratio > 4.5:1'
+        test_method: 'Automated (axe-core) + Manual (contrast checker tool)'
+
+      - criterion: '1.4.1 Use of Color'
+        requirement: 'Confidence indicators use color + icon/shape (not color alone)'
+        test_method: 'Manual testing with colorblind simulation'
+
+      - criterion: '2.1.1 Keyboard'
+        requirement: 'All filter menus accessible via keyboard (Tab, Enter, Escape, Arrow keys)'
+        test_method: 'Manual testing with keyboard only (no mouse)'
+
+      - criterion: '4.1.2 Name, Role, Value'
+        requirement: 'All filter controls have proper ARIA labels and roles'
+        test_method: 'Automated (axe-core) + Manual (screen reader testing with NVDA/JAWS)'
+
+      - criterion: '4.1.3 Status Messages'
+        requirement: 'Filter state changes announced to screen readers (ARIA live regions)'
+        test_method: 'Manual screen reader testing'
+
+# Top issues to watch for during implementation
+top_concerns:
+  - id: 'IMPL-001'
+    priority: high
+    concern: 'Backend API may not support confidence_min/confidence_max query params'
+    check_before_coding: 'Verify API endpoint with curl/Postman before starting Phase 4'
+    fallback_plan: 'Client-side filtering of results if backend unsupported'
+
+  - id: 'IMPL-002'
+    priority: high
+    concern: 'Backend API may not support array params for component_type and project_id'
+    check_before_coding: 'Test API with ?component_type=wide_flange,channel to verify array support'
+    fallback_plan: 'Show warning toast and use only first selected value'
+
+  - id: 'IMPL-003'
+    priority: medium
+    concern: 'Breaking existing bookmarked URLs with old query params'
+    mitigation: 'Implement thorough migration logic and E2E test for legacy URLs'
+    test_coverage: 'E2E test scenario "Legacy URL migration" (see test_requirements)'
+
+  - id: 'IMPL-004'
+    priority: medium
+    concern: 'Colorblind users cannot distinguish confidence indicators'
+    mitigation: 'Use color + distinct icons/shapes for each quartile'
+    test_coverage: 'Manual testing with colorblind simulation tools (Chrome DevTools)'
+
+  - id: 'IMPL-005'
+    priority: low
+    concern: 'Performance degradation with complex filter combinations'
+    mitigation: 'Profile with React DevTools Profiler. Optimize with React.memo and useMemo.'
+    test_coverage: 'Performance benchmark test with 500+ results and 5+ filters'
+
+# Phase-specific validation
+phase_validation:
+  phase_1_state_management:
+    must_complete:
+      - 'TypeScript interfaces defined and compile without errors'
+      - 'URL param helpers (filtersToUrlParams, urlParamsToFilters) unit tested'
+      - 'Migration logic (migrateLegacyParams) tested with old URL formats'
+    quality_gate: 'TypeScript compilation passes, unit tests pass'
+
+  phase_2_minimize_search:
+    must_complete:
+      - 'Search section displays only 3 controls (visual regression test)'
+      - 'Existing search, scope, and sort functionality unaffected'
+      - 'Responsive layout verified on mobile/tablet breakpoints'
+    quality_gate: 'E2E smoke test passes for basic search workflow'
+
+  phase_3_sortable_headers:
+    must_complete:
+      - 'All sortable columns display TableSortLabel'
+      - '3-state toggle works (No Sort → Asc → Desc → No Sort)'
+      - 'URL params update correctly for each sort state'
+    quality_gate: 'E2E test passes for sort workflow'
+
+  phase_4_confidence_column:
+    must_complete:
+      - 'ConfidenceIndicator displays color-coded indicators'
+      - 'Quartile filtering works (API call with correct params)'
+      - 'Filter badges display correctly'
+      - 'Colorblind-friendly design verified'
+    quality_gate: 'Integration test passes for confidence filtering'
+
+  phase_5_filterable_headers:
+    must_complete:
+      - 'Type and Project column filters functional'
+      - 'Multi-select checkboxes work correctly'
+      - 'Filter badges display with correct labels (not IDs/UUIDs)'
+      - 'Clear All Filters button resets all state'
+    quality_gate: 'E2E test passes for complete filtering workflow'
+
+waiver:
+  active: false
+
+recommendations:
+  immediate:
+    - action: 'Verify backend API capabilities before starting implementation'
+      refs: ['IMPL-001', 'IMPL-002']
+      priority: 'high'
+
+    - action: 'Create visual designs for color-blind accessible confidence indicators'
+      refs: ['IMPL-004']
+      priority: 'medium'
+
+    - action: 'Set up performance benchmarking infrastructure before Phase 4'
+      refs: ['IMPL-005']
+      priority: 'medium'
+
+  future:
+    - action: 'Consider adding saved filter presets feature (similar to saved searches)'
+      refs: ['Story 9.2 (future enhancement)']
+
+    - action: 'Implement column visibility toggle (show/hide columns)'
+      refs: ['Story 9.3 (future enhancement)']
+
+    - action: 'Add export filtered results to CSV functionality'
+      refs: ['Story 7.2 (existing export feature)']
