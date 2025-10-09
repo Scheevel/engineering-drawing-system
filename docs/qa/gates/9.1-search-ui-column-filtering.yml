@@ -2,12 +2,23 @@ schema: 1
 story: '9.1'
 story_title: 'Search UI Refactoring - Column-Based Filtering & Confidence Display'
 gate: PENDING
-status_reason: 'Awaiting implementation and QA review'
-reviewer: 'Quinn (Test Architect)'
-updated: '2025-10-08T00:00:00Z'
+status_reason: 'Backend verified (confidence filtering supported, single-select required). Ready for implementation.'
+reviewer: 'Sarah (Product Owner) - Initial Validation | Quinn (Test Architect) - QA Review Pending'
+updated: '2025-10-09T00:00:00Z'
 
 quality_score: null
 expires: null
+
+# Backend Verification Results (2025-10-09)
+backend_verification:
+  date: '2025-10-09'
+  verified_by: 'Sarah (Product Owner)'
+  confidence_filtering: 'SUPPORTED'
+  confidence_params_tested: 'confidence_min=0.75&confidence_max=1.0'
+  array_parameters: 'NOT_SUPPORTED'
+  array_test_result: 'Pydantic validation error - backend expects single enum value'
+  design_decision: 'Modified AC4 to single-select (radio buttons) instead of multi-select (checkboxes)'
+  story_modifications: 'Updated AC4, Technical Notes, Tasks (Phase 5), State Management to use single values'
 
 # This gate checklist will be used during implementation and QA review
 # Update this file as implementation progresses

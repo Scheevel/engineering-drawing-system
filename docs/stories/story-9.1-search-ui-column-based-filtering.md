@@ -2,19 +2,19 @@
 
 ## Status
 
-**Status**: ✅ Ready for Development
+**Status**: ✅ Ready for Development (Backend Verified)
 **Epic**: 9 - Search & Discovery UX Improvements
 **Sprint**: TBD
 **Assigned To**: TBD
-**Estimated Effort**: 4-6 hours (5 phases)
+**Estimated Effort**: 3.5-5 hours (5 phases)
 **Priority**: Medium
-**Dependencies**: None
+**Dependencies**: None (Backend verified: confidence filtering supported, single-select required)
 **Story Type**: Refactoring + Feature Enhancement
 **Created By**: Mary (Business Analyst)
 **Creation Date**: 2025-10-08
-**Validated By**: TBD
-**Validation Date**: TBD
-**Implementation Readiness Score**: 9/10
+**Validated By**: Sarah (Product Owner)
+**Validation Date**: 2025-10-09
+**Implementation Readiness Score**: 9.2/10
 
 ---
 
@@ -230,13 +230,13 @@ Table Cell Display:
 **Then** menu displays:
 - **All Types** (default, clears filter)
 - List of available component types (from `componentTypesData`)
-- Checkboxes for multi-select filtering
-- Search box for filtering long lists
+- Radio buttons for single-select filtering
+- Search box for filtering long lists (optional, when > 10 types)
 
-**And** selecting types:
+**And** selecting a type:
 - Applies filter to search results (backend API call with `component_type` param)
-- Updates URL query param (e.g., `?type=wide_flange,channel`)
-- Shows active filter badge: `[Type: Wide Flange, Channel ×]`
+- Updates URL query param (e.g., `?type=wide_flange`)
+- Shows active filter badge: `[Type: Wide Flange ×]`
 
 **Given** user clicks **Project** column header
 **When** header menu opens
@@ -244,12 +244,12 @@ Table Cell Display:
 - **All Projects** (default, clears filter)
 - **Unassigned** (drawings with no project)
 - List of available projects (from `projects` query)
-- Checkboxes for multi-select filtering
+- Radio buttons for single-select filtering
 
-**And** selecting projects:
+**And** selecting a project:
 - Applies filter to search results (backend API call with `project_id` param)
-- Updates URL query param (e.g., `?project=uuid1,uuid2`)
-- Shows active filter badge: `[Project: Bridge 405, Downtown Rehab ×]`
+- Updates URL query param (e.g., `?project=uuid`)
+- Shows active filter badge: `[Project: Bridge 405 ×]`
 
 **Visual Reference:**
 ```
@@ -257,11 +257,11 @@ Type Column Menu:
 ┌──────────────────────────┐
 │ [Search types...]        │
 ├──────────────────────────┤
-│ ☑ All Types              │
-│ ☑ Wide Flange (W)        │ ← Multi-select
-│ ☐ Channel (C)            │
-│ ☐ Angle (L)              │
-│ ☐ HSS                    │
+│ ○ All Types              │
+│ ◉ Wide Flange (W)        │ ← Single-select (radio)
+│ ○ Channel (C)            │
+│ ○ Angle (L)              │
+│ ○ HSS                    │
 └──────────────────────────┘
 
 Active Filter Badges (below table):
@@ -273,8 +273,8 @@ Active Filter Badges (below table):
 
 **Implementation:**
 - Create `FilterableColumnHeader.tsx` component (reusable)
-- Use Material-UI `Menu` + `FormGroup` + `Checkbox`
-- Add state for active filters: `componentTypeFilters`, `projectFilters`
+- Use Material-UI `Menu` + `RadioGroup` + `Radio` for single-select
+- Add state for active filters: `componentTypeFilter`, `projectFilter` (singular, not arrays)
 - Update search query construction (lines 401-427)
 - Display active filter chips (lines 868-892) - repurpose existing implementation
 - Sync all filters to URL query params
@@ -313,8 +313,8 @@ Active Filter Badges (below table):
     query: string;
     scope: string[];
     sortBy: string;
-    componentTypes: string[];     // NEW: Array instead of single value
-    projectIds: string[];         // NEW: Array instead of single value
+    componentType: string;        // NEW: Single value (backend constraint)
+    projectId: string;            // NEW: Single value (backend constraint)
     confidenceQuartile: number;   // NEW: 0-4 (0 = all, 1-4 = quartiles)
   }
   ```
@@ -332,7 +332,7 @@ Active Filter Badges (below table):
 
 #### Task 1.3: Update Search Query Construction
 - [ ] Modify `searchComponents` call (lines 402-412) to use new filters
-- [ ] Handle array params for multi-select filters (componentTypes, projectIds)
+- [ ] Pass single values for componentType and projectId filters (backend supports single enum only)
 - [ ] Map confidenceQuartile to min/max ranges
 - [ ] Update React Query key to include new filters (line 401)
 
@@ -452,38 +452,38 @@ Active Filter Badges (below table):
 
 ---
 
-### **Phase 5: Filterable Column Headers (Type & Project) (1.5 hours)**
+### **Phase 5: Filterable Column Headers (Type & Project) (1 hour)**
 
 #### Task 5.1: Create FilterableColumnHeader Component
 - [ ] Create `frontend/src/components/FilterableColumnHeader.tsx` (reusable)
-- [ ] Props: `label`, `options`, `selectedValues`, `onChange`, `searchable`
-- [ ] Implement Material-UI `Menu` with checkboxes
+- [ ] Props: `label`, `options`, `selectedValue`, `onChange`, `searchable`
+- [ ] Implement Material-UI `Menu` with `RadioGroup` for single-select
 - [ ] Add search box for filtering options (conditional, when > 10 items)
-- [ ] Show selected count in header (e.g., "Type (2)")
-- [ ] Handle multi-select state
+- [ ] Show active filter in header when selected (e.g., "Type: Wide Flange")
+- [ ] Handle single-select radio button state
 
 #### Task 5.2: Implement Type Column Filtering
 - [ ] Replace static "Type" header (line 998) with FilterableColumnHeader
 - [ ] Pass componentTypesData as options
 - [ ] Use `getComponentTypeLabel` helper (lines 100-118) for display
-- [ ] Add `componentTypeFilters` state (string array)
-- [ ] Update search query with component_type array param
-- [ ] Sync to URL (`?type=wide_flange,channel`)
+- [ ] Add `componentTypeFilter` state (single string value)
+- [ ] Update search query with component_type single value param
+- [ ] Sync to URL (`?type=wide_flange`)
 
 #### Task 5.3: Implement Project Column Filtering
 - [ ] Replace static "Project" header (line 1001) with FilterableColumnHeader
 - [ ] Pass projects data as options
 - [ ] Include "Unassigned" as special option (project_id: null)
-- [ ] Add `projectFilters` state (string array)
-- [ ] Update search query with project_id array param
+- [ ] Add `projectFilter` state (single string value)
+- [ ] Update search query with project_id single value param
 - [ ] Handle "Unassigned" filter specially (backend expects null)
-- [ ] Sync to URL (`?project=uuid1,uuid2,unassigned`)
+- [ ] Sync to URL (`?project=uuid`)
 
 #### Task 5.4: Update Active Filters Display
 - [ ] Repurpose existing chips section (lines 868-892)
 - [ ] Show chips for each active filter:
-  - Component Type chips (show type labels, not IDs)
-  - Project chips (show project names, not IDs)
+  - Component Type chip (show type label, not ID) - singular
+  - Project chip (show project name, not ID) - singular
   - Confidence quartile chip (e.g., "Confidence: 75-100%")
 - [ ] Add "Clear All Filters" button
 - [ ] Implement individual chip delete (update URL params)
@@ -494,21 +494,24 @@ Active Filter Badges (below table):
 
 ### API Changes Required
 
-**Backend API must support new query params:**
+**Backend API Capabilities (VERIFIED 2025-10-09):**
 
-Confidence filtering (NEW):
+✅ **Confidence filtering - SUPPORTED**:
 ```
 GET /api/v1/search/components?confidence_min=0.75&confidence_max=1.0
 ```
 
-Multi-select filters (ENHANCEMENT):
+❌ **Array parameters - NOT SUPPORTED**:
+Backend uses Pydantic enum validation expecting single values:
 ```
-GET /api/v1/search/components?component_type=wide_flange,channel&project_id=uuid1,uuid2
+# WORKS:
+GET /api/v1/search/components?component_type=wide_flange&project_id=uuid
+
+# FAILS (Pydantic validation error):
+GET /api/v1/search/components?component_type=wide_flange,channel
 ```
 
-**If backend doesn't support arrays**, implement client-side workaround:
-- Make multiple API calls and merge results, OR
-- Send first selected value only with warning toast
+**Design Decision**: Implement **single-select filtering** (radio buttons) to match backend constraints. Multi-select support deferred to future backend enhancement story.
 
 ### Component Architecture
 
@@ -540,15 +543,15 @@ SearchPage
 
 **URL as Source of Truth:**
 ```typescript
-// URL: ?query=beam&type=wide_flange,channel&confidence_quartile=4&sort=confidence_desc
+// URL: ?query=beam&type=wide_flange&confidence_quartile=4&sort=confidence_desc
 
 const [searchParams, setSearchParams] = useSearchParams();
 
 // Read filters from URL
 const filters = useMemo(() => ({
   query: searchParams.get('query') || '',
-  componentTypes: searchParams.get('type')?.split(',') || [],
-  projectIds: searchParams.get('project')?.split(',') || [],
+  componentType: searchParams.get('type') || '',       // Single value
+  projectId: searchParams.get('project') || '',        // Single value
   confidenceQuartile: parseInt(searchParams.get('confidence_quartile') || '0'),
   sortBy: searchParams.get('sort') || 'relevance',
 }), [searchParams]);
@@ -556,11 +559,7 @@ const filters = useMemo(() => ({
 // Update filters (automatically updates URL)
 const updateFilter = (key: string, value: any) => {
   const params = new URLSearchParams(searchParams);
-  if (Array.isArray(value)) {
-    params.set(key, value.join(','));
-  } else {
-    params.set(key, value.toString());
-  }
+  params.set(key, value.toString());
   setSearchParams(params);
 };
 ```
@@ -569,7 +568,7 @@ const updateFilter = (key: string, value: any) => {
 
 - `TableSortLabel` - Sortable column headers
 - `Menu` + `MenuItem` - Column header filter dropdowns
-- `FormGroup` + `Checkbox` - Multi-select filters
+- `RadioGroup` + `Radio` - Single-select filters (backend constraint)
 - `Chip` - Active filter badges
 - `Box` - Confidence color indicator
 - `Tooltip` - Confidence hover details
@@ -696,10 +695,17 @@ useEffect(() => {
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2025-10-08 | 1.0 | Initial story creation from elicitation | Mary (Business Analyst) |
+| 2025-10-09 | 1.1 | PO validation complete: Backend verified, modified AC4 to single-select (radio buttons) due to backend Pydantic enum constraint. Confidence filtering supported. Score: 9.2/10 | Sarah (Product Owner) |
 
 ---
 
 ## Notes
+
+**Backend Verification Results (2025-10-09):**
+- ✅ **Confidence Filtering**: Backend supports `confidence_min` and `confidence_max` query parameters
+- ❌ **Array Parameters**: Backend uses Pydantic enum validation expecting single values (not comma-separated arrays)
+- **Design Decision**: Modified AC4 from multi-select (checkboxes) to single-select (radio buttons) to match backend capabilities
+- **Future Enhancement**: Multi-select filtering can be added once backend supports array parameters or implements OR logic for filters
 
 **Design Philosophy:**
 This story transforms search from a "**search-then-filter**" model to a "**browse-and-filter**" model. Engineers familiar with Excel and Google Sheets will find the column-based filtering intuitive and efficient.
