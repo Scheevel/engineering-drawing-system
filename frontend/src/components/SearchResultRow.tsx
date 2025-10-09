@@ -19,6 +19,7 @@ import {
   Visibility as ViewIcon,
 } from '@mui/icons-material';
 import HighlightedText from './HighlightedText.tsx';
+import ConfidenceIndicator from './ConfidenceIndicator.tsx';
 
 interface SearchResultRowProps {
   component: any;
@@ -148,12 +149,12 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({
         </TableCell>
         <TableCell>{component.project_name || 'N/A'}</TableCell>
         <TableCell>
-          {component.confidence_score !== null && component.confidence_score !== undefined && (
-            <Chip
-              label={`${Math.round(component.confidence_score * 100)}%`}
-              size="small"
-              color={component.confidence_score > 0.8 ? 'success' : 'warning'}
-            />
+          {component.confidence_score !== null && component.confidence_score !== undefined ? (
+            <ConfidenceIndicator confidence={component.confidence_score} showLabel={true} />
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              N/A
+            </Typography>
           )}
         </TableCell>
         <TableCell>

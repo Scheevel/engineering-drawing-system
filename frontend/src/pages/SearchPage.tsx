@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -68,12 +69,14 @@ import FlexibleComponentCard from '../components/flexible/FlexibleComponentCard.
 import SearchResultRow from '../components/SearchResultRow.tsx';
 import SavedSearchDialog from '../components/SavedSearchDialog.tsx';
 import ScopeEffectivenessMetrics from '../components/ScopeEffectivenessMetrics.tsx';
+import UnifiedColumnHeader, { type ColumnFilterOption } from '../components/UnifiedColumnHeader.tsx';
 import { useDebounce } from '../hooks/useDebounce.ts';
 
 interface SearchFilters {
-  componentType: string;
-  projectId: string;
-  instanceIdentifier: string;
+  componentType: string;        // Single value (backend constraint)
+  projectId: string;            // Single value (backend constraint)
+  instanceIdentifier: string;   // Optional instance filter
+  confidenceQuartile: number;   // NEW: 0-4 (0 = all, 1-4 = quartiles)
 }
 
 interface SearchScope {
@@ -91,9 +94,14 @@ const SORT_OPTIONS: SortOption[] = [
   { value: 'relevance', label: 'Relevance' },
   { value: 'piece_mark_asc', label: 'Piece Mark (A-Z)' },
   { value: 'piece_mark_desc', label: 'Piece Mark (Z-A)' },
+  { value: 'component_type_asc', label: 'Type (A-Z)' },
+  { value: 'component_type_desc', label: 'Type (Z-A)' },
+  { value: 'quantity_asc', label: 'Quantity (Low to High)' },
+  { value: 'quantity_desc', label: 'Quantity (High to Low)' },
+  { value: 'confidence_asc', label: 'Confidence (Low to High)' },
+  { value: 'confidence_desc', label: 'Confidence (High to Low)' },
   { value: 'date_desc', label: 'Date Added (Newest)' },
   { value: 'date_asc', label: 'Date Added (Oldest)' },
-  { value: 'confidence_desc', label: 'Confidence (High to Low)' },
 ];
 
 // Helper function to get proper display label for component types
@@ -117,20 +125,97 @@ const getComponentTypeLabel = (value: string): string => {
   return knownTypeLabels[value] || value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, ' ');
 };
 
+// Helper function to map confidence quartile to API min/max params
+const getConfidenceRange = (quartile: number): { min: number; max: number } | null => {
+  const ranges: Record<number, { min: number; max: number }> = {
+    1: { min: 0, max: 0.25 },      // 0-25% (Low - Red)
+    2: { min: 0.25, max: 0.50 },   // 25-50% (Medium-Low - Orange)
+    3: { min: 0.50, max: 0.75 },   // 50-75% (Medium-High - Yellow)
+    4: { min: 0.75, max: 1.00 },   // 75-100% (High - Green)
+  };
+  return ranges[quartile] || null;
+};
+
+// Helper function to get quartile label for display
+const getConfidenceQuartileLabel = (quartile: number): string => {
+  const labels: Record<number, string> = {
+    1: '0-25% (Low)',
+    2: '25-50% (Medium-Low)',
+    3: '50-75% (Medium-High)',
+    4: '75-100% (High)',
+  };
+  return labels[quartile] || 'All Levels';
+};
+
+// Helper function to convert filters to URL params
+const filtersToUrlParams = (filters: SearchFilters, query: string, sortBy: string): URLSearchParams => {
+  const params = new URLSearchParams();
+
+  if (query) params.set('query', query);
+  if (filters.componentType) params.set('type', filters.componentType);
+  if (filters.projectId && filters.projectId !== 'all') params.set('project', filters.projectId);
+  if (filters.instanceIdentifier) params.set('instance', filters.instanceIdentifier);
+  if (filters.confidenceQuartile > 0) params.set('confidence_quartile', filters.confidenceQuartile.toString());
+  if (sortBy && sortBy !== 'relevance') params.set('sort', sortBy);
+
+  return params;
+};
+
+// Helper function to parse URL params into filters
+const urlParamsToFilters = (params: URLSearchParams): { filters: SearchFilters; query: string; sortBy: string } => {
+  return {
+    filters: {
+      componentType: params.get('type') || params.get('componentType') || '', // Support legacy param
+      projectId: params.get('project') || params.get('projectId') || 'all',   // Support legacy param
+      instanceIdentifier: params.get('instance') || '',
+      confidenceQuartile: parseInt(params.get('confidence_quartile') || '0', 10),
+    },
+    query: params.get('query') || '',
+    sortBy: params.get('sort') || 'relevance',
+  };
+};
+
+// Helper function to migrate legacy URL params (backwards compatibility)
+const migrateLegacyParams = (params: URLSearchParams): URLSearchParams => {
+  const newParams = new URLSearchParams(params);
+  let migrated = false;
+
+  // Migrate componentType → type
+  if (newParams.has('componentType')) {
+    newParams.set('type', newParams.get('componentType')!);
+    newParams.delete('componentType');
+    migrated = true;
+  }
+
+  // Migrate projectId → project
+  if (newParams.has('projectId')) {
+    newParams.set('project', newParams.get('projectId')!);
+    newParams.delete('projectId');
+    migrated = true;
+  }
+
+  return migrated ? newParams : params;
+};
+
 const SearchPage: React.FC = () => {
-  const [query, setQuery] = useState('');
-  const [filters, setFilters] = useState<SearchFilters>({
-    componentType: '',
-    projectId: 'all',
-    instanceIdentifier: '',
-  });
+  // URL state management - Source of truth for filters
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Initialize state from URL params (with migration for legacy params)
+  const initialState = useMemo(() => {
+    const migratedParams = migrateLegacyParams(searchParams);
+    return urlParamsToFilters(migratedParams);
+  }, []); // Only run on mount
+
+  const [query, setQuery] = useState(initialState.query);
+  const [filters, setFilters] = useState<SearchFilters>(initialState.filters);
   const [searchScope, setSearchScope] = useState<SearchScope>({
     piece_mark: true,   // Default to piece marks for precision
     component_type: false,
     description: false,
   });
   const [scopeExpanded, setScopeExpanded] = useState(false);
-  const [sortBy, setSortBy] = useState('relevance');
+  const [sortBy, setSortBy] = useState(initialState.sortBy);
   const [page, setPage] = useState(1);
   const [allResults, setAllResults] = useState<any[]>([]);
   const [hasMoreResults, setHasMoreResults] = useState(false);
@@ -393,6 +478,9 @@ const SearchPage: React.FC = () => {
     },
   });
 
+  // Get confidence range for API query
+  const confidenceRange = filters.confidenceQuartile > 0 ? getConfidenceRange(filters.confidenceQuartile) : null;
+
   const {
     data: searchResults,
     isLoading,
@@ -407,11 +495,13 @@ const SearchPage: React.FC = () => {
                   filters.projectId === 'unassigned' ? null :
                   filters.projectId || undefined,
       instance_identifier: filters.instanceIdentifier || undefined,
+      confidence_min: confidenceRange?.min,
+      confidence_max: confidenceRange?.max,
       page,
       limit: 25,
     }),
     {
-      enabled: Boolean(debouncedQuery.length > 0 || filters.componentType || filters.projectId !== 'all' || filters.instanceIdentifier), // Enable when query OR filters are present
+      enabled: Boolean(debouncedQuery.length > 0 || filters.componentType || filters.projectId !== 'all' || filters.instanceIdentifier || filters.confidenceQuartile > 0), // Enable when query OR filters are present
       keepPreviousData: false,
       onSuccess: (data) => {
         if (page === 1) {
@@ -434,6 +524,25 @@ const SearchPage: React.FC = () => {
 
   const handleSortChange = (newSort: string) => {
     setSortBy(newSort);
+    setPage(1); // Reset to first page when sort changes
+  };
+
+  // Handle sort from column header clicks (3-state toggle)
+  const handleSort = (column: string) => {
+    const currentSort = sortBy;
+
+    // Cycle: No Sort (relevance) → Ascending → Descending → No Sort
+    if (!currentSort.startsWith(column)) {
+      // Not currently sorting by this column, start with ascending
+      setSortBy(`${column}_asc`);
+    } else if (currentSort.endsWith('_asc')) {
+      // Currently ascending, switch to descending
+      setSortBy(`${column}_desc`);
+    } else {
+      // Currently descending, reset to relevance
+      setSortBy('relevance');
+    }
+
     setPage(1); // Reset to first page when sort changes
   };
 
@@ -523,6 +632,16 @@ const SearchPage: React.FC = () => {
     }
   };
 
+  // Sync filter state to URL params (URL as source of truth)
+  useEffect(() => {
+    const newParams = filtersToUrlParams(filters, query, sortBy);
+
+    // Only update if params actually changed (avoid infinite loops)
+    if (newParams.toString() !== searchParams.toString()) {
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [filters, query, sortBy]); // Don't include searchParams/setSearchParams to avoid loops
+
   // Load suggestions when query changes
   useEffect(() => {
     if (query.length >= 2) {
@@ -566,8 +685,39 @@ const SearchPage: React.FC = () => {
   const activeFiltersCount = [
     filters.componentType,
     filters.projectId !== 'all' ? filters.projectId : '',
-    filters.instanceIdentifier
-  ].filter(value => value && value.trim() !== '').length;
+    filters.instanceIdentifier,
+    filters.confidenceQuartile > 0 ? 'confidence' : ''
+  ].filter(value => value && (typeof value === 'string' ? value.trim() !== '' : true)).length;
+
+  // Prepare filter options for Type column
+  const componentTypeOptions: ColumnFilterOption[] = useMemo(() => {
+    const allOption: ColumnFilterOption = { value: '', label: 'All Types' };
+    const typeOptions: ColumnFilterOption[] = componentTypesData?.component_types?.map((type) => ({
+      value: type,
+      label: getComponentTypeLabel(type),
+    })) || [];
+    return [allOption, ...typeOptions];
+  }, [componentTypesData]);
+
+  // Prepare filter options for Project column
+  const projectOptions: ColumnFilterOption[] = useMemo(() => {
+    const allOption: ColumnFilterOption = { value: 'all', label: 'All Projects' };
+    const unassignedOption: ColumnFilterOption = { value: 'unassigned', label: 'Unassigned' };
+    const projectOpts: ColumnFilterOption[] = projects.map((project) => ({
+      value: project.id,
+      label: project.name,
+    }));
+    return [allOption, unassignedOption, ...projectOpts];
+  }, [projects]);
+
+  // Prepare confidence quartile filter options
+  const confidenceOptions: ColumnFilterOption[] = useMemo(() => [
+    { value: 0, label: 'All Levels' },
+    { value: 1, label: '0-25% (Low)', color: 'error.main' },
+    { value: 2, label: '25-50% (Medium-Low)', color: 'orange' },
+    { value: 3, label: '50-75% (Medium-High)', color: 'warning.main' },
+    { value: 4, label: '75-100% (High)', color: 'success.main' },
+  ], []);
 
   return (
     <Box>
@@ -580,8 +730,9 @@ const SearchPage: React.FC = () => {
         {isFetching && debouncedQuery && (
           <LinearProgress sx={{ mb: 2 }} />
         )}
-        <Grid container spacing={3} alignItems="center">
-          <Grid item xs={12} md={4}>
+        {/* Minimized search section - 3 controls only */}
+        <Grid container spacing={3} alignItems="flex-start">
+          <Grid item xs={12} md={6}>
             <Box sx={{ position: 'relative' }}>
               <Autocomplete
                 freeSolo
@@ -608,7 +759,7 @@ const SearchPage: React.FC = () => {
                               <ErrorIcon sx={{ color: 'error.main', fontSize: 20, mr: 1 }} />
                             )
                           )}
-                          
+
                           {/* Help tooltip */}
                           <Tooltip
                             title={getSearchHelpContent()}
@@ -624,11 +775,11 @@ const SearchPage: React.FC = () => {
                               <HelpIcon sx={{ fontSize: 20 }} />
                             </IconButton>
                           </Tooltip>
-                          
+
                           {/* Clear button */}
                           {query && (
-                            <IconButton 
-                              onClick={handleClearSearch} 
+                            <IconButton
+                              onClick={handleClearSearch}
                               size="small"
                               sx={{ mr: 1 }}
                             >
@@ -645,7 +796,7 @@ const SearchPage: React.FC = () => {
             </Box>
           </Grid>
 
-          <Grid item xs={12} md={2}>
+          <Grid item xs={12} md={3}>
             <Button
               variant="outlined"
               startIcon={<TuneIcon />}
@@ -658,77 +809,21 @@ const SearchPage: React.FC = () => {
             </Button>
           </Grid>
 
-          <Grid item xs={12} md={2}>
-            <FormControl fullWidth>
-              <InputLabel>Component Type</InputLabel>
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth size="medium">
+              <InputLabel>Sort By</InputLabel>
               <Select
-                value={filters.componentType}
-                onChange={(e) => handleFilterChange('componentType', e.target.value)}
-                label="Component Type"
+                value={sortBy}
+                onChange={(e) => handleSortChange(e.target.value)}
+                label="Sort By"
               >
-                <MenuItem value="">All Types</MenuItem>
-                {componentTypesData?.component_types?.map((type) => (
-                  <MenuItem key={type} value={type}>
-                    {getComponentTypeLabel(type)}
+                {SORT_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
-          </Grid>
-
-          <Grid item xs={12} md={2}>
-            <FormControl fullWidth>
-              <InputLabel>Project</InputLabel>
-              <Select
-                value={filters.projectId}
-                onChange={(e) => handleFilterChange('projectId', e.target.value)}
-                label="Project"
-              >
-                <MenuItem value="all">All Projects</MenuItem>
-                <MenuItem value="unassigned">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <FolderOpen sx={{ color: 'text.secondary', fontSize: 'small' }} />
-                    Unassigned
-                  </Box>
-                </MenuItem>
-                {projects.map((project) => (
-                  <MenuItem key={project.id} value={project.id}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Folder sx={{ color: 'primary.main', fontSize: 'small' }} />
-                      {project.name}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} md={2}>
-            <TextField
-              fullWidth
-              label="Instance Identifier"
-              value={filters.instanceIdentifier}
-              onChange={(e) => handleFilterChange('instanceIdentifier', e.target.value)}
-              placeholder="e.g., A, B, C"
-              inputProps={{ maxLength: 10 }}
-              helperText="Filter by specific instance (optional)"
-            />
-          </Grid>
-
-          <Grid item xs={12} md={2}>
-            <Button
-              variant="outlined"
-              startIcon={<ClearIcon />}
-              onClick={() => setFilters({
-                componentType: '',
-                projectId: 'all',
-                instanceIdentifier: '',
-              })}
-              disabled={activeFiltersCount === 0}
-              fullWidth
-            >
-              Clear Filters
-            </Button>
           </Grid>
 
         </Grid>
@@ -866,25 +961,52 @@ const SearchPage: React.FC = () => {
         )}
 
         {/* Active Filters */}
-        {(filters.componentType || filters.projectId !== 'all') && (
+        {(filters.componentType || filters.projectId !== 'all' || filters.confidenceQuartile > 0) && (
           <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Active Filters:
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="subtitle2">
+                Active Filters:
+              </Typography>
+              <Button
+                size="small"
+                startIcon={<ClearIcon />}
+                onClick={() => setFilters({
+                  componentType: '',
+                  projectId: 'all',
+                  instanceIdentifier: '',
+                  confidenceQuartile: 0,
+                })}
+              >
+                Clear All
+              </Button>
+            </Box>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               {filters.componentType && (
                 <Chip
                   label={`Type: ${getComponentTypeLabel(filters.componentType)}`}
                   onDelete={() => handleFilterChange('componentType', '')}
                   size="small"
+                  color="primary"
+                  variant="outlined"
                 />
               )}
               {filters.projectId !== 'all' && (
                 <Chip
-                  label={`Project: ${filters.projectId === 'unassigned' ? 'Unassigned' : 
+                  label={`Project: ${filters.projectId === 'unassigned' ? 'Unassigned' :
                     projects.find(p => p.id === filters.projectId)?.name || 'Unknown'}`}
                   onDelete={() => handleFilterChange('projectId', 'all')}
                   size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+              )}
+              {filters.confidenceQuartile > 0 && (
+                <Chip
+                  label={`Confidence: ${getConfidenceQuartileLabel(filters.confidenceQuartile)}`}
+                  onDelete={() => handleFilterChange('confidenceQuartile', 0)}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
                 />
               )}
             </Box>
@@ -897,8 +1019,8 @@ const SearchPage: React.FC = () => {
         <Paper>
           {/* Results Header */}
           <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-            <Grid container alignItems="center" justifyContent="space-between">
-              <Grid item xs={12} md={6}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+              <Box>
                 <Typography variant="h6">
                   Search Results
                   {searchResults && (
@@ -910,54 +1032,37 @@ const SearchPage: React.FC = () => {
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                   Searching in: {getScopeDisplayText()}
                   {searchResults?.query_type && searchResults.query_type !== 'simple' && (
-                    <Chip 
-                      label={searchResults.query_type} 
-                      size="small" 
-                      variant="outlined" 
-                      sx={{ ml: 1, height: 20 }} 
+                    <Chip
+                      label={searchResults.query_type}
+                      size="small"
+                      variant="outlined"
+                      sx={{ ml: 1, height: 20 }}
                     />
                   )}
                   {queryValidation.queryType && queryValidation.queryType !== 'simple' && (
-                    <Chip 
-                      label={`client: ${queryValidation.queryType}`} 
-                      size="small" 
-                      variant="outlined" 
+                    <Chip
+                      label={`client: ${queryValidation.queryType}`}
+                      size="small"
+                      variant="outlined"
                       color="primary"
-                      sx={{ ml: 1, height: 20 }} 
+                      sx={{ ml: 1, height: 20 }}
                     />
                   )}
                 </Typography>
-              </Grid>
-              <Grid item xs={12} md={3}>
-                {/* Save Search Button - only show when there are results and a project is selected */}
-                {allResults.length > 0 && currentProjectId && (
-                  <Button
-                    variant="outlined"
-                    startIcon={<BookmarkBorderIcon />}
-                    onClick={handleOpenSaveSearchDialog}
-                    disabled={createSavedSearchMutation.isLoading}
-                    sx={{ mb: 1, mr: 1, minWidth: 120 }}
-                    size="small"
-                  >
-                    Save Search
-                  </Button>
-                )}
-                <FormControl size="small" fullWidth>
-                  <InputLabel>Sort By</InputLabel>
-                  <Select
-                    value={sortBy}
-                    onChange={(e) => handleSortChange(e.target.value)}
-                    label="Sort By"
-                  >
-                    {SORT_OPTIONS.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
+              </Box>
+              {/* Save Search Button - only show when there are results and a project is selected */}
+              {allResults.length > 0 && currentProjectId && (
+                <Button
+                  variant="outlined"
+                  startIcon={<BookmarkBorderIcon />}
+                  onClick={handleOpenSaveSearchDialog}
+                  disabled={createSavedSearchMutation.isLoading}
+                  size="small"
+                >
+                  Save Search
+                </Button>
+              )}
+            </Box>
           </Box>
 
           {/* Scope Effectiveness Metrics - Story 1.2 */}
@@ -994,13 +1099,73 @@ const SearchPage: React.FC = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Piece Mark</TableCell>
-                      <TableCell>Type</TableCell>
-                      <TableCell>Quantity</TableCell>
-                      <TableCell>Drawing</TableCell>
-                      <TableCell>Project</TableCell>
-                      <TableCell>Confidence</TableCell>
-                      <TableCell>Actions</TableCell>
+                      <TableCell>
+                        <UnifiedColumnHeader
+                          label="Piece Mark"
+                          columnKey="piece_mark"
+                          sortable={true}
+                          sortBy={sortBy}
+                          onSort={handleSort}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <UnifiedColumnHeader
+                          label="Type"
+                          columnKey="component_type"
+                          sortable={true}
+                          sortBy={sortBy}
+                          onSort={handleSort}
+                          filterable={true}
+                          filterOptions={componentTypeOptions}
+                          selectedFilterValue={filters.componentType}
+                          onFilterChange={(value) => handleFilterChange('componentType', value as string)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <UnifiedColumnHeader
+                          label="Quantity"
+                          columnKey="quantity"
+                          sortable={true}
+                          sortBy={sortBy}
+                          onSort={handleSort}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <UnifiedColumnHeader
+                          label="Drawing"
+                          columnKey="drawing"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <UnifiedColumnHeader
+                          label="Project"
+                          columnKey="project"
+                          filterable={true}
+                          filterOptions={projectOptions}
+                          selectedFilterValue={filters.projectId}
+                          onFilterChange={(value) => handleFilterChange('projectId', value as string)}
+                          searchable={projects.length > 10}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <UnifiedColumnHeader
+                          label="Confidence"
+                          columnKey="confidence"
+                          sortable={true}
+                          sortBy={sortBy}
+                          onSort={handleSort}
+                          filterable={true}
+                          filterOptions={confidenceOptions}
+                          selectedFilterValue={filters.confidenceQuartile}
+                          onFilterChange={(value) => handleFilterChange('confidenceQuartile', value as number)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <UnifiedColumnHeader
+                          label="Actions"
+                          columnKey="actions"
+                        />
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
