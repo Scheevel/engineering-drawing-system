@@ -1245,13 +1245,69 @@ const SearchPage: React.FC = () => {
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Piece Mark</TableCell>
-                        <TableCell>Type</TableCell>
-                        <TableCell>Quantity</TableCell>
-                        <TableCell>Drawing</TableCell>
-                        <TableCell>Project</TableCell>
-                        <TableCell>Added</TableCell>
-                        <TableCell>Actions</TableCell>
+                        <TableCell>
+                          <UnifiedColumnHeader
+                            label="Piece Mark"
+                            columnKey="piece_mark"
+                            sortable={true}
+                            sortBy={sortBy}
+                            onSort={handleSort}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <UnifiedColumnHeader
+                            label="Type"
+                            columnKey="component_type"
+                            sortable={true}
+                            sortBy={sortBy}
+                            onSort={handleSort}
+                            filterable={true}
+                            filterOptions={componentTypeOptions}
+                            selectedFilterValue={filters.componentType}
+                            onFilterChange={(value) => handleFilterChange('componentType', value as string)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <UnifiedColumnHeader
+                            label="Quantity"
+                            columnKey="quantity"
+                            sortable={true}
+                            sortBy={sortBy}
+                            onSort={handleSort}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <UnifiedColumnHeader
+                            label="Drawing"
+                            columnKey="drawing"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <UnifiedColumnHeader
+                            label="Project"
+                            columnKey="project"
+                            filterable={true}
+                            filterOptions={projectOptions}
+                            selectedFilterValue={filters.projectId}
+                            onFilterChange={(value) => handleFilterChange('projectId', value as string)}
+                            searchable={projects.length > 10}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <UnifiedColumnHeader
+                            label="Added"
+                            columnKey="created_at"
+                            sortable={true}
+                            sortBy={sortBy}
+                            onSort={handleSort}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <UnifiedColumnHeader
+                            label="Actions"
+                            columnKey="actions"
+                          />
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>

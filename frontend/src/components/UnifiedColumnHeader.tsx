@@ -34,7 +34,7 @@ interface UnifiedColumnHeaderProps {
 
   // Sort props
   sortable?: boolean;
-  sortBy: string;
+  sortBy?: string;
   onSort?: (column: string) => void;
 
   // Filter props
@@ -115,8 +115,8 @@ const UnifiedColumnHeader: React.FC<UnifiedColumnHeaderProps> = ({
   };
 
   // Check if column is currently sorted
-  const isSorted = sortBy.startsWith(columnKey);
-  const sortDirection = sortBy.endsWith('_asc') ? 'asc' : 'desc';
+  const isSorted = sortBy ? sortBy.startsWith(columnKey) : false;
+  const sortDirection = sortBy && sortBy.endsWith('_asc') ? 'asc' : 'desc';
 
   // Check if column has active filter
   const hasFilter = filterable && selectedFilterValue !== undefined &&
