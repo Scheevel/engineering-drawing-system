@@ -633,6 +633,21 @@ export const createComponent = async (componentData: ComponentCreateRequest): Pr
   return response.data;
 };
 
+// Suggest instance identifier for piece mark (Story 1.2 AC4)
+export interface InstanceSuggestion {
+  suggested_identifier: string | null;
+  existing_count: number;
+  message: string;
+}
+
+export const suggestInstanceIdentifier = async (
+  drawingId: string,
+  pieceMark: string
+): Promise<InstanceSuggestion> => {
+  const response = await api.get(`/components/suggest-instance/${drawingId}/${encodeURIComponent(pieceMark)}`);
+  return response.data;
+};
+
 // Delete component
 export const deleteComponent = async (componentId: string): Promise<void> => {
   await api.delete(`/components/${componentId}`);

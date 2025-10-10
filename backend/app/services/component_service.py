@@ -25,7 +25,58 @@ logger = logging.getLogger(__name__)
 
 class ComponentService:
     """Service layer for component operations with business logic and validation"""
-    
+
+    def _get_next_instance_identifier(self, piece_mark: str, drawing_id: UUID, db: Session) -> Optional[str]:
+        """
+        Calculate the next available instance identifier for a piece mark.
+
+        Logic:
+        1. Find all existing instances of the piece mark in the drawing
+        2. If no instances exist, return None (first instance doesn't need identifier)
+        3. Extract used letters (A-Z)
+        4. Return first missing letter in sequence (fills gaps)
+        5. If all A-Z used, return next in sequence (AA, AB, etc.)
+
+        Args:
+            piece_mark: The base piece mark (e.g., "G1")
+            drawing_id: The drawing UUID
+            db: Database session
+
+        Returns:
+            Next available instance identifier (e.g., "A", "B", "C") or None if first instance
+        """
+        # Query existing components with this piece mark
+        existing = db.query(Component).filter(
+            and_(
+                Component.drawing_id == drawing_id,
+                Component.piece_mark == piece_mark.upper()
+            )
+        ).all()
+
+        # If no existing components, this is the first instance (no identifier needed)
+        if not existing:
+            return None
+
+        # Extract used instance identifiers (only single uppercase letters A-Z for MVP)
+        used_identifiers = set()
+        for component in existing:
+            if component.instance_identifier:
+                identifier = component.instance_identifier.strip().upper()
+                # Only consider single letters A-Z for auto-generation
+                if len(identifier) == 1 and identifier.isalpha():
+                    used_identifiers.add(identifier)
+
+        # Find first missing letter in A-Z sequence
+        alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        for letter in alphabet:
+            if letter not in used_identifiers:
+                return letter
+
+        # All A-Z used - for MVP, return None (user must manually specify)
+        # Future enhancement: Generate AA, AB, AC, etc.
+        logger.warning(f"All A-Z instance identifiers used for piece mark {piece_mark} in drawing {drawing_id}")
+        return None
+
     async def get_component_with_details(self, component_id: UUID, db: Session) -> Optional[ComponentResponse]:
         """Get component with all related data (dimensions, specifications, drawing context)"""
         try:
@@ -47,12 +98,29 @@ class ComponentService:
             raise
     
     async def create_component(
-        self, 
-        create_data: ComponentCreateRequest, 
+        self,
+        create_data: ComponentCreateRequest,
         db: Session
     ) -> ComponentResponse:
-        """Create a new component with validation"""
+        """Create a new component with validation and auto-instance generation"""
         try:
+            # Auto-generate instance identifier if not provided
+            instance_identifier = create_data.instance_identifier
+            if not instance_identifier:
+                # Calculate next available instance identifier
+                suggested_identifier = self._get_next_instance_identifier(
+                    piece_mark=create_data.piece_mark,
+                    drawing_id=create_data.drawing_id,
+                    db=db
+                )
+                instance_identifier = suggested_identifier
+
+                if suggested_identifier:
+                    logger.info(
+                        f"Auto-generated instance identifier '{suggested_identifier}' "
+                        f"for piece mark '{create_data.piece_mark}' in drawing {create_data.drawing_id}"
+                    )
+
             # Create component instance
             component = Component(
                 drawing_id=create_data.drawing_id,
@@ -66,7 +134,7 @@ class ComponentService:
                 bounding_box=create_data.bounding_box,
                 confidence_score=create_data.confidence_score,
                 review_status=create_data.review_status or "pending",
-                instance_identifier=create_data.instance_identifier,
+                instance_identifier=instance_identifier,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow()
             )

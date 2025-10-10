@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -21,7 +21,7 @@ import {
   Save as SaveIcon,
 } from '@mui/icons-material';
 import { useMutation, useQueryClient, useQuery } from 'react-query';
-import { createComponent, ComponentCreateRequest, getDrawingComponents } from '../../services/api.ts';
+import { createComponent, ComponentCreateRequest, getDrawingComponents, suggestInstanceIdentifier } from '../../services/api.ts';
 
 interface ComponentCreationDialogProps {
   open: boolean;
@@ -59,8 +59,9 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
     material_type: '',
     instance_identifier: '',
   });
-  
+
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [instanceSuggestionMessage, setInstanceSuggestionMessage] = useState<string>('');
   
   // Get existing components for validation
   const { data: drawingComponentsResponse } = useQuery(
@@ -86,6 +87,52 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
     { value: 'truss', label: 'Truss' },
     { value: 'generic', label: 'Generic' },
   ];
+
+  // Story 1.2 AC4: Auto-suggest instance identifier when piece mark changes
+  useEffect(() => {
+    const fetchInstanceSuggestion = async () => {
+      // Only fetch suggestion if piece mark is not empty and dialog is open
+      if (!formData.piece_mark || !formData.piece_mark.trim() || !open) {
+        setInstanceSuggestionMessage('');
+        return;
+      }
+
+      // Don't override if user has manually entered an instance identifier
+      if (formData.instance_identifier && formData.instance_identifier.trim()) {
+        setInstanceSuggestionMessage('');
+        return;
+      }
+
+      try {
+        const suggestion = await suggestInstanceIdentifier(drawingId, formData.piece_mark.trim());
+
+        // Auto-populate the instance identifier field if suggestion exists
+        if (suggestion.suggested_identifier) {
+          setFormData(prev => ({
+            ...prev,
+            instance_identifier: suggestion.suggested_identifier || '',
+          }));
+          setInstanceSuggestionMessage(suggestion.message);
+        } else {
+          // Clear instance field if no suggestion (first instance or 26+ instances)
+          setFormData(prev => ({
+            ...prev,
+            instance_identifier: '',
+          }));
+          setInstanceSuggestionMessage('');
+        }
+      } catch (error) {
+        // Silently fail - don't block user if API call fails
+        console.warn('Failed to fetch instance suggestion:', error);
+        setInstanceSuggestionMessage('');
+      }
+    };
+
+    // Debounce to avoid excessive API calls while user is typing
+    const timeoutId = setTimeout(fetchInstanceSuggestion, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.piece_mark, drawingId, open]); // Intentionally NOT depending on formData.instance_identifier to avoid loops
 
   // Create component mutation
   const createMutation = useMutation(
@@ -271,7 +318,8 @@ const ComponentCreationDialog: React.FC<ComponentCreationDialogProps> = ({
               onChange={(e) => handleFieldChange('instance_identifier', e.target.value)}
               placeholder="e.g., A, B, C"
               inputProps={{ maxLength: 10 }}
-              helperText="Optional. Use to differentiate multiple instances of the same piece mark."
+              helperText={instanceSuggestionMessage || "Optional. Use to differentiate multiple instances of the same piece mark."}
+              color={instanceSuggestionMessage ? "info" : undefined}
             />
           </Grid>
 

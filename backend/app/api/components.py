@@ -365,12 +365,69 @@ async def check_piece_mark_duplicates(
         component_uuid = uuid.UUID(component_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid component ID format")
-    
+
     duplicates = await component_service.check_piece_mark_duplicates(
         component_uuid, piece_mark, db
     )
-    
+
     return {
         "has_duplicates": len(duplicates) > 0,
         "duplicate_components": duplicates
+    }
+
+@router.get("/suggest-instance/{drawing_id}/{piece_mark}")
+async def suggest_instance_identifier(
+    drawing_id: str,
+    piece_mark: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Suggest next available instance identifier for a piece mark in a drawing.
+
+    Story 1.2 AC4: Auto-generate instance identifiers (.A, .B, .C) when piece mark already exists.
+
+    Returns:
+        {
+            "suggested_identifier": "A" | null,
+            "existing_count": 1,
+            "message": "Piece mark 'G1' already exists. Suggested instance identifier: 'A'"
+        }
+    """
+    try:
+        drawing_uuid = uuid.UUID(drawing_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid drawing ID format")
+
+    # Verify drawing exists
+    drawing = db.query(Drawing).filter(Drawing.id == drawing_uuid).first()
+    if not drawing:
+        raise HTTPException(status_code=404, detail="Drawing not found")
+
+    # Get suggestion from service
+    suggested_identifier = component_service._get_next_instance_identifier(
+        piece_mark=piece_mark,
+        drawing_id=drawing_uuid,
+        db=db
+    )
+
+    # Count existing instances
+    existing_count = db.query(Component).filter(
+        and_(
+            Component.drawing_id == drawing_uuid,
+            Component.piece_mark == piece_mark.upper()
+        )
+    ).count()
+
+    # Build response
+    if suggested_identifier:
+        message = f"Piece mark '{piece_mark}' already exists ({existing_count} instance(s)). Suggested instance identifier: '{suggested_identifier}'"
+    elif existing_count > 0:
+        message = f"Piece mark '{piece_mark}' already exists ({existing_count} instance(s)). All A-Z identifiers used - please specify manually."
+    else:
+        message = f"Piece mark '{piece_mark}' is new in this drawing. No instance identifier needed."
+
+    return {
+        "suggested_identifier": suggested_identifier,
+        "existing_count": existing_count,
+        "message": message
     }
