@@ -524,9 +524,7 @@ const SearchPage: React.FC = () => {
       query: debouncedQuery || '*', // Use wildcard when no query but filters are applied
       scope: currentScopeArray,
       component_type: filters.componentType || undefined,
-      project_id: filters.projectId === 'all' ? undefined :
-                  filters.projectId === 'unassigned' ? null :
-                  filters.projectId || undefined,
+      project_id: filters.projectId === 'all' ? undefined : filters.projectId || undefined,
       instance_identifier: filters.instanceIdentifier || undefined,
       confidence_min: confidenceRange?.min,
       confidence_max: confidenceRange?.max,
@@ -562,20 +560,17 @@ const SearchPage: React.FC = () => {
     setPage(1); // Reset to first page when sort changes
   };
 
-  // Handle sort from column header clicks (2-state toggle: asc ↔ desc)
-  const handleSort = (column: string) => {
-    const currentSort = sortBy;
+  // Handle sort from column header clicks
+  // If direction is specified, use it; otherwise toggle
+  const handleSort = (column: string, direction?: 'asc' | 'desc') => {
+    const newSortBy = direction ? `${column}_${direction}` : (sortBy === `${column}_asc` ? `${column}_desc` : `${column}_asc`);
 
-    // Simple toggle: Ascending ↔ Descending
-    if (currentSort === `${column}_asc`) {
-      // Currently ascending, switch to descending
-      setSortBy(`${column}_desc`);
-    } else {
-      // Not sorting by this column OR currently descending, switch to ascending
-      setSortBy(`${column}_asc`);
-    }
+    setSortBy(newSortBy);
+    setPage(1);
 
-    setPage(1); // Reset to first page when sort changes
+    // Force invalidation of queries to ensure refetch
+    queryClient.invalidateQueries(['recent-components']);
+    queryClient.invalidateQueries(['search']);
   };
 
   const handleLoadMore = () => {

@@ -108,9 +108,12 @@ class SearchService:
             # Apply additional filters
             if request.component_type:
                 query = query.filter(Component.component_type == request.component_type)
-            
+
             if request.project_id:
-                query = query.filter(Drawing.project_id == request.project_id)
+                if request.project_id.lower() == "unassigned":
+                    query = query.filter(Drawing.project_id.is_(None))
+                else:
+                    query = query.filter(Drawing.project_id == request.project_id)
             
             if request.drawing_type:
                 query = query.filter(Drawing.drawing_type == request.drawing_type)
@@ -255,11 +258,12 @@ class SearchService:
             # Apply the same filters as main search
             if request.component_type:
                 base_query = base_query.filter(Component.component_type == request.component_type.value)
-            
+
             if request.project_id:
-                base_query = base_query.filter(Drawing.project_id == request.project_id)
-            elif request.project_id is None:  # Explicitly filter for unassigned
-                base_query = base_query.filter(Drawing.project_id.is_(None))
+                if request.project_id.lower() == "unassigned":
+                    base_query = base_query.filter(Drawing.project_id.is_(None))
+                else:
+                    base_query = base_query.filter(Drawing.project_id == request.project_id)
             
             if request.drawing_type:
                 base_query = base_query.filter(Drawing.drawing_type == request.drawing_type)
@@ -281,11 +285,12 @@ class SearchService:
             # Apply the same filters as main search
             if request.component_type:
                 scope_query = scope_query.filter(Component.component_type == request.component_type.value)
-            
+
             if request.project_id:
-                scope_query = scope_query.filter(Drawing.project_id == request.project_id)
-            elif request.project_id is None:
-                scope_query = scope_query.filter(Drawing.project_id.is_(None))
+                if request.project_id.lower() == "unassigned":
+                    scope_query = scope_query.filter(Drawing.project_id.is_(None))
+                else:
+                    scope_query = scope_query.filter(Drawing.project_id == request.project_id)
             
             if request.drawing_type:
                 scope_query = scope_query.filter(Drawing.drawing_type == request.drawing_type)
@@ -415,7 +420,7 @@ class SearchService:
         db: Session,
         offset: int = 0,
         component_type: Optional[str] = None,
-        project_id: Optional[int] = None,
+        project_id: Optional[str] = None,  # UUID string, not int!
         confidence_quartile: Optional[int] = None,
         instance_identifier: Optional[str] = None,
         sort_by: Optional[str] = None,
@@ -435,7 +440,13 @@ class SearchService:
                 query = query.filter(Component.component_type == component_type)
 
             if project_id:
-                query = query.join(Drawing).filter(Drawing.project_id == project_id)
+                query = query.join(Drawing)
+                if project_id.lower() == "unassigned":
+                    # Special case: filter for drawings with no project assigned
+                    query = query.filter(Drawing.project_id.is_(None))
+                else:
+                    # Normal case: filter by specific project UUID
+                    query = query.filter(Drawing.project_id == project_id)
 
             if confidence_quartile and confidence_quartile > 0:
                 # Map quartiles to confidence score ranges
@@ -457,7 +468,8 @@ class SearchService:
                 query = query.order_by(order_func(Component.piece_mark))
             elif sort_by == "component_type":
                 query = query.order_by(order_func(Component.component_type))
-            elif sort_by == "confidence_score":
+            elif sort_by in ["confidence", "confidence_score"]:
+                # Accept both "confidence" (from frontend) and "confidence_score"
                 query = query.order_by(order_func(Component.confidence_score))
             else:  # Default to created_at (recent first)
                 query = query.order_by(desc(Component.created_at))
@@ -511,7 +523,7 @@ class SearchService:
         self,
         db: Session,
         component_type: Optional[str] = None,
-        project_id: Optional[int] = None,
+        project_id: Optional[str] = None,  # UUID string, not int!
         confidence_quartile: Optional[int] = None,
         instance_identifier: Optional[str] = None
     ) -> int:
@@ -524,7 +536,11 @@ class SearchService:
                 query = query.filter(Component.component_type == component_type)
 
             if project_id:
-                query = query.join(Drawing).filter(Drawing.project_id == project_id)
+                query = query.join(Drawing)
+                if project_id.lower() == "unassigned":
+                    query = query.filter(Drawing.project_id.is_(None))
+                else:
+                    query = query.filter(Drawing.project_id == project_id)
 
             if confidence_quartile and confidence_quartile > 0:
                 min_confidence = (confidence_quartile - 1) * 0.25

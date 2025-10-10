@@ -35,7 +35,7 @@ interface UnifiedColumnHeaderProps {
   // Sort props
   sortable?: boolean;
   sortBy?: string;
-  onSort?: (column: string) => void;
+  onSort?: (column: string, direction?: 'asc' | 'desc') => void;
   onClearSort?: () => void; // Clear sort back to default (relevance)
 
   // Filter props
@@ -76,25 +76,16 @@ const UnifiedColumnHeader: React.FC<UnifiedColumnHeaderProps> = ({
 
   const handleSortAsc = () => {
     if (onSort) {
-      onSort(columnKey);
-      // Cycle to ascending
-      if (!sortBy.startsWith(columnKey)) {
-        onSort(columnKey); // First click = asc
-      }
+      // Pass explicit 'asc' direction
+      onSort(columnKey, 'asc');
     }
     handleCloseMenu();
   };
 
   const handleSortDesc = () => {
     if (onSort) {
-      // Force descending
-      const currentSort = sortBy;
-      if (!currentSort.startsWith(columnKey)) {
-        onSort(columnKey); // First click = asc
-        setTimeout(() => onSort(columnKey), 0); // Second click = desc
-      } else if (currentSort.endsWith('_asc')) {
-        onSort(columnKey); // Toggle to desc
-      }
+      // Pass explicit 'desc' direction
+      onSort(columnKey, 'desc');
     }
     handleCloseMenu();
   };

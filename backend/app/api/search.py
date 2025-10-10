@@ -96,7 +96,7 @@ async def get_recent_components(
     limit: int = Query(25, ge=1, le=100),
     page: int = Query(1, ge=1),
     component_type: Optional[str] = None,
-    project_id: Optional[int] = None,
+    project_id: Optional[str] = None,  # UUID string, not int!
     confidence_quartile: Optional[int] = Query(None, ge=0, le=4, description="Filter by confidence quartile: 0=all, 1=0-24%, 2=25-49%, 3=50-74%, 4=75-100%"),
     instance_identifier: Optional[str] = Query(None, max_length=10, description="Filter by instance identifier"),
     sort_by: Optional[str] = Query(None, description="Sort field: piece_mark, component_type, confidence_score, created_at"),
