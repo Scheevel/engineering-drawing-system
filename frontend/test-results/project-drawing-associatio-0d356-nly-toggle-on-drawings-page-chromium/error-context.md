@@ -1,0 +1,133 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e6]: Engineering Drawing Index System
+  - generic [ref=e8]:
+    - generic [ref=e10]:
+      - button [ref=e12] [cursor=pointer]:
+        - img [ref=e13] [cursor=pointer]
+      - separator [ref=e15]
+      - list [ref=e16]:
+        - listitem "Dashboard" [ref=e17]:
+          - button "Dashboard" [ref=e18] [cursor=pointer]:
+            - img [ref=e20] [cursor=pointer]
+            - generic:
+              - generic: Dashboard
+        - listitem "Projects" [ref=e22]:
+          - button "Projects" [ref=e23] [cursor=pointer]:
+            - img [ref=e25] [cursor=pointer]
+            - generic:
+              - generic: Projects
+        - listitem "Schema Management" [ref=e27]:
+          - button "Schema Management" [ref=e28] [cursor=pointer]:
+            - img [ref=e30] [cursor=pointer]
+            - generic:
+              - generic: Schema Management
+        - listitem "Search Components" [ref=e32]:
+          - button "Search Components" [ref=e33] [cursor=pointer]:
+            - img [ref=e35] [cursor=pointer]
+            - generic:
+              - generic: Search Components
+        - listitem "Upload Drawings" [ref=e37]:
+          - button "Upload Drawings" [ref=e38] [cursor=pointer]:
+            - img [ref=e40] [cursor=pointer]
+            - generic:
+              - generic: Upload Drawings
+        - listitem "Export Components" [ref=e42]:
+          - button "Export Components" [ref=e43] [cursor=pointer]:
+            - img [ref=e45] [cursor=pointer]
+            - generic:
+              - generic: Export Components
+    - main [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]:
+          - heading "Drawings" [level=1] [ref=e50]
+          - generic [ref=e51]:
+            - button "Export" [ref=e52] [cursor=pointer]:
+              - img [ref=e54] [cursor=pointer]
+              - text: Export
+            - button "Upload Drawings" [ref=e56] [cursor=pointer]:
+              - img [ref=e58] [cursor=pointer]
+              - text: Upload Drawings
+        - generic [ref=e60]:
+          - generic [ref=e63]:
+            - paragraph [ref=e64]: Total Drawings
+            - heading "1" [level=4] [ref=e65]
+          - generic [ref=e68]:
+            - paragraph [ref=e69]: Assigned
+            - heading "1" [level=4] [ref=e70]
+          - generic [ref=e73]:
+            - paragraph [ref=e74]: Unassigned
+            - heading "0" [level=4] [ref=e75]
+          - generic [ref=e78]:
+            - paragraph [ref=e79]: Processing
+            - heading "0" [level=4] [ref=e80]
+        - generic [ref=e82]:
+          - img [ref=e83]
+          - generic [ref=e86]:
+            - generic: Filter by Projects
+            - generic [ref=e87]:
+              - combobox "Filter by Projects" [ref=e88]
+              - button "Open" [ref=e90] [cursor=pointer]:
+                - img [ref=e91] [cursor=pointer]
+              - group:
+                - generic: Filter by Projects
+          - generic [ref=e93]:
+            - generic [ref=e94]: Filter by Status
+            - generic [ref=e95]:
+              - combobox [ref=e96] [cursor=pointer]: All Status
+              - textbox: all
+              - img
+              - group:
+                - generic: Filter by Status
+          - generic [ref=e97] [cursor=pointer]:
+            - checkbox "Unassigned Only" [ref=e100] [cursor=pointer]
+            - generic [ref=e103] [cursor=pointer]: Unassigned Only
+        - table [ref=e106]:
+          - rowgroup [ref=e107]:
+            - row "File Name Project Status Size Upload Date Components Actions" [ref=e108]:
+              - columnheader [ref=e109]:
+                - generic [ref=e110] [cursor=pointer]:
+                  - checkbox [ref=e111] [cursor=pointer]
+                  - img [ref=e112] [cursor=pointer]
+              - columnheader "File Name" [ref=e114]
+              - columnheader "Project" [ref=e115]
+              - columnheader "Status" [ref=e116]
+              - columnheader "Size" [ref=e117]
+              - columnheader "Upload Date" [ref=e118]
+              - columnheader "Components" [ref=e119]
+              - columnheader "Actions" [ref=e120]
+          - rowgroup [ref=e121]:
+            - row "001-08-201.jpg 001-08-201.jpg nm-ffc Assign to more projects Completed 3.6 MB 9/30/2025 71 View Drawing Delete Drawing" [ref=e122]:
+              - cell [ref=e123]:
+                - generic [ref=e124] [cursor=pointer]:
+                  - checkbox [ref=e125] [cursor=pointer]
+                  - img [ref=e126] [cursor=pointer]
+              - cell "001-08-201.jpg 001-08-201.jpg" [ref=e128]:
+                - generic [ref=e129]:
+                  - img [ref=e130]
+                  - generic [ref=e132]:
+                    - heading "001-08-201.jpg" [level=6] [ref=e133]
+                    - generic [ref=e134]: 001-08-201.jpg
+              - cell "nm-ffc Assign to more projects" [ref=e135]:
+                - generic [ref=e137]:
+                  - button "nm-ffc" [ref=e138]:
+                    - img [ref=e139]
+                    - generic [ref=e141]: nm-ffc
+                    - img [ref=e142] [cursor=pointer]
+                  - button "Assign to more projects" [ref=e144] [cursor=pointer]:
+                    - img [ref=e145] [cursor=pointer]
+              - cell "Completed" [ref=e147]:
+                - generic [ref=e149]: Completed
+              - cell "3.6 MB" [ref=e150]
+              - cell "9/30/2025" [ref=e151]
+              - cell "71" [ref=e152]:
+                - generic [ref=e154]: "71"
+              - cell "View Drawing Delete Drawing" [ref=e155]:
+                - button "View Drawing" [ref=e156] [cursor=pointer]:
+                  - img [ref=e157] [cursor=pointer]
+                - button "Delete Drawing" [ref=e159] [cursor=pointer]:
+                  - img [ref=e160] [cursor=pointer]
+```

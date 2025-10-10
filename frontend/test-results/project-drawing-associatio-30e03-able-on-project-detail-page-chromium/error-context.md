@@ -1,0 +1,76 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e6]: Engineering Drawing Index System
+  - generic [ref=e8]:
+    - generic [ref=e10]:
+      - button [ref=e12] [cursor=pointer]:
+        - img [ref=e13] [cursor=pointer]
+      - separator [ref=e15]
+      - list [ref=e16]:
+        - listitem "Dashboard" [ref=e17]:
+          - button "Dashboard" [ref=e18] [cursor=pointer]:
+            - img [ref=e20] [cursor=pointer]
+            - generic:
+              - generic: Dashboard
+        - listitem "Projects" [ref=e22]:
+          - button "Projects" [ref=e23] [cursor=pointer]:
+            - img [ref=e25] [cursor=pointer]
+            - generic:
+              - generic: Projects
+        - listitem "Schema Management" [ref=e27]:
+          - button "Schema Management" [ref=e28] [cursor=pointer]:
+            - img [ref=e30] [cursor=pointer]
+            - generic:
+              - generic: Schema Management
+        - listitem "Search Components" [ref=e32]:
+          - button "Search Components" [ref=e33] [cursor=pointer]:
+            - img [ref=e35] [cursor=pointer]
+            - generic:
+              - generic: Search Components
+        - listitem "Upload Drawings" [ref=e37]:
+          - button "Upload Drawings" [ref=e38] [cursor=pointer]:
+            - img [ref=e40] [cursor=pointer]
+            - generic:
+              - generic: Upload Drawings
+        - listitem "Export Components" [ref=e42]:
+          - button "Export Components" [ref=e43] [cursor=pointer]:
+            - img [ref=e45] [cursor=pointer]
+            - generic:
+              - generic: Export Components
+    - main [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]:
+          - button [ref=e50] [cursor=pointer]:
+            - img [ref=e51] [cursor=pointer]
+          - heading "temp-test" [level=1] [ref=e54]:
+            - img [ref=e55]
+            - text: temp-test
+        - generic [ref=e57]:
+          - generic [ref=e60]:
+            - paragraph [ref=e61]: Total Drawings
+            - heading "0" [level=4] [ref=e62]
+          - generic [ref=e65]:
+            - paragraph [ref=e66]: Created
+            - heading "10/3/2025" [level=6] [ref=e67]
+          - generic [ref=e70]:
+            - paragraph [ref=e71]: Location
+            - heading "Not specified" [level=6] [ref=e72]
+        - generic [ref=e73]:
+          - tablist "project tabs" [ref=e76]:
+            - tab "Drawings (0)" [selected] [ref=e77] [cursor=pointer]: Drawings (0)
+            - tab "Details" [ref=e78] [cursor=pointer]: Details
+          - tabpanel "Drawings (0)" [ref=e80]:
+            - generic [ref=e81]:
+              - generic [ref=e82]:
+                - heading "Project Drawings" [level=6] [ref=e83]
+                - button "Add Drawings" [ref=e84] [cursor=pointer]:
+                  - img [ref=e86] [cursor=pointer]
+                  - text: Add Drawings
+              - generic [ref=e88]:
+                - img [ref=e89]
+                - heading "No drawings in this project" [level=6] [ref=e91]
+                - paragraph [ref=e92]: Click "Add Drawings" to assign drawings to this project
+```
