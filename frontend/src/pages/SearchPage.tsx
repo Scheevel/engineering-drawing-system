@@ -408,13 +408,27 @@ const SearchPage: React.FC = () => {
 
   // Fetch recent components when page loads
   const { data: recentComponentsData, isLoading: recentLoading } = useQuery(
-    ['recent-components', filters], // Include filters in query key so it refetches when filters change
-    () => getRecentComponents(20, {
-      componentType: filters.componentType,
-      projectId: filters.projectId,
-      confidenceQuartile: filters.confidenceQuartile,
-      instanceIdentifier: filters.instanceIdentifier
-    }),
+    ['recent-components', filters, sortBy], // Include filters and sort in query key so it refetches when they change
+    () => {
+      // Parse sortBy into field and order (e.g., "piece_mark_desc" → field: "piece_mark", order: "desc")
+      let sortField: string | undefined;
+      let sortOrder: string | undefined;
+
+      if (sortBy && sortBy !== 'relevance') {
+        const parts = sortBy.split('_');
+        if (parts.length >= 2) {
+          sortOrder = parts[parts.length - 1]; // Last part is order (asc/desc)
+          sortField = parts.slice(0, -1).join('_'); // Everything before last part is field name
+        }
+      }
+
+      return getRecentComponents(20, {
+        componentType: filters.componentType,
+        projectId: filters.projectId,
+        confidenceQuartile: filters.confidenceQuartile,
+        instanceIdentifier: filters.instanceIdentifier
+      }, sortField, sortOrder);
+    },
     {
       enabled: !debouncedQuery.trim(), // Only fetch when not searching
       onSuccess: (data) => {
@@ -573,12 +587,24 @@ const SearchPage: React.FC = () => {
         const currentCount = allRecentResults.length;
         const newLimit = currentCount + 20; // Load 20 more components
 
+        // Parse sortBy into field and order (same logic as in useQuery)
+        let sortField: string | undefined;
+        let sortOrder: string | undefined;
+
+        if (sortBy && sortBy !== 'relevance') {
+          const parts = sortBy.split('_');
+          if (parts.length >= 2) {
+            sortOrder = parts[parts.length - 1];
+            sortField = parts.slice(0, -1).join('_');
+          }
+        }
+
         const response = await getRecentComponents(newLimit, {
           componentType: filters.componentType,
           projectId: filters.projectId,
           confidenceQuartile: filters.confidenceQuartile,
           instanceIdentifier: filters.instanceIdentifier
-        });
+        }, sortField, sortOrder);
         const newComponents = response.recent_components || [];
         
         setAllRecentResults(newComponents);

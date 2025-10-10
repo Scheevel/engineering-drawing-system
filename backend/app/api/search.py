@@ -91,9 +91,11 @@ async def get_recent_components(
     project_id: Optional[int] = None,
     confidence_quartile: Optional[int] = Query(None, ge=0, le=4, description="Filter by confidence quartile: 0=all, 1=0-24%, 2=25-49%, 3=50-74%, 4=75-100%"),
     instance_identifier: Optional[str] = Query(None, max_length=10, description="Filter by instance identifier"),
+    sort_by: Optional[str] = Query(None, description="Sort field: piece_mark, component_type, confidence_score, created_at"),
+    sort_order: Optional[str] = Query("desc", description="Sort order: asc or desc"),
     db: Session = Depends(get_db)
 ):
-    """Get recently added components for search page preview with optional filters"""
+    """Get recently added components for search page preview with optional filters and sorting"""
     try:
         offset = (page - 1) * limit
         recent_components = await search_service.get_recent_components(
@@ -101,7 +103,9 @@ async def get_recent_components(
             component_type=component_type,
             project_id=project_id,
             confidence_quartile=confidence_quartile,
-            instance_identifier=instance_identifier
+            instance_identifier=instance_identifier,
+            sort_by=sort_by,
+            sort_order=sort_order
         )
         total_count = await search_service.get_total_components_count(
             db,

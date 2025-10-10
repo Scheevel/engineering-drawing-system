@@ -345,7 +345,9 @@ export const getRecentComponents = async (
     projectId?: string;
     confidenceQuartile?: number;
     instanceIdentifier?: string;
-  }
+  },
+  sortBy?: string,
+  sortOrder?: string
 ): Promise<{
   recent_components: Component[];
   total_available: number;
@@ -359,6 +361,10 @@ export const getRecentComponents = async (
     if (filters.confidenceQuartile) params.confidence_quartile = filters.confidenceQuartile;
     if (filters.instanceIdentifier) params.instance_identifier = filters.instanceIdentifier;
   }
+
+  // Add sort parameters if provided
+  if (sortBy) params.sort_by = sortBy;
+  if (sortOrder) params.sort_order = sortOrder;
 
   const response = await api.get('/search/recent', { params });
   return response.data;

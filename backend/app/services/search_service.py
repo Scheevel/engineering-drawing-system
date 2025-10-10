@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, or_, func, desc
+from sqlalchemy import and_, or_, func, desc, asc
 import logging
 from datetime import datetime
 import json
@@ -400,9 +400,11 @@ class SearchService:
         component_type: Optional[str] = None,
         project_id: Optional[int] = None,
         confidence_quartile: Optional[int] = None,
-        instance_identifier: Optional[str] = None
+        instance_identifier: Optional[str] = None,
+        sort_by: Optional[str] = None,
+        sort_order: Optional[str] = "desc"
     ) -> List[ComponentSearchResult]:
-        """Get recently added components for search page preview with optional filters"""
+        """Get recently added components for search page preview with optional filters and sorting"""
         try:
             # Build base query with eager loading
             query = db.query(Component).options(
@@ -431,8 +433,20 @@ class SearchService:
             if instance_identifier:
                 query = query.filter(Component.instance_identifier == instance_identifier)
 
-            # Apply ordering and pagination
-            components = query.order_by(desc(Component.created_at)).offset(offset).limit(limit).all()
+            # Apply sorting
+            order_func = desc if sort_order == "desc" else asc
+
+            if sort_by == "piece_mark":
+                query = query.order_by(order_func(Component.piece_mark))
+            elif sort_by == "component_type":
+                query = query.order_by(order_func(Component.component_type))
+            elif sort_by == "confidence_score":
+                query = query.order_by(order_func(Component.confidence_score))
+            else:  # Default to created_at (recent first)
+                query = query.order_by(desc(Component.created_at))
+
+            # Apply pagination
+            components = query.offset(offset).limit(limit).all()
             
             # Convert to response format
             results = []
