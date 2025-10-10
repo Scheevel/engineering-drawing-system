@@ -36,6 +36,7 @@ interface UnifiedColumnHeaderProps {
   sortable?: boolean;
   sortBy?: string;
   onSort?: (column: string) => void;
+  onClearSort?: () => void; // Clear sort back to default (relevance)
 
   // Filter props
   filterable?: boolean;
@@ -49,8 +50,9 @@ const UnifiedColumnHeader: React.FC<UnifiedColumnHeaderProps> = ({
   label,
   columnKey,
   sortable = false,
-  sortBy,
+  sortBy = '',
   onSort,
+  onClearSort,
   filterable = false,
   filterOptions = [],
   selectedFilterValue,
@@ -98,11 +100,9 @@ const UnifiedColumnHeader: React.FC<UnifiedColumnHeaderProps> = ({
   };
 
   const handleClearSort = () => {
-    if (onSort) {
-      // Cycle back to relevance
-      while (sortBy.startsWith(columnKey)) {
-        onSort(columnKey);
-      }
+    if (onClearSort) {
+      // Call the clear sort handler to reset to relevance/default
+      onClearSort();
     }
     handleCloseMenu();
   };

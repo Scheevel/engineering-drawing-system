@@ -501,12 +501,25 @@ const SearchPage: React.FC = () => {
   // Get confidence range for API query
   const confidenceRange = filters.confidenceQuartile > 0 ? getConfidenceRange(filters.confidenceQuartile) : null;
 
+  // Parse sortBy into field and order for API
+  const sortParams = useMemo(() => {
+    if (sortBy && sortBy !== 'relevance') {
+      const parts = sortBy.split('_');
+      if (parts.length >= 2) {
+        const order = parts[parts.length - 1]; // Last part is order (asc/desc)
+        const field = parts.slice(0, -1).join('_'); // Everything before last part is field name
+        return { sort_by: field, sort_order: order };
+      }
+    }
+    return { sort_by: 'relevance', sort_order: 'desc' };
+  }, [sortBy]);
+
   const {
     data: searchResults,
     isLoading,
     isFetching,
   } = useQuery(
-    ['search', debouncedQuery, filters, currentScopeArray, page],
+    ['search', debouncedQuery, filters, currentScopeArray, page, sortBy],
     () => searchComponents({
       query: debouncedQuery || '*', // Use wildcard when no query but filters are applied
       scope: currentScopeArray,
@@ -517,6 +530,8 @@ const SearchPage: React.FC = () => {
       instance_identifier: filters.instanceIdentifier || undefined,
       confidence_min: confidenceRange?.min,
       confidence_max: confidenceRange?.max,
+      sort_by: sortParams.sort_by,
+      sort_order: sortParams.sort_order,
       page,
       limit: 25,
     }),
@@ -547,20 +562,17 @@ const SearchPage: React.FC = () => {
     setPage(1); // Reset to first page when sort changes
   };
 
-  // Handle sort from column header clicks (3-state toggle)
+  // Handle sort from column header clicks (2-state toggle: asc ↔ desc)
   const handleSort = (column: string) => {
     const currentSort = sortBy;
 
-    // Cycle: No Sort (relevance) → Ascending → Descending → No Sort
-    if (!currentSort.startsWith(column)) {
-      // Not currently sorting by this column, start with ascending
-      setSortBy(`${column}_asc`);
-    } else if (currentSort.endsWith('_asc')) {
+    // Simple toggle: Ascending ↔ Descending
+    if (currentSort === `${column}_asc`) {
       // Currently ascending, switch to descending
       setSortBy(`${column}_desc`);
     } else {
-      // Currently descending, reset to relevance
-      setSortBy('relevance');
+      // Not sorting by this column OR currently descending, switch to ascending
+      setSortBy(`${column}_asc`);
     }
 
     setPage(1); // Reset to first page when sort changes
@@ -990,12 +1002,16 @@ const SearchPage: React.FC = () => {
               <Button
                 size="small"
                 startIcon={<ClearIcon />}
-                onClick={() => setFilters({
-                  componentType: '',
-                  projectId: 'all',
-                  instanceIdentifier: '',
-                  confidenceQuartile: 0,
-                })}
+                onClick={() => {
+                  setFilters({
+                    componentType: '',
+                    projectId: 'all',
+                    instanceIdentifier: '',
+                    confidenceQuartile: 0,
+                  });
+                  setPage(1); // Reset to first page to trigger refetch
+                  setAllResults([]); // Clear displayed results immediately for better UX
+                }}
               >
                 Clear All
               </Button>
@@ -1126,6 +1142,7 @@ const SearchPage: React.FC = () => {
                           sortable={true}
                           sortBy={sortBy}
                           onSort={handleSort}
+                          onClearSort={() => setSortBy('relevance')}
                         />
                       </TableCell>
                       <TableCell>
@@ -1135,6 +1152,7 @@ const SearchPage: React.FC = () => {
                           sortable={true}
                           sortBy={sortBy}
                           onSort={handleSort}
+                          onClearSort={() => setSortBy('relevance')}
                           filterable={true}
                           filterOptions={componentTypeOptions}
                           selectedFilterValue={filters.componentType}
@@ -1165,6 +1183,7 @@ const SearchPage: React.FC = () => {
                           sortable={true}
                           sortBy={sortBy}
                           onSort={handleSort}
+                          onClearSort={() => setSortBy('relevance')}
                           filterable={true}
                           filterOptions={confidenceOptions}
                           selectedFilterValue={filters.confidenceQuartile}
@@ -1178,6 +1197,7 @@ const SearchPage: React.FC = () => {
                           sortable={true}
                           sortBy={sortBy}
                           onSort={handleSort}
+                          onClearSort={() => setSortBy('relevance')}
                         />
                       </TableCell>
                       <TableCell>
@@ -1272,6 +1292,7 @@ const SearchPage: React.FC = () => {
                             sortable={true}
                             sortBy={sortBy}
                             onSort={handleSort}
+                            onClearSort={() => setSortBy('relevance')}
                           />
                         </TableCell>
                         <TableCell>
@@ -1281,6 +1302,7 @@ const SearchPage: React.FC = () => {
                             sortable={true}
                             sortBy={sortBy}
                             onSort={handleSort}
+                            onClearSort={() => setSortBy('relevance')}
                             filterable={true}
                             filterOptions={componentTypeOptions}
                             selectedFilterValue={filters.componentType}
@@ -1311,6 +1333,7 @@ const SearchPage: React.FC = () => {
                             sortable={true}
                             sortBy={sortBy}
                             onSort={handleSort}
+                            onClearSort={() => setSortBy('relevance')}
                             filterable={true}
                             filterOptions={confidenceOptions}
                             selectedFilterValue={filters.confidenceQuartile}
@@ -1324,6 +1347,7 @@ const SearchPage: React.FC = () => {
                             sortable={true}
                             sortBy={sortBy}
                             onSort={handleSort}
+                            onClearSort={() => setSortBy('relevance')}
                           />
                         </TableCell>
                         <TableCell>

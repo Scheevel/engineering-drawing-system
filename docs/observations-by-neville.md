@@ -2,8 +2,9 @@
 
 make a yagni folder
 
-/BMad:agents:bmad-orchestrator launch `deployer` agent as configured in `.bmad-core/agents/deployer.md` and *smart-deploy command @
 
-
- commit all changes as "known good check point"
+Create an e2e test spec:
+ - run in headed mode, so I can observe
+ - Go to http://localhost:3000/search?confidence_quartile=1
+ - Expected: on records with confidence_quartile=1 should be displayed
 

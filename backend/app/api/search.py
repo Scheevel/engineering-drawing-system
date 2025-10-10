@@ -16,6 +16,10 @@ async def search_components(
     project_id: Optional[str] = None,
     drawing_type: Optional[str] = None,
     instance_identifier: Optional[str] = Query(None, max_length=10, description="Filter by instance identifier"),
+    confidence_min: Optional[float] = Query(None, ge=0.0, le=1.0, description="Minimum confidence score (0.0-1.0)"),
+    confidence_max: Optional[float] = Query(None, ge=0.0, le=1.0, description="Maximum confidence score (0.0-1.0)"),
+    sort_by: Optional[str] = Query("relevance", description="Sort field: relevance, piece_mark, component_type, confidence_score, created_at"),
+    sort_order: Optional[str] = Query("desc", description="Sort order: asc or desc"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db)
@@ -41,6 +45,10 @@ async def search_components(
             project_id=project_id,
             drawing_type=drawing_type,
             instance_identifier=instance_identifier,
+            confidence_min=confidence_min,
+            confidence_max=confidence_max,
+            sort_by=sort_by or "relevance",
+            sort_order=sort_order or "desc",
             page=page,
             limit=limit
         )

@@ -117,6 +117,11 @@ export interface SearchRequest {
   component_type?: string;
   project_id?: string;
   drawing_type?: string;
+  instance_identifier?: string;
+  confidence_min?: number;
+  confidence_max?: number;
+  sort_by?: string;
+  sort_order?: string;
   page?: number;
   limit?: number;
 }

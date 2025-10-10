@@ -122,18 +122,35 @@ class SearchService:
                     pass
                 else:
                     query = query.filter(Component.instance_identifier == request.instance_identifier)
-            
+
+            # Apply confidence filtering
+            if request.confidence_min is not None:
+                query = query.filter(Component.confidence_score >= request.confidence_min)
+
+            if request.confidence_max is not None:
+                query = query.filter(Component.confidence_score <= request.confidence_max)
+
             # Get total count
             total = query.count()
             
             # Apply pagination and sorting
             offset = (request.page - 1) * request.limit
-            
-            if request.sort_by == "date":
-                query = query.order_by(desc(Component.created_at) if request.sort_order == "desc" else Component.created_at)
-            elif request.sort_by == "name":
-                query = query.order_by(desc(Component.piece_mark) if request.sort_order == "desc" else Component.piece_mark)
-            else:  # relevance
+
+            # Enhanced sorting with support for more fields
+            sort_field_map = {
+                "date": Component.created_at,
+                "created_at": Component.created_at,
+                "name": Component.piece_mark,
+                "piece_mark": Component.piece_mark,
+                "component_type": Component.component_type,
+                "confidence": Component.confidence_score,
+                "confidence_score": Component.confidence_score,
+            }
+
+            if request.sort_by in sort_field_map:
+                field = sort_field_map[request.sort_by]
+                query = query.order_by(desc(field) if request.sort_order == "desc" else field)
+            else:  # relevance (default)
                 if request.query and request.query != "*":
                     # Enhanced relevance: exact matches first, then partial matches
                     from sqlalchemy import case

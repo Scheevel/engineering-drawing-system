@@ -1,0 +1,242 @@
+schema: 1
+type: user-journey
+name: User Journey Template
+description: Structured template for creating user journey narratives from approved dev stories
+
+# Metadata configuration
+metadata:
+  title_format: "User Journey: {feature_name}"
+  filename_format: "journey-{story_id}-{slug}.md"
+  default_output_path: "docs/user-journeys/"
+
+# Inputs required before starting
+inputs:
+  - name: story_id
+    prompt: "Story ID (e.g., 9.1)"
+    required: true
+
+  - name: story_title
+    prompt: "Story title"
+    required: true
+
+  - name: feature_name
+    prompt: "Feature name (for journey title)"
+    required: true
+
+  - name: persona
+    prompt: "User persona (e.g., 'Railroad Bridge Engineer', 'Admin User')"
+    default: "User"
+
+  - name: user_goal
+    prompt: "What is the user trying to achieve?"
+    required: true
+
+  - name: include_visual
+    prompt: "Include Mermaid diagram? (yes/no)"
+    default: "yes"
+
+# Document sections
+sections:
+  - id: header
+    instruction: |
+      Create the document header with story reference and persona information.
+      Use format:
+      # User Journey: {feature_name}
+
+      **Story**: {story_id} - {story_title}
+      **Persona**: {persona}
+      **Goal**: {user_goal}
+      **Created**: {current_date}
+    elicit: false
+
+  - id: context
+    title: "Context"
+    instruction: |
+      In 1-2 sentences, explain:
+      - Why is the user doing this?
+      - What problem are they solving?
+      - What prompted them to use this feature?
+
+      Keep it brief and user-focused. Avoid technical jargon.
+    elicit: true
+
+  - id: entry-point
+    title: "Entry Point"
+    instruction: |
+      Describe exactly how the user starts this journey.
+      Be specific about the action (e.g., "User clicks 'Search Components' in navigation menu")
+
+      Entry points might be:
+      - Navigation menu click
+      - URL navigation
+      - Button on another page
+      - Automated trigger (notification, etc.)
+    elicit: true
+
+  - id: journey-steps
+    title: "Step-by-Step Flow"
+    instruction: |
+      Create a numbered sequence of steps. For each step include:
+
+      ### Step N: {Action Name}
+      **User Action:** {What user does - be specific}
+      **System Response:** {What changes in the UI}
+      **Visual Cues:** {What user sees - buttons, messages, highlights}
+      **Validation/Feedback:** {Any errors, confirmations, or guidance shown}
+
+      Extract these from the story's acceptance criteria and UI descriptions.
+      Each step should be observable and testable.
+      Include ALL steps from entry to completion.
+
+      Example:
+      ### Step 1: Navigate to Search Page
+      **User Action:** Clicks "Search Components" in left navigation menu
+      **System Response:** Page loads showing "Recent Components" table with 20 entries
+      **Visual Cues:** Table displays with column headers "Piece Mark", "Type", "Quantity", etc.
+      **Validation/Feedback:** N/A
+    elicit: true
+
+  - id: decision-points
+    title: "Decision Points"
+    instruction: |
+      List places where the user must make a choice that affects the outcome.
+
+      Format:
+      - **Decision**: {What choice user faces}
+        - **Option A**: {Choice 1} → {Consequence}
+        - **Option B**: {Choice 2} → {Consequence}
+
+      Example:
+      - **Decision**: User clicks "Type" column header dropdown
+        - **Sort Ascending**: Table sorts A-Z by type
+        - **Sort Descending**: Table sorts Z-A by type
+        - **Filter by Type**: Shows filter radio buttons
+    elicit: true
+
+  - id: edge-cases
+    title: "Edge Cases & Error States"
+    instruction: |
+      Document non-happy-path scenarios. For each:
+
+      ### Scenario: {Edge case name}
+      **Trigger:** {What causes this}
+      **System Behavior:** {How system handles it}
+      **User Experience:** {What user sees/does}
+
+      Common edge cases:
+      - Empty states (no data to display)
+      - Validation errors (invalid input)
+      - Permission errors (unauthorized access)
+      - Network errors (API timeout)
+      - Conflict states (duplicate entries)
+
+      Extract these from story's error handling requirements.
+    elicit: true
+
+  - id: success-completion
+    title: "Success Completion"
+    instruction: |
+      Describe the final state when user successfully completes the journey.
+
+      Include:
+      - **User sees:** {Final UI state}
+      - **User knows they succeeded because:** {Clear indicators - messages, visual changes}
+      - **Next actions available:** {What can user do from here?}
+
+      This should map directly to the story's acceptance criteria completion state.
+    elicit: true
+
+  - id: visual-flow
+    title: "Visual Flow"
+    condition: "include_visual == 'yes'"
+    instruction: |
+      Create a Mermaid flowchart diagram showing the user journey.
+
+      Use these node types:
+      - Rectangles [Action] for user actions
+      - Rounded rectangles ([State]) for system states
+      - Diamonds {Decision?} for choice points
+      - Dotted lines -.-> for error paths
+
+      Example structure:
+      ```mermaid
+      flowchart TD
+          A[User navigates to /search] --> B{Has query?}
+          B -->|No| C[Show Recent Components]
+          B -->|Yes| D[Show Search Results]
+          C --> E[Click column header]
+          D --> E
+          E --> F[Dropdown opens]
+          F --> G{User selects}
+          G -->|Sort| H[Table re-sorts]
+          G -->|Filter| I[Table filters]
+          H --> J([End])
+          I --> J
+      ```
+
+      Keep it simple - aim for 8-15 nodes maximum.
+      The diagram should be scannable at a glance.
+    elicit: true
+
+  - id: acceptance-mapping
+    title: "Acceptance Criteria Mapping"
+    instruction: |
+      Create a checklist mapping each AC from the story to journey steps.
+
+      Format:
+      - [ ] **AC1**: {Acceptance criteria text}
+        - Covered in: Step {N}, Step {M}
+
+      This ensures complete coverage and helps QA plan tests.
+    elicit: false
+
+  - id: notes
+    title: "Implementation Notes"
+    instruction: |
+      Optional section for technical notes that affect UX:
+      - Performance considerations (loading states)
+      - Browser compatibility notes
+      - Accessibility features
+      - Mobile vs desktop differences
+
+      Keep brief - this is still a user-focused document.
+    elicit: false
+    required: false
+
+# Validation rules
+validation:
+  max_pages: 3
+  required_sections:
+    - context
+    - entry-point
+    - journey-steps
+    - success-completion
+
+  quality_checks:
+    - "Every step has a user action"
+    - "Every step has a system response"
+    - "Success state is clearly defined"
+    - "All acceptance criteria are referenced"
+
+# Agent permissions
+permissions:
+  owner: po  # Product Owner typically creates this
+  editors:
+    - sm  # Scrum Master can facilitate
+    - ux  # UX Designer if available
+  reviewers:
+    - dev  # For feasibility
+    - qa   # For test planning
+
+# Output configuration
+output:
+  format: markdown
+  include_toc: false
+  include_metadata_footer: true
+
+  metadata_footer: |
+    ---
+    **Story Reference**: {story_id}
+    **Created**: {creation_date}
+    **Last Updated**: {update_date}
+    **Owner**: {owner_agent}

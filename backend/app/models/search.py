@@ -36,6 +36,8 @@ class SearchRequest(BaseModel):
     project_id: Optional[str] = None
     drawing_type: Optional[str] = None
     instance_identifier: Optional[str] = Field(None, max_length=10, description="Filter by instance identifier")
+    confidence_min: Optional[float] = Field(None, ge=0.0, le=1.0, description="Minimum confidence score (0.0-1.0)")
+    confidence_max: Optional[float] = Field(None, ge=0.0, le=1.0, description="Maximum confidence score (0.0-1.0)")
     page: int = Field(1, ge=1)
     limit: int = Field(20, ge=1, le=100)
     sort_by: str = "relevance"  # relevance, date, name

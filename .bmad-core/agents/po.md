@@ -59,6 +59,7 @@ commands:
   - correct-course: execute the correct-course task
   - create-epic: Create epic for brownfield projects (task brownfield-create-epic)
   - create-story: Create user story from requirements (task brownfield-create-story)
+  - create-user-journey {story_path}: Create user journey narrative from approved story (task create-user-journey)
   - doc-out: Output full document to current destination file
   - execute-checklist-po: Run task execute-checklist (checklist po-master-checklist)
   - shard-doc {document} {destination}: run the task shard-doc against the optionally provided document to the specified destination
@@ -71,9 +72,11 @@ dependencies:
     - po-master-checklist.md
   tasks:
     - correct-course.md
+    - create-user-journey.md
     - execute-checklist.md
     - shard-doc.md
     - validate-next-story.md
   templates:
     - story-tmpl.yaml
+    - user-journey-tmpl.yaml
 ```

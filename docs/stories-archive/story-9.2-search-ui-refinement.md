@@ -274,19 +274,135 @@ Ensure filter changes update the URL via:
 ## Dev Agent Record
 
 ### Agent Model Used
-*To be populated by dev agent*
+claude-sonnet-4-5-20250929
 
 ### Debug Log References
-*To be populated by dev agent*
+**Third Regression Fix (2025-10-10):**
+- Root cause analysis: `/search/components` endpoint lacked sort parameter support
+- Backend API enhanced to accept `sort_by`, `sort_order`, `confidence_min`, `confidence_max`
+- Frontend useQuery dependency array updated to include `sortBy` for refetch triggering
+- Backend service enhanced with sort_field_map for flexible field name handling
 
 ### Completion Notes List
-*To be populated by dev agent*
+
+**Third Regression: Sort Not Updating on Repeated Column Clicks (2025-10-10)**
+
+**Issue**: When clicking column header to sort asc → desc → asc, the URL updated but search results did not re-sort. This affected the Search Results table specifically (Recent Components table already worked correctly).
+
+**Root Cause**: Dual backend/frontend issue:
+1. Backend `/search/components` endpoint did not accept `sort_by` or `sort_order` parameters (unlike `/search/recent` which did)
+2. Frontend useQuery dependency array did not include `sortBy`, so query didn't refetch when sort changed
+3. Even if frontend refetched, backend would ignore sort params
+
+**Solution Applied**:
+1. Backend API: Added `sort_by`, `sort_order`, `confidence_min`, `confidence_max` parameters to `/search/components` endpoint
+2. Backend Model: Added `confidence_min` and `confidence_max` fields to SearchRequest Pydantic model
+3. Backend Service: Enhanced sort logic with `sort_field_map` supporting: piece_mark, component_type, confidence_score, created_at
+4. Backend Service: Added confidence range filtering (lines 126-131)
+5. Frontend API: Updated SearchRequest TypeScript interface with new fields
+6. Frontend SearchPage: Created `sortParams` computed value using useMemo to parse sortBy into sort_by/sort_order
+7. Frontend SearchPage: Added `sortBy` to useQuery dependency array (CRITICAL - line 522)
+8. Frontend SearchPage: Passed sort_by and sort_order to searchComponents() API call
+
+**Testing**: Services restarted successfully. User should test:
+- Click column header asc → desc → asc to verify all three updates trigger result changes
+- Verify URL updates with ?sort=column_asc / ?sort=column_desc
+- Test sorting on multiple columns (Piece Mark, Type, Confidence, Added)
+
+---
+
+**Fourth Regression: Clear Filters Not Updating Results (2025-10-10)**
+
+**Issue**: Clicking "Clear All" button in Active Filters section reset filter state but did not update the displayed results, leaving old filtered data visible on screen.
+
+**Root Cause**: The Clear All button's onClick handler only called `setFilters()` to reset filter values but did not:
+1. Reset page number to trigger pagination reset
+2. Clear the `allResults` array that stores displayed component data
+
+This caused the UI to show cleared filter chips while displaying stale filtered results, creating a confusing user experience.
+
+**Solution Applied**:
+Enhanced the Clear All button onClick handler (line 1005-1014) to perform three actions:
+1. `setFilters()` - Reset all filter values to defaults
+2. `setPage(1)` - Reset pagination to first page to trigger query refetch
+3. `setAllResults([])` - Clear displayed results array immediately for instant visual feedback
+
+**Testing**: Frontend service restarted. User should test:
+- Apply multiple filters (Type, Project, Confidence)
+- Click "Clear All" button
+- Verify filter chips disappear immediately
+- Verify table refreshes with unfiltered results
+- Verify URL parameters are cleared
+
+---
+
+**Fifth Regression: Browser Freeze on "Clear Sort" Click (2025-10-10)**
+
+**Issue**: **CRITICAL** - Clicking "Clear Sort" in any column header dropdown menu caused the browser to become completely unresponsive, requiring force quit.
+
+**Root Cause**: Infinite while loop in `UnifiedColumnHeader.tsx` `handleClearSort` function (line 103):
+```typescript
+const handleClearSort = () => {
+  if (onSort) {
+    while (sortBy.startsWith(columnKey)) { // INFINITE LOOP!
+      onSort(columnKey);
+    }
+  }
+  handleCloseMenu();
+};
+```
+
+The logic was fundamentally flawed:
+1. Loop condition: `while (sortBy.startsWith(columnKey))`
+2. Loop action: `onSort(columnKey)` - toggles between `column_asc` and `column_desc`
+3. Problem: BOTH `column_asc` AND `column_desc` start with `columnKey`
+4. Result: Loop never exits because condition is always true after toggling
+
+**Why This Happened**: The original developer attempted to "cycle through" sort states to clear it by clicking multiple times, but the toggle logic meant the condition would always remain true, creating an infinite loop that froze the browser's main thread.
+
+**Solution Applied**:
+1. **Component Interface Enhancement** - Added `onClearSort?: () => void` prop to `UnifiedColumnHeaderProps` (line 39)
+2. **Fixed Handler** - Replaced infinite loop with direct call to clear handler:
+```typescript
+const handleClearSort = () => {
+  if (onClearSort) {
+    onClearSort(); // Directly reset to default sort
+  }
+  handleCloseMenu();
+};
+```
+3. **SearchPage Integration** - Added `onClearSort={() => setSortBy('relevance')}` to all 8 sortable column headers:
+   - Search Results table: Piece Mark, Type, Confidence, Added (lines 1139-1201)
+   - Recent Components table: Piece Mark, Type, Confidence, Added (lines 1289-1350)
+
+**Files Modified**:
+- `frontend/src/components/UnifiedColumnHeader.tsx` - Fixed infinite loop, added onClearSort prop
+- `frontend/src/pages/SearchPage.tsx` - Added onClearSort to 8 sortable column headers
+
+**Testing**: Frontend service restarted. User should test:
+- Sort any column (Piece Mark, Type, Confidence, Added)
+- Click column header dropdown
+- Select "Clear Sort" option
+- Verify browser remains responsive
+- Verify sort clears to "relevance" (default)
+- Verify URL updates to remove ?sort parameter
+- Test on both Search Results and Recent Components tables
 
 ### File List
-*To be populated by dev agent*
 
-**Expected files to be modified:**
-- `frontend/src/pages/SearchPage.tsx` (main changes)
+**Modified Files (Third, Fourth & Fifth Regression Fixes):**
+- `backend/app/api/search.py` - Added sort and confidence parameters to search endpoint
+- `backend/app/models/search.py` - Added confidence_min/max to SearchRequest model
+- `backend/app/services/search_service.py` - Enhanced sort logic with field map, added confidence filtering
+- `frontend/src/services/api.ts` - Updated SearchRequest interface with sort/confidence fields
+- `frontend/src/components/UnifiedColumnHeader.tsx` - **CRITICAL FIX**: Removed infinite loop from handleClearSort, added onClearSort prop
+- `frontend/src/pages/SearchPage.tsx` - Multiple fixes:
+  - Added sortBy to useQuery deps, created sortParams, passed to API (sort fix)
+  - Enhanced Clear All button to reset page and clear results array (clear filters fix)
+  - Added onClearSort prop to all 8 sortable column headers (browser freeze fix)
+
+**Previously Modified Files:**
+- `frontend/src/pages/SearchPage.tsx` (main changes from original story)
 - `frontend/src/components/ConfidenceIndicator.tsx` (may need creation or updates)
 - `frontend/src/services/api.ts` (filter parameter mapping)
 - `frontend/tests/search.spec.ts` (E2E test updates)

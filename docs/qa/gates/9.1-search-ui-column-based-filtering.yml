@@ -1,0 +1,141 @@
+schema: 1
+story: '9.1'
+gate: CONCERNS
+status_reason: 'All 5 acceptance criteria met with high code quality, but missing comprehensive test coverage for new components (UnifiedColumnHeader, ConfidenceIndicator) and E2E tests for column filtering features.'
+reviewer: 'Quinn'
+updated: '2025-10-09T14:16:00Z'
+quality_score: 70
+
+top_issues:
+  - id: TEST-001
+    severity: high
+    category: test_coverage
+    description: 'Missing unit tests for UnifiedColumnHeader component (318 lines, complex reusable component with sort+filter logic)'
+    location: 'frontend/src/components/UnifiedColumnHeader.tsx'
+    recommendation: 'Create comprehensive unit tests covering: sort 3-state toggle, filter menu interactions, radio button selection, search box filtering, prop validation'
+
+  - id: TEST-002
+    severity: high
+    category: test_coverage
+    description: 'Missing unit tests for ConfidenceIndicator component (58 lines with color mapping logic)'
+    location: 'frontend/src/components/ConfidenceIndicator.tsx'
+    recommendation: 'Create unit tests covering: color mapping for all quartiles, tooltip display, percentage calculation, edge cases (null/undefined confidence)'
+
+  - id: TEST-003
+    severity: high
+    category: test_coverage
+    description: 'No E2E tests covering Story 9.1 features (column filtering, URL state persistence, active filter chips)'
+    location: 'frontend/e2e/search-functionality.spec.ts'
+    recommendation: 'Add E2E tests for: clicking column headers, selecting filters, verifying URL params, clearing filters, backwards compatibility with legacy URLs'
+
+  - id: MNT-001
+    severity: medium
+    category: code_quality
+    description: 'Unused imports in implementation files (IconButton, Folder, FolderOpen)'
+    location: 'frontend/src/components/UnifiedColumnHeader.tsx:5, frontend/src/pages/SearchPage.tsx:39-40'
+    recommendation: 'Remove unused imports to improve code cleanliness and reduce bundle size'
+
+  - id: DOC-001
+    severity: medium
+    category: documentation
+    description: 'Missing JSDoc comments for reusable UnifiedColumnHeader component'
+    location: 'frontend/src/components/UnifiedColumnHeader.tsx'
+    recommendation: 'Add JSDoc comments documenting: component purpose, prop descriptions, usage examples, Excel AutoFilter pattern reference'
+
+  - id: MNT-002
+    severity: low
+    category: maintainability
+    description: 'sortBy prop required even when sortable=false (type strictness issue)'
+    location: 'frontend/src/components/UnifiedColumnHeader.tsx:37,52'
+    recommendation: 'Make sortBy optional when sortable=false using conditional types or prop validation'
+
+acceptance_criteria:
+  - id: AC1
+    description: 'Minimized Search Section with 3 controls only'
+    status: PASS
+    validation: 'SearchPage.tsx lines 733-829 shows exactly 3 controls: Search (md=6), Scope (md=3), Sort (md=3). Component Type, Project, Instance Identifier filters removed as specified.'
+
+  - id: AC2
+    description: 'Sortable Column Headers with 3-state toggle'
+    status: PASS
+    validation: 'UnifiedColumnHeader used for all 7 columns. Piece Mark, Type, Quantity, Confidence sortable. handleSort (lines 531-547) implements 3-state toggle: relevance → asc → desc → relevance. SORT_OPTIONS extended with all required options.'
+
+  - id: AC3
+    description: 'Confidence Column with Quartile Filtering and color indicators'
+    status: PASS
+    validation: 'ConfidenceIndicator displays color-coded circles (red/orange/yellow/green). Quartile filtering (lines 714-720) with 4 ranges + "All Levels". API integration (lines 481-502) maps quartiles to confidence_min/confidence_max params.'
+
+  - id: AC4
+    description: 'Column Header Filtering for Type and Project with single-select'
+    status: PASS
+    validation: 'Type column (lines 1112-1122) and Project column (lines 1140-1148) use UnifiedColumnHeader with filterable=true. RadioGroup (lines 264-294) implements single-select as required by backend Pydantic constraint. Active filter chips display (lines 984-1002).'
+
+  - id: AC5
+    description: 'Backwards Compatibility and URL State Management'
+    status: PASS
+    validation: 'migrateLegacyParams (lines 179-198) converts componentType→type, projectId→project. URL as source of truth (lines 200-208). URL sync useEffect (lines 635-643). All filter state persists via URL query params.'
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'No authentication changes. Uses existing API patterns. No new user input vulnerabilities. SQL injection protected via SQLAlchemy ORM.'
+
+  performance:
+    status: PASS
+    notes: 'useMemo for filter options (lines 693-720). React Query caching. Debounced search (300ms). No performance regressions observed.'
+
+  reliability:
+    status: PASS
+    notes: 'TypeScript type safety enforced. Error handling via React Query. Backwards compatibility with legacy URLs. Frontend compiles successfully (warnings only, no errors).'
+
+  maintainability:
+    status: CONCERNS
+    notes: 'Missing tests make future refactoring risky. Reusable UnifiedColumnHeader (318 lines) lacks unit tests. Unused imports need cleanup. JSDoc documentation missing.'
+
+code_quality:
+  typescript_compilation: PASS
+  eslint_warnings: true
+  follows_standards: true
+  notes: 'Follows project coding standards (PascalCase.tsx, proper import organization, Material-UI patterns). TypeScript compiles successfully. Minor ESLint warnings (unused imports) need cleanup.'
+
+design_decisions:
+  - decision: 'Unified column header component instead of 3 separate components (ConfidenceColumnHeader, FilterableColumnHeader, sortable headers)'
+    rationale: 'Superior DRY principle implementation. Single component handles all 7 columns with different configurations. Excel AutoFilter pattern is more intuitive than separate components.'
+    validation: 'APPROVED - Better than story specification'
+
+  - decision: 'Single-select filtering with radio buttons instead of multi-select checkboxes'
+    rationale: 'Backend Pydantic constraints require single enum values, not arrays. Verified via curl testing before implementation.'
+    validation: 'APPROVED - Matches backend capabilities'
+
+  - decision: 'Instance identifier filter kept in SearchFilters interface but removed from UI'
+    rationale: 'Maintains API compatibility while cleaning up UI per AC1 requirements'
+    validation: 'APPROVED - Intentional design choice'
+
+implementation_notes:
+  files_changed: 6
+  lines_added: 1017
+  lines_deleted: 147
+  commits:
+    - '97cb7d6: Complete Story 9.1: Search UI Refactoring - Excel-Style Column Filtering'
+    - 'c7997c6: Fix: Remove unused IconButton import from UnifiedColumnHeader'
+  frontend_status: 'Compiled successfully with warnings (no errors)'
+
+recommendations:
+  immediate:
+    - 'Add unit tests for UnifiedColumnHeader and ConfidenceIndicator before next release'
+    - 'Remove unused imports (IconButton, Folder, FolderOpen) for code cleanliness'
+
+  short_term:
+    - 'Create E2E tests covering column filtering workflows'
+    - 'Add JSDoc comments to UnifiedColumnHeader for developer documentation'
+    - 'Make sortBy prop optional when sortable=false'
+
+  long_term:
+    - 'Consider adding test coverage requirements to CI/CD pipeline'
+    - 'Document instance_identifier filter API compatibility decision in architecture docs'
+
+waiver:
+  active: false
+  reason: null
+  approved_by: null
+  expiration: null
