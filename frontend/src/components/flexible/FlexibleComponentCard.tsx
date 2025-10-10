@@ -637,6 +637,15 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
 
                         <Grid item xs={12} sm={6}>
                           <Typography variant="body2" color="text.secondary">
+                            Instance Identifier
+                          </Typography>
+                          <Typography variant="body1" color={component.instance_identifier ? 'text.primary' : 'text.secondary'}>
+                            {component.instance_identifier || '—'}
+                          </Typography>
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="body2" color="text.secondary">
                             Drawing File
                           </Typography>
                           <Typography variant="body1">

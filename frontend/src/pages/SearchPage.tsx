@@ -1140,6 +1140,22 @@ const SearchPage: React.FC = () => {
                           onClearSort={() => setSortBy('relevance')}
                         />
                       </TableCell>
+                      <TableCell sx={{ width: '100px' }}>
+                        <UnifiedColumnHeader
+                          label="Instance"
+                          columnKey="instance_identifier"
+                          filterable={true}
+                          filterOptions={[
+                            { value: '', label: 'All' },
+                            { value: 'A', label: 'A' },
+                            { value: 'B', label: 'B' },
+                            { value: 'C', label: 'C' },
+                            { value: 'D', label: 'D' },
+                          ]}
+                          selectedFilterValue={filters.instanceIdentifier}
+                          onFilterChange={(value) => handleFilterChange('instanceIdentifier', value as string)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <UnifiedColumnHeader
                           label="Type"
@@ -1290,6 +1306,22 @@ const SearchPage: React.FC = () => {
                             onClearSort={() => setSortBy('relevance')}
                           />
                         </TableCell>
+                        <TableCell sx={{ width: '100px' }}>
+                          <UnifiedColumnHeader
+                            label="Instance"
+                            columnKey="instance_identifier"
+                            filterable={true}
+                            filterOptions={[
+                              { value: '', label: 'All' },
+                              { value: 'A', label: 'A' },
+                              { value: 'B', label: 'B' },
+                              { value: 'C', label: 'C' },
+                              { value: 'D', label: 'D' },
+                            ]}
+                            selectedFilterValue={filters.instanceIdentifier}
+                            onFilterChange={(value) => handleFilterChange('instanceIdentifier', value as string)}
+                          />
+                        </TableCell>
                         <TableCell>
                           <UnifiedColumnHeader
                             label="Type"
@@ -1359,6 +1391,11 @@ const SearchPage: React.FC = () => {
                           <TableCell>
                             <Typography variant="body2" fontWeight="bold">
                               {component.piece_mark}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color={component.instance_identifier ? 'text.primary' : 'text.secondary'}>
+                              {component.instance_identifier || '—'}
                             </Typography>
                           </TableCell>
                           <TableCell>{component.component_type}</TableCell>

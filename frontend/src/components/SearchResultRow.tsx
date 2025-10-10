@@ -113,7 +113,7 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({
                 {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
               </IconButton>
               <HighlightedText
-                text={getDisplayIdentifier()}
+                text={component.piece_mark}
                 searchTerm={getHighlightTerm('piece_mark')}
                 variant="body2"
                 fontWeight="bold"
@@ -126,6 +126,11 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({
               </Box>
             )}
           </Box>
+        </TableCell>
+        <TableCell>
+          <Typography variant="body2" color={component.instance_identifier ? 'text.primary' : 'text.secondary'}>
+            {component.instance_identifier || '—'}
+          </Typography>
         </TableCell>
         <TableCell>
           <HighlightedText
@@ -176,7 +181,7 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({
 
       {/* Inline Preview Row */}
       <TableRow>
-        <TableCell colSpan={7} sx={{ paddingBottom: 0, paddingTop: 0 }}>
+        <TableCell colSpan={8} sx={{ paddingBottom: 0, paddingTop: 0 }}>
           <Collapse in={expanded} timeout="auto" unmountOnExit>
             <Box sx={{ margin: 2 }}>
               <Typography variant="h6" gutterBottom component="div">
