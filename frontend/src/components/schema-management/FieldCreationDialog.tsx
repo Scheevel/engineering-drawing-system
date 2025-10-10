@@ -56,8 +56,8 @@ const fieldValidationSchema = yup.object({
     .min(2, 'Field name must be at least 2 characters')
     .max(50, 'Field name must be less than 50 characters')
     .matches(
-      /^[a-zA-Z][a-zA-Z0-9\s\-_]*$/,
-      'Field name must start with a letter and contain only letters, numbers, spaces, hyphens, and underscores'
+      /^[a-zA-Z][a-zA-Z0-9_]*$/,
+      'Field name must start with a letter and contain only letters, numbers, and underscores (no spaces or hyphens)'
     ),
   field_type: yup
     .string()

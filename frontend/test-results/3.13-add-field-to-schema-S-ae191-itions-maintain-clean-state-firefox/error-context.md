@@ -1,0 +1,396 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6]: Engineering Drawing Index System
+    - generic [ref=e8]:
+      - generic [ref=e10]:
+        - button [ref=e12] [cursor=pointer]:
+          - img [ref=e13] [cursor=pointer]
+        - separator [ref=e15]
+        - list [ref=e16]:
+          - listitem [ref=e17]:
+            - button [ref=e18] [cursor=pointer]:
+              - img [ref=e20] [cursor=pointer]
+          - listitem [ref=e22]:
+            - button [ref=e23] [cursor=pointer]:
+              - img [ref=e25] [cursor=pointer]
+          - listitem [ref=e27]:
+            - button [ref=e28] [cursor=pointer]:
+              - img [ref=e30] [cursor=pointer]
+          - listitem [ref=e32]:
+            - button [ref=e33] [cursor=pointer]:
+              - img [ref=e35] [cursor=pointer]
+          - listitem [ref=e37]:
+            - button [ref=e38] [cursor=pointer]:
+              - img [ref=e40] [cursor=pointer]
+          - listitem [ref=e42]:
+            - button [ref=e43] [cursor=pointer]:
+              - img [ref=e45] [cursor=pointer]
+      - main [ref=e47]:
+        - generic [ref=e48]:
+          - navigation [ref=e49]:
+            - list [ref=e50]:
+              - listitem [ref=e51]:
+                - generic [ref=e52] [cursor=pointer]:
+                  - img [ref=e53] [cursor=pointer]
+                  - text: Dashboard
+              - listitem [ref=e55]:
+                - img [ref=e56]
+              - listitem [ref=e58]:
+                - generic [ref=e59] [cursor=pointer]: Schemas
+              - listitem [ref=e60]:
+                - img [ref=e61]
+              - listitem [ref=e63]:
+                - generic [ref=e64]:
+                  - img [ref=e65]
+                  - paragraph [ref=e67]: console-test-1759328811643
+          - generic [ref=e68]:
+            - generic [ref=e69]:
+              - generic [ref=e70]:
+                - button [ref=e71] [cursor=pointer]:
+                  - img [ref=e72] [cursor=pointer]
+                - heading [level=1] [ref=e74]: Edit Schema
+                - generic [ref=e77]: Active
+              - generic [ref=e78]:
+                - button [ref=e79] [cursor=pointer]:
+                  - img [ref=e81] [cursor=pointer]
+                  - text: Cancel
+                - button [disabled]:
+                  - generic:
+                    - img
+                  - text: Save
+                - button [disabled]:
+                  - generic:
+                    - img
+                  - text: Save & Return
+            - paragraph [ref=e83]:
+              - text: "Editing schema:"
+              - strong [ref=e84]: console-test-1759328811643
+          - generic [ref=e85]:
+            - tablist [ref=e88]:
+              - tab [ref=e89] [cursor=pointer]: Basic Information
+              - tab [selected] [ref=e90] [cursor=pointer]: Fields
+              - tab [ref=e91] [cursor=pointer]: Advanced Settings
+              - tab [ref=e92] [cursor=pointer]: History
+            - tabpanel [ref=e94]:
+              - generic [ref=e96]:
+                - generic [ref=e97]:
+                  - generic [ref=e98]:
+                    - heading [level=6] [ref=e99]: Schema Fields
+                    - paragraph [ref=e100]: Manage the data fields that components using this schema will capture. This schema has 16 fields.
+                  - button [ref=e101] [cursor=pointer]:
+                    - img [ref=e103] [cursor=pointer]
+                    - text: Add Field
+                - generic [ref=e106]:
+                  - generic [ref=e107]:
+                    - heading [level=6] [ref=e108]: Fields
+                    - generic [ref=e109]:
+                      - paragraph [ref=e110]: Total
+                      - generic [ref=e111]: "16"
+                  - list [ref=e112]:
+                    - listitem [ref=e113]:
+                      - generic [ref=e114]:
+                        - img [ref=e117]
+                        - generic [ref=e119]:
+                          - paragraph [ref=e122]: test_field_1759332552587
+                          - paragraph [ref=e123]:
+                            - generic [ref=e126]: Text
+                      - generic [ref=e128]:
+                        - checkbox [checked] [ref=e132] [cursor=pointer]
+                        - button [ref=e135] [cursor=pointer]:
+                          - img [ref=e136] [cursor=pointer]
+                        - button [ref=e138] [cursor=pointer]:
+                          - img [ref=e139] [cursor=pointer]
+                    - separator [ref=e141]
+                    - listitem [ref=e142]:
+                      - generic [ref=e143]:
+                        - img [ref=e146]
+                        - generic [ref=e148]:
+                          - paragraph [ref=e151]: test_field_1759332552587_2
+                          - paragraph [ref=e152]:
+                            - generic [ref=e155]: Number
+                      - generic [ref=e157]:
+                        - checkbox [checked] [ref=e161] [cursor=pointer]
+                        - button [ref=e164] [cursor=pointer]:
+                          - img [ref=e165] [cursor=pointer]
+                        - button [ref=e167] [cursor=pointer]:
+                          - img [ref=e168] [cursor=pointer]
+                    - separator [ref=e170]
+                    - listitem [ref=e171]:
+                      - generic [ref=e172]:
+                        - img [ref=e175]
+                        - generic [ref=e177]:
+                          - paragraph [ref=e180]: rapid_field_1_1759332559299
+                          - paragraph [ref=e181]:
+                            - generic [ref=e184]: Text
+                      - generic [ref=e186]:
+                        - checkbox [checked] [ref=e190] [cursor=pointer]
+                        - button [ref=e193] [cursor=pointer]:
+                          - img [ref=e194] [cursor=pointer]
+                        - button [ref=e196] [cursor=pointer]:
+                          - img [ref=e197] [cursor=pointer]
+                    - separator [ref=e199]
+                    - listitem [ref=e200]:
+                      - generic [ref=e201]:
+                        - img [ref=e204]
+                        - generic [ref=e206]:
+                          - paragraph [ref=e209]: rapid_field_2_1759332559299
+                          - paragraph [ref=e210]:
+                            - generic [ref=e213]: Number
+                      - generic [ref=e215]:
+                        - checkbox [checked] [ref=e219] [cursor=pointer]
+                        - button [ref=e222] [cursor=pointer]:
+                          - img [ref=e223] [cursor=pointer]
+                        - button [ref=e225] [cursor=pointer]:
+                          - img [ref=e226] [cursor=pointer]
+                    - separator [ref=e228]
+                    - listitem [ref=e229]:
+                      - generic [ref=e230]:
+                        - img [ref=e233]
+                        - generic [ref=e235]:
+                          - paragraph [ref=e238]: rapid_field_3_1759332559299
+                          - paragraph [ref=e239]:
+                            - generic [ref=e242]: Checkbox
+                      - generic [ref=e244]:
+                        - checkbox [checked] [ref=e248] [cursor=pointer]
+                        - button [ref=e251] [cursor=pointer]:
+                          - img [ref=e252] [cursor=pointer]
+                        - button [ref=e254] [cursor=pointer]:
+                          - img [ref=e255] [cursor=pointer]
+                    - separator [ref=e257]
+                    - listitem [ref=e258]:
+                      - generic [ref=e259]:
+                        - img [ref=e262]
+                        - generic [ref=e264]:
+                          - paragraph [ref=e267]: test_field_1759333094538
+                          - paragraph [ref=e268]:
+                            - generic [ref=e271]: Text
+                      - generic [ref=e273]:
+                        - checkbox [checked] [ref=e277] [cursor=pointer]
+                        - button [ref=e280] [cursor=pointer]:
+                          - img [ref=e281] [cursor=pointer]
+                        - button [ref=e283] [cursor=pointer]:
+                          - img [ref=e284] [cursor=pointer]
+                    - separator [ref=e286]
+                    - listitem [ref=e287]:
+                      - generic [ref=e288]:
+                        - img [ref=e291]
+                        - generic [ref=e293]:
+                          - paragraph [ref=e296]: test_field_1759333094538_2
+                          - paragraph [ref=e297]:
+                            - generic [ref=e300]: Number
+                      - generic [ref=e302]:
+                        - checkbox [checked] [ref=e306] [cursor=pointer]
+                        - button [ref=e309] [cursor=pointer]:
+                          - img [ref=e310] [cursor=pointer]
+                        - button [ref=e312] [cursor=pointer]:
+                          - img [ref=e313] [cursor=pointer]
+                    - separator [ref=e315]
+                    - listitem [ref=e316]:
+                      - generic [ref=e317]:
+                        - img [ref=e320]
+                        - generic [ref=e322]:
+                          - paragraph [ref=e325]: rapid_field_1_1759333101102
+                          - paragraph [ref=e326]:
+                            - generic [ref=e329]: Text
+                      - generic [ref=e331]:
+                        - checkbox [checked] [ref=e335] [cursor=pointer]
+                        - button [ref=e338] [cursor=pointer]:
+                          - img [ref=e339] [cursor=pointer]
+                        - button [ref=e341] [cursor=pointer]:
+                          - img [ref=e342] [cursor=pointer]
+                    - separator [ref=e344]
+                    - listitem [ref=e345]:
+                      - generic [ref=e346]:
+                        - img [ref=e349]
+                        - generic [ref=e351]:
+                          - paragraph [ref=e354]: rapid_field_2_1759333101102
+                          - paragraph [ref=e355]:
+                            - generic [ref=e358]: Number
+                      - generic [ref=e360]:
+                        - checkbox [checked] [ref=e364] [cursor=pointer]
+                        - button [ref=e367] [cursor=pointer]:
+                          - img [ref=e368] [cursor=pointer]
+                        - button [ref=e370] [cursor=pointer]:
+                          - img [ref=e371] [cursor=pointer]
+                    - separator [ref=e373]
+                    - listitem [ref=e374]:
+                      - generic [ref=e375]:
+                        - img [ref=e378]
+                        - generic [ref=e380]:
+                          - paragraph [ref=e383]: rapid_field_1_1760110840264
+                          - paragraph [ref=e384]:
+                            - generic [ref=e387]: Text
+                      - generic [ref=e389]:
+                        - checkbox [checked] [ref=e393] [cursor=pointer]
+                        - button [ref=e396] [cursor=pointer]:
+                          - img [ref=e397] [cursor=pointer]
+                        - button [ref=e399] [cursor=pointer]:
+                          - img [ref=e400] [cursor=pointer]
+                    - separator [ref=e402]
+                    - listitem [ref=e403]:
+                      - generic [ref=e404]:
+                        - img [ref=e407]
+                        - generic [ref=e409]:
+                          - paragraph [ref=e412]: test_field_1760110840856
+                          - paragraph [ref=e413]:
+                            - generic [ref=e416]: Text
+                      - generic [ref=e418]:
+                        - checkbox [checked] [ref=e422] [cursor=pointer]
+                        - button [ref=e425] [cursor=pointer]:
+                          - img [ref=e426] [cursor=pointer]
+                        - button [ref=e428] [cursor=pointer]:
+                          - img [ref=e429] [cursor=pointer]
+                    - separator [ref=e431]
+                    - listitem [ref=e432]:
+                      - generic [ref=e433]:
+                        - img [ref=e436]
+                        - generic [ref=e438]:
+                          - paragraph [ref=e441]: rapid_field_2_1760110840264
+                          - paragraph [ref=e442]:
+                            - generic [ref=e445]: Number
+                      - generic [ref=e447]:
+                        - checkbox [checked] [ref=e451] [cursor=pointer]
+                        - button [ref=e454] [cursor=pointer]:
+                          - img [ref=e455] [cursor=pointer]
+                        - button [ref=e457] [cursor=pointer]:
+                          - img [ref=e458] [cursor=pointer]
+                    - separator [ref=e460]
+                    - listitem [ref=e461]:
+                      - generic [ref=e462]:
+                        - img [ref=e465]
+                        - generic [ref=e467]:
+                          - paragraph [ref=e470]: test_field_1760110840856_2
+                          - paragraph [ref=e471]:
+                            - generic [ref=e474]: Number
+                      - generic [ref=e476]:
+                        - checkbox [checked] [ref=e480] [cursor=pointer]
+                        - button [ref=e483] [cursor=pointer]:
+                          - img [ref=e484] [cursor=pointer]
+                        - button [ref=e486] [cursor=pointer]:
+                          - img [ref=e487] [cursor=pointer]
+                    - separator [ref=e489]
+                    - listitem [ref=e490]:
+                      - generic [ref=e491]:
+                        - img [ref=e494]
+                        - generic [ref=e496]:
+                          - paragraph [ref=e499]: rapid_field_1_1760110853051
+                          - paragraph [ref=e500]:
+                            - generic [ref=e503]: Text
+                      - generic [ref=e505]:
+                        - checkbox [checked] [ref=e509] [cursor=pointer]
+                        - button [ref=e512] [cursor=pointer]:
+                          - img [ref=e513] [cursor=pointer]
+                        - button [ref=e515] [cursor=pointer]:
+                          - img [ref=e516] [cursor=pointer]
+                    - separator [ref=e518]
+                    - listitem [ref=e519]:
+                      - generic [ref=e520]:
+                        - img [ref=e523]
+                        - generic [ref=e525]:
+                          - paragraph [ref=e528]: test_field_1760110853903
+                          - paragraph [ref=e529]:
+                            - generic [ref=e532]: Text
+                      - generic [ref=e534]:
+                        - checkbox [checked] [ref=e538] [cursor=pointer]
+                        - button [ref=e541] [cursor=pointer]:
+                          - img [ref=e542] [cursor=pointer]
+                        - button [ref=e544] [cursor=pointer]:
+                          - img [ref=e545] [cursor=pointer]
+                    - separator [ref=e547]
+                    - listitem [ref=e548]:
+                      - generic [ref=e549]:
+                        - img [ref=e552]
+                        - generic [ref=e554]:
+                          - paragraph [ref=e557]: rapid_field_2_1760110853051
+                          - paragraph [ref=e558]:
+                            - generic [ref=e561]: Number
+                      - generic [ref=e563]:
+                        - checkbox [checked] [ref=e567] [cursor=pointer]
+                        - button [ref=e570] [cursor=pointer]:
+                          - img [ref=e571] [cursor=pointer]
+                        - button [ref=e573] [cursor=pointer]:
+                          - img [ref=e574] [cursor=pointer]
+  - dialog "Add New Field" [ref=e579]:
+    - heading "Add New Field" [level=2] [ref=e580]:
+      - generic [ref=e581]:
+        - generic [ref=e582]:
+          - img [ref=e583]
+          - generic [ref=e585]: Add New Field
+        - button [ref=e586] [cursor=pointer]:
+          - img [ref=e587] [cursor=pointer]
+    - separator [ref=e589]
+    - generic [ref=e590]:
+      - generic [ref=e592]:
+        - generic [ref=e594]:
+          - generic [ref=e595]:
+            - text: Field Name
+            - generic [ref=e596]: "*"
+          - generic [ref=e597]:
+            - textbox "Field Name" [active] [ref=e598]: rapid_field_3_1760110853051
+            - group:
+              - generic: Field Name *
+          - paragraph [ref=e599]:
+            - generic [ref=e600]:
+              - generic [ref=e601]: Choose a unique, descriptive name for this field
+              - generic [ref=e602]: 27/50
+        - generic [ref=e605] [cursor=pointer]:
+          - generic [ref=e606] [cursor=pointer]:
+            - checkbox "Required Field Users must provide a value for this field" [ref=e607] [cursor=pointer]
+            - img [ref=e608] [cursor=pointer]
+          - generic [ref=e611] [cursor=pointer]:
+            - paragraph [ref=e612] [cursor=pointer]: Required Field
+            - generic [ref=e613] [cursor=pointer]: Users must provide a value for this field
+        - generic [ref=e615]:
+          - heading "Field Type" [level=6] [ref=e617]
+          - generic [ref=e618]:
+            - generic [ref=e622] [cursor=pointer]:
+              - img [ref=e624] [cursor=pointer]
+              - heading "Text Input" [level=6] [ref=e626] [cursor=pointer]
+              - generic [ref=e627] [cursor=pointer]: Single line text input for short text values
+            - generic [ref=e631] [cursor=pointer]:
+              - img [ref=e633] [cursor=pointer]
+              - heading "Number Input" [level=6] [ref=e635] [cursor=pointer]
+              - generic [ref=e636] [cursor=pointer]: Numeric input with optional min/max validation
+            - generic [ref=e640] [cursor=pointer]:
+              - img [ref=e642] [cursor=pointer]
+              - heading "Checkbox" [level=6] [ref=e644] [cursor=pointer]
+              - generic [ref=e645] [cursor=pointer]: Boolean checkbox for yes/no values
+            - generic [ref=e649] [cursor=pointer]:
+              - img [ref=e651] [cursor=pointer]
+              - heading "Multi-line Text" [level=6] [ref=e653] [cursor=pointer]
+              - generic [ref=e654] [cursor=pointer]: Multi-line text input for longer text content
+            - generic [ref=e658] [cursor=pointer]:
+              - img [ref=e660] [cursor=pointer]
+              - heading "Date Picker" [level=6] [ref=e662] [cursor=pointer]
+              - generic [ref=e663] [cursor=pointer]: Date picker with optional time selection
+          - generic [ref=e664]:
+            - generic [ref=e665]:
+              - img [ref=e667]
+              - paragraph [ref=e669]: "Selected: Text Input"
+            - paragraph [ref=e670]: Single line text input for short text values
+        - generic [ref=e672]:
+          - generic: Help Text (Optional)
+          - generic [ref=e673]:
+            - textbox "Help Text (Optional)" [ref=e674]
+            - group:
+              - generic: Help Text (Optional)
+          - paragraph [ref=e675]:
+            - generic [ref=e676]:
+              - generic [ref=e677]: Provide guidance to help users understand what to enter
+              - generic [ref=e678]: 0/200
+        - alert [ref=e680]:
+          - img [ref=e682]
+          - paragraph [ref=e685]:
+            - strong [ref=e686]: "Text Input:"
+            - text: Single line text input for short text values
+      - separator [ref=e687]
+      - generic [ref=e688]:
+        - button "Cancel" [ref=e689] [cursor=pointer]: Cancel
+        - button "Add Field" [ref=e690] [cursor=pointer]:
+          - img [ref=e692] [cursor=pointer]
+          - text: Add Field
+```
