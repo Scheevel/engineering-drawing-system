@@ -392,15 +392,47 @@ class SearchService:
             logger.error(f"Error getting suggestions for '{prefix}': {str(e)}")
             return []
     
-    async def get_recent_components(self, limit: int, db: Session, offset: int = 0) -> List[ComponentSearchResult]:
-        """Get recently added components for search page preview"""
+    async def get_recent_components(
+        self,
+        limit: int,
+        db: Session,
+        offset: int = 0,
+        component_type: Optional[str] = None,
+        project_id: Optional[int] = None,
+        confidence_quartile: Optional[int] = None,
+        instance_identifier: Optional[str] = None
+    ) -> List[ComponentSearchResult]:
+        """Get recently added components for search page preview with optional filters"""
         try:
-            # Get recent components with drawing and project info
-            components = db.query(Component).options(
+            # Build base query with eager loading
+            query = db.query(Component).options(
                 joinedload(Component.drawing).joinedload(Drawing.project),
                 joinedload(Component.dimensions),
                 joinedload(Component.specifications)
-            ).order_by(desc(Component.created_at)).offset(offset).limit(limit).all()
+            )
+
+            # Apply filters if provided
+            if component_type:
+                query = query.filter(Component.component_type == component_type)
+
+            if project_id:
+                query = query.join(Drawing).filter(Drawing.project_id == project_id)
+
+            if confidence_quartile and confidence_quartile > 0:
+                # Map quartiles to confidence score ranges
+                # Quartile 1: 0-24%, 2: 25-49%, 3: 50-74%, 4: 75-100%
+                min_confidence = (confidence_quartile - 1) * 0.25
+                max_confidence = confidence_quartile * 0.25
+                query = query.filter(
+                    Component.confidence_score >= min_confidence,
+                    Component.confidence_score < max_confidence if confidence_quartile < 4 else Component.confidence_score <= 1.0
+                )
+
+            if instance_identifier:
+                query = query.filter(Component.instance_identifier == instance_identifier)
+
+            # Apply ordering and pagination
+            components = query.order_by(desc(Component.created_at)).offset(offset).limit(limit).all()
             
             # Convert to response format
             results = []
@@ -444,10 +476,37 @@ class SearchService:
             logger.error(f"Error getting recent components: {str(e)}")
             return []
     
-    async def get_total_components_count(self, db: Session) -> int:
-        """Get total count of components in the system"""
+    async def get_total_components_count(
+        self,
+        db: Session,
+        component_type: Optional[str] = None,
+        project_id: Optional[int] = None,
+        confidence_quartile: Optional[int] = None,
+        instance_identifier: Optional[str] = None
+    ) -> int:
+        """Get total count of components in the system with optional filters"""
         try:
-            return db.query(Component).count()
+            query = db.query(Component)
+
+            # Apply same filters as get_recent_components
+            if component_type:
+                query = query.filter(Component.component_type == component_type)
+
+            if project_id:
+                query = query.join(Drawing).filter(Drawing.project_id == project_id)
+
+            if confidence_quartile and confidence_quartile > 0:
+                min_confidence = (confidence_quartile - 1) * 0.25
+                max_confidence = confidence_quartile * 0.25
+                query = query.filter(
+                    Component.confidence_score >= min_confidence,
+                    Component.confidence_score < max_confidence if confidence_quartile < 4 else Component.confidence_score <= 1.0
+                )
+
+            if instance_identifier:
+                query = query.filter(Component.instance_identifier == instance_identifier)
+
+            return query.count()
         except Exception as e:
             logger.error(f"Error getting total components count: {str(e)}")
             return 0

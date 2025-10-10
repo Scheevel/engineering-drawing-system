@@ -408,8 +408,13 @@ const SearchPage: React.FC = () => {
 
   // Fetch recent components when page loads
   const { data: recentComponentsData, isLoading: recentLoading } = useQuery(
-    'recent-components',
-    () => getRecentComponents(20),
+    ['recent-components', filters], // Include filters in query key so it refetches when filters change
+    () => getRecentComponents(20, {
+      componentType: filters.componentType,
+      projectId: filters.projectId,
+      confidenceQuartile: filters.confidenceQuartile,
+      instanceIdentifier: filters.instanceIdentifier
+    }),
     {
       enabled: !debouncedQuery.trim(), // Only fetch when not searching
       onSuccess: (data) => {
@@ -567,8 +572,13 @@ const SearchPage: React.FC = () => {
         // Load more components by increasing the limit
         const currentCount = allRecentResults.length;
         const newLimit = currentCount + 20; // Load 20 more components
-        
-        const response = await getRecentComponents(newLimit);
+
+        const response = await getRecentComponents(newLimit, {
+          componentType: filters.componentType,
+          projectId: filters.projectId,
+          confidenceQuartile: filters.confidenceQuartile,
+          instanceIdentifier: filters.instanceIdentifier
+        });
         const newComponents = response.recent_components || [];
         
         setAllRecentResults(newComponents);

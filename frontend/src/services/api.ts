@@ -338,13 +338,29 @@ export const getSearchSuggestions = async (prefix: string, limit: number = 10): 
   return response.data.suggestions;
 };
 
-export const getRecentComponents = async (limit: number = 20): Promise<{
+export const getRecentComponents = async (
+  limit: number = 20,
+  filters?: {
+    componentType?: string;
+    projectId?: string;
+    confidenceQuartile?: number;
+    instanceIdentifier?: string;
+  }
+): Promise<{
   recent_components: Component[];
   total_available: number;
 }> => {
-  const response = await api.get('/search/recent', {
-    params: { limit },
-  });
+  const params: any = { limit };
+
+  // Add filter parameters if provided (convert camelCase to snake_case for API)
+  if (filters) {
+    if (filters.componentType) params.component_type = filters.componentType;
+    if (filters.projectId && filters.projectId !== 'all') params.project_id = filters.projectId;
+    if (filters.confidenceQuartile) params.confidence_quartile = filters.confidenceQuartile;
+    if (filters.instanceIdentifier) params.instance_identifier = filters.instanceIdentifier;
+  }
+
+  const response = await api.get('/search/recent', { params });
   return response.data;
 };
 

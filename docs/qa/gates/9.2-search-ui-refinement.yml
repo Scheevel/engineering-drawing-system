@@ -4,31 +4,41 @@
 schema: 1
 story: "9.2"
 story_title: "Search UI Refinement and Filter Fix"
-gate: PASS
-status_reason: "All acceptance criteria implemented and verified with comprehensive E2E test coverage. Critical filter bug fix confirmed working across all browsers."
+gate: CONCERNS
+status_reason: "REGRESSION DISCOVERED: Filter works for Search Results but NOT for Recent Components table. URL parameter confidence_quartile=1 is displayed in Active Filters badge but Recent Components table ignores all filters. Backend /search/recent endpoint lacks filter parameter support."
 reviewer: "Quinn (Test Architect)"
-updated: "2025-10-09T19:15:00Z"
+updated: "2025-10-09T21:57:00Z"
 
 waiver: { active: false }
 
-top_issues: []
+top_issues:
+  - id: "FILTER-002"
+    severity: medium
+    category: functionality
+    finding: "Recent Components table ignores URL-based filters (confidence_quartile, type, project)"
+    evidence: "Navigating to /search?confidence_quartile=1 shows Active Filter badge but displays components with ALL confidence levels (9%, 40%, 65%, 73%, 80%)"
+    impact: "User confusion - active filter appears to be ignored on default view without search query"
+    root_cause: "Backend /search/recent endpoint only accepts limit/page params (search.py:86-91), Frontend getRecentComponents() doesn't pass filters (api.ts:341-349)"
+    refs: ["backend/app/api/search.py:86-101", "frontend/src/services/api.ts:341-349", "frontend/src/pages/SearchPage.tsx:410-417"]
+    recommendation: "Add filter parameters to /search/recent endpoint and update frontend to pass active filters"
 
 risk_summary:
-  totals: { critical: 0, high: 0, medium: 0, low: 2 }
-  highest: { score: 2, item: "Minor code cleanup needed" }
+  totals: { critical: 0, high: 0, medium: 1, low: 2 }
+  highest: { score: 6, item: "Filter regression on Recent Components" }
   recommendations:
-    must_fix: []
+    must_fix:
+      - "Fix Recent Components filter support before production deployment"
     monitor:
       - "Schedule code cleanup for unused imports in next refactoring"
 
-quality_score: 90  # 100 - (5 × 2 LOW) = 90
+quality_score: 80  # 100 - (10 × 1 MEDIUM) - (5 × 2 LOW) = 80
 
 evidence:
   tests_reviewed: 12  # E2E tests added in frontend/e2e/search-filters.spec.ts
-  risks_identified: 2  # Reduced from 3 after test coverage added
+  risks_identified: 3  # Regression discovered post-deployment
   trace:
-    ac_covered: [1, 2, 3, 4, 5, 6, 7]  # All ACs implemented and tested
-    ac_gaps: []  # No coverage gaps
+    ac_covered: [1, 2, 3, 4, 5, 7]  # AC6 only partially covered
+    ac_gaps: ["AC6: Filter application - works for Search Results, fails for Recent Components"]
 
 nfr_validation:
   security:
@@ -38,14 +48,30 @@ nfr_validation:
     status: PASS
     notes: "Efficient use of useMemo for filter options, proper useEffect dependencies"
   reliability:
-    status: PASS
-    notes: "Comprehensive E2E test coverage validates filter bug fix across all browsers (chromium, firefox, webkit, mobile)"
+    status: CONCERNS
+    notes: "E2E tests validate Search Results filtering but missed Recent Components regression. Filter inconsistency creates unreliable UX - active filter badge shown but not applied to default table view."
   maintainability:
     status: PASS
     notes: "Minor cleanup items identified but don't affect maintainability significantly"
 
 recommendations:
-  immediate: []  # No blocking issues
+  immediate:
+    - action: "Add filter parameter support to /search/recent backend endpoint"
+      priority: high
+      refs: ["backend/app/api/search.py:86-101"]
+      details: "Accept confidence_quartile, component_type, project_id as optional query params"
+    - action: "Update backend get_recent_components() service to apply filters"
+      priority: high
+      refs: ["backend/app/services/search_service.py"]
+      details: "Add filter logic similar to search() method"
+    - action: "Update frontend getRecentComponents() to pass filter parameters"
+      priority: high
+      refs: ["frontend/src/services/api.ts:341-349"]
+      details: "Accept filters object and include in API params"
+    - action: "Pass active filters to getRecentComponents() in SearchPage"
+      priority: high
+      refs: ["frontend/src/pages/SearchPage.tsx:410-417"]
+      details: "Use current filters state when fetching recent components"
   future:
     - action: "Clean up unused imports and variables"
       refs: ["frontend/src/pages/SearchPage.tsx:10-13,39-40"]
@@ -59,4 +85,5 @@ test_coverage:
   test_file: "frontend/e2e/search-filters.spec.ts"
   browsers_tested: ["chromium", "firefox", "webkit", "Mobile Chrome", "Mobile Safari"]
   critical_test: "should apply Confidence filter and update URL (AC6 - Critical Bug Fix)"
-  test_status: "ALL PASSING"
+  test_status: "PASSING for Search Results, FAILING for Recent Components"
+  coverage_gap: "Tests only verify filter behavior with search query (Search Results table), did not test URL-based filter on page load (Recent Components table)"

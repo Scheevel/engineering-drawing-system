@@ -87,13 +87,29 @@ async def get_search_suggestions(
 async def get_recent_components(
     limit: int = Query(25, ge=1, le=100),
     page: int = Query(1, ge=1),
+    component_type: Optional[str] = None,
+    project_id: Optional[int] = None,
+    confidence_quartile: Optional[int] = Query(None, ge=0, le=4, description="Filter by confidence quartile: 0=all, 1=0-24%, 2=25-49%, 3=50-74%, 4=75-100%"),
+    instance_identifier: Optional[str] = Query(None, max_length=10, description="Filter by instance identifier"),
     db: Session = Depends(get_db)
 ):
-    """Get recently added components for search page preview"""
+    """Get recently added components for search page preview with optional filters"""
     try:
         offset = (page - 1) * limit
-        recent_components = await search_service.get_recent_components(limit, db, offset)
-        total_count = await search_service.get_total_components_count(db)
+        recent_components = await search_service.get_recent_components(
+            limit, db, offset,
+            component_type=component_type,
+            project_id=project_id,
+            confidence_quartile=confidence_quartile,
+            instance_identifier=instance_identifier
+        )
+        total_count = await search_service.get_total_components_count(
+            db,
+            component_type=component_type,
+            project_id=project_id,
+            confidence_quartile=confidence_quartile,
+            instance_identifier=instance_identifier
+        )
         return {
             "recent_components": recent_components,
             "total_available": total_count,

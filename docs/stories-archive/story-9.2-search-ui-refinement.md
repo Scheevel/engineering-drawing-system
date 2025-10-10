@@ -490,19 +490,46 @@ AND URL contains both filter parameters
 
 ### Updated Gate Status
 
-**Gate**: PASS → `docs/qa/gates/9.2-search-ui-refinement.yml`
+**Gate**: ~~PASS~~ → **CONCERNS** → `docs/qa/gates/9.2-search-ui-refinement.yml`
 
-**Quality Score**: 90/100 (improved from 80/100)
-- All acceptance criteria implemented ✓
-- Comprehensive E2E test coverage added ✓
+**Quality Score**: ~~90/100~~ → **80/100** (regression discovered)
+- Medium severity: Filter regression on Recent Components (-10)
 - Low severity: Minor code cleanup needed (-5 × 2)
 
-**Status Reason**: All acceptance criteria implemented and verified with comprehensive E2E test coverage. Critical filter bug fix confirmed working across all browsers.
+**Status Reason**: REGRESSION DISCOVERED post-deployment. Filter works for Search Results but NOT for Recent Components table. URL parameter `confidence_quartile=1` is displayed in Active Filters badge but Recent Components table ignores all filters.
+
+### 🚨 Post-Deployment Regression (2025-10-09 21:57)
+
+**Issue ID**: FILTER-002 (Medium Severity)
+
+**Finding**: Recent Components table ignores URL-based filters (confidence_quartile, type, project)
+
+**Evidence**:
+- Navigation to `/search?confidence_quartile=1` displays Active Filter badge showing "Confidence: 0-24% (Low)"
+- Recent Components table shows components with ALL confidence levels: 9%, 40%, 65%, 73%, 80%
+- Expected: Only components with 0-24% confidence should be displayed
+- Actual: Filter is visually indicated but not applied to data
+
+**Root Cause**:
+- Backend `/search/recent` endpoint only accepts `limit` and `page` parameters ([search.py:86-91](backend/app/api/search.py#L86-L91))
+- Frontend `getRecentComponents()` doesn't pass filter parameters ([api.ts:341-349](frontend/src/services/api.ts#L341-L349))
+- SearchPage component doesn't include filters when fetching recent components ([SearchPage.tsx:410-417](frontend/src/pages/SearchPage.tsx#L410-L417))
+
+**Impact**: User confusion - active filter appears to be ignored on default view (without search query)
+
+**Test Coverage Gap**: E2E tests only verify filter behavior with search query (Search Results table), did not test URL-based filter on page load (Recent Components table)
+
+**Required Fixes**:
+1. Add filter parameters to `/search/recent` backend endpoint
+2. Update backend `get_recent_components()` service to apply filters
+3. Update frontend `getRecentComponents()` to pass filter parameters
+4. Pass active filters to `getRecentComponents()` in SearchPage
+5. Update E2E tests to verify Recent Components filtering
 
 ### Recommended Status
 
-**✅ READY FOR ARCHIVE**
+**⚠️ REQUIRES FIX BEFORE PRODUCTION**
 
-The implementation is complete, all acceptance criteria are met, and comprehensive automated test coverage has been added. The critical filter bug fix has been verified across all major browsers and mobile platforms.
+The implementation has a significant regression that creates UX inconsistency. While the core filter bug (AC6) is fixed for Search Results, the Recent Components table (default view) does not respect URL-based filters. This must be addressed before production deployment.
 
-**Story owner may now proceed with archiving this story.**
+**Story remains in archive but requires follow-up fix.**
