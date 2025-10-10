@@ -70,6 +70,7 @@ import SearchResultRow from '../components/SearchResultRow.tsx';
 import SavedSearchDialog from '../components/SavedSearchDialog.tsx';
 import ScopeEffectivenessMetrics from '../components/ScopeEffectivenessMetrics.tsx';
 import UnifiedColumnHeader, { type ColumnFilterOption } from '../components/UnifiedColumnHeader.tsx';
+import ConfidenceIndicator from '../components/ConfidenceIndicator.tsx';
 import { useDebounce } from '../hooks/useDebounce.ts';
 
 interface SearchFilters {
@@ -660,17 +661,17 @@ const SearchPage: React.FC = () => {
 
   // Reset page and results when search query, filters, or scope change
   useEffect(() => {
-    if (debouncedQuery.trim() || filters.componentType || filters.projectId !== 'all') {
+    if (debouncedQuery.trim() || filters.componentType || filters.projectId !== 'all' || filters.instanceIdentifier || filters.confidenceQuartile > 0) {
       setPage(1);
       setAllResults([]);
     }
-  }, [debouncedQuery, filters.componentType, filters.projectId, searchScope]);
+  }, [debouncedQuery, filters.componentType, filters.projectId, filters.instanceIdentifier, filters.confidenceQuartile, searchScope]);
 
   // Handle scope default refresh - ensures search triggers when scope defaults to piece_mark
   useEffect(() => {
     // Check if we have a query or filters that would trigger a search
-    const shouldSearch = Boolean(debouncedQuery.length > 0 || filters.componentType || filters.projectId !== 'all');
-    
+    const shouldSearch = Boolean(debouncedQuery.length > 0 || filters.componentType || filters.projectId !== 'all' || filters.instanceIdentifier || filters.confidenceQuartile > 0);
+
     if (shouldSearch) {
       // Force a fresh search by invalidating the exact query key
       queryClient.invalidateQueries(['search', debouncedQuery, filters, currentScopeArray, page]);
@@ -713,10 +714,10 @@ const SearchPage: React.FC = () => {
   // Prepare confidence quartile filter options
   const confidenceOptions: ColumnFilterOption[] = useMemo(() => [
     { value: 0, label: 'All Levels' },
-    { value: 1, label: '0-25% (Low)', color: 'error.main' },
-    { value: 2, label: '25-50% (Medium-Low)', color: 'orange' },
-    { value: 3, label: '50-75% (Medium-High)', color: 'warning.main' },
-    { value: 4, label: '75-100% (High)', color: 'success.main' },
+    { value: 1, label: 'Very Low (0-24%)', color: 'error.main' },
+    { value: 2, label: 'Low (25-49%)', color: 'orange' },
+    { value: 3, label: 'Medium (50-74%)', color: 'warning.main' },
+    { value: 4, label: 'High (75-100%)', color: 'success.main' },
   ], []);
 
   return (
@@ -807,23 +808,6 @@ const SearchPage: React.FC = () => {
             >
               Search Scope
             </Button>
-          </Grid>
-
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth size="medium">
-              <InputLabel>Sort By</InputLabel>
-              <Select
-                value={sortBy}
-                onChange={(e) => handleSortChange(e.target.value)}
-                label="Sort By"
-              >
-                {SORT_OPTIONS.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
           </Grid>
 
         </Grid>
@@ -1123,15 +1107,6 @@ const SearchPage: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <UnifiedColumnHeader
-                          label="Quantity"
-                          columnKey="quantity"
-                          sortable={true}
-                          sortBy={sortBy}
-                          onSort={handleSort}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <UnifiedColumnHeader
                           label="Drawing"
                           columnKey="drawing"
                         />
@@ -1158,6 +1133,15 @@ const SearchPage: React.FC = () => {
                           filterOptions={confidenceOptions}
                           selectedFilterValue={filters.confidenceQuartile}
                           onFilterChange={(value) => handleFilterChange('confidenceQuartile', value as number)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <UnifiedColumnHeader
+                          label="Added"
+                          columnKey="created_at"
+                          sortable={true}
+                          sortBy={sortBy}
+                          onSort={handleSort}
                         />
                       </TableCell>
                       <TableCell>
@@ -1269,15 +1253,6 @@ const SearchPage: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           <UnifiedColumnHeader
-                            label="Quantity"
-                            columnKey="quantity"
-                            sortable={true}
-                            sortBy={sortBy}
-                            onSort={handleSort}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <UnifiedColumnHeader
                             label="Drawing"
                             columnKey="drawing"
                           />
@@ -1291,6 +1266,19 @@ const SearchPage: React.FC = () => {
                             selectedFilterValue={filters.projectId}
                             onFilterChange={(value) => handleFilterChange('projectId', value as string)}
                             searchable={projects.length > 10}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <UnifiedColumnHeader
+                            label="Confidence"
+                            columnKey="confidence"
+                            sortable={true}
+                            sortBy={sortBy}
+                            onSort={handleSort}
+                            filterable={true}
+                            filterOptions={confidenceOptions}
+                            selectedFilterValue={filters.confidenceQuartile}
+                            onFilterChange={(value) => handleFilterChange('confidenceQuartile', value as number)}
                           />
                         </TableCell>
                         <TableCell>
@@ -1319,7 +1307,6 @@ const SearchPage: React.FC = () => {
                             </Typography>
                           </TableCell>
                           <TableCell>{component.component_type}</TableCell>
-                          <TableCell>{component.quantity}</TableCell>
                           <TableCell>
                             <Typography variant="body2">
                               {component.drawing_file_name}
@@ -1331,6 +1318,13 @@ const SearchPage: React.FC = () => {
                             )}
                           </TableCell>
                           <TableCell>{component.project_name || 'N/A'}</TableCell>
+                          <TableCell>
+                            {component.confidence_score !== null && component.confidence_score !== undefined ? (
+                              <ConfidenceIndicator confidence={component.confidence_score} showLabel={true} />
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">N/A</Typography>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <Typography variant="caption" color="text.secondary">
                               {new Date(component.created_at).toLocaleDateString()}

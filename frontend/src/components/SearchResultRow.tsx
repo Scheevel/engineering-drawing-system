@@ -134,7 +134,6 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({
             variant="body2"
           />
         </TableCell>
-        <TableCell>{component.quantity}</TableCell>
         <TableCell>
           <HighlightedText
             text={component.drawing_file_name}
@@ -156,6 +155,11 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({
               N/A
             </Typography>
           )}
+        </TableCell>
+        <TableCell>
+          <Typography variant="caption" color="text.secondary">
+            {new Date(component.created_at).toLocaleDateString()}
+          </Typography>
         </TableCell>
         <TableCell>
           <IconButton
