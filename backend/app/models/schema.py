@@ -228,6 +228,7 @@ class FlexibleComponentCreate(BaseModel):
 class FlexibleComponentUpdate(BaseModel):
     """Update request for components with flexible schema data"""
     piece_mark: Optional[str] = Field(None, min_length=1, max_length=100)
+    component_type: Optional[str] = Field(None, max_length=50)
     location_x: Optional[float] = None
     location_y: Optional[float] = None
     instance_identifier: Optional[str] = Field(None, max_length=10)
@@ -244,6 +245,7 @@ class FlexibleComponentResponse(BaseModel):
     id: UUID
     drawing_id: UUID
     piece_mark: str
+    component_type: Optional[str] = None
     location_x: Optional[float]
     location_y: Optional[float]
     instance_identifier: Optional[str] = None

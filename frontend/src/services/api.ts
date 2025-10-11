@@ -899,6 +899,7 @@ export interface FlexibleComponentCreate {
 
 export interface FlexibleComponentUpdate {
   piece_mark?: string;
+  component_type?: string;
   schema_id?: string;
   dynamic_data?: DynamicComponentData | Record<string, any>; // Allow both formats
   coordinates?: {

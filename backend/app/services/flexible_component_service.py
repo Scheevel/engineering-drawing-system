@@ -395,6 +395,7 @@ class FlexibleComponentService:
             'id': component.id,
             'drawing_id': component.drawing_id,
             'piece_mark': component.piece_mark,
+            'component_type': component.component_type,
             'location_x': component.location_x,
             'location_y': component.location_y,
             'instance_identifier': component.instance_identifier,

@@ -3,8 +3,13 @@
 make a yagni folder
 
 
-Create an e2e test spec:
- - run in headed mode, so I can observe
- - Go to http://localhost:3000/search?confidence_quartile=1
- - Expected: on records with confidence_quartile=1 should be displayed
+/BMad:agents:analyst *elicit a new feature request or refactoring. On the component detail card there is no place to view or edit the type? Please review archived stories or code base to determine if this was implemented already.
 
+e2e test:
+ - go to /schema
+ - choose any non-default schema and click edit icon
+ - click fields tab
+ - add field
+ - select checkbox and populate
+ - click add field button
+ - Observe the error logged to the console

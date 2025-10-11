@@ -18,6 +18,9 @@ import {
   CircularProgress,
   Chip,
   useTheme,
+  FormControl,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -64,6 +67,22 @@ import ContextualHelpPanel from './ContextualHelpPanel.tsx';
 import ComponentDimensions from '../editor/ComponentDimensions.tsx';
 import ComponentHistory from '../editor/ComponentHistory.tsx';
 import ComponentSpecifications from '../editor/ComponentSpecifications.tsx';
+
+// Component type options (shared with ComponentDetailModal)
+const COMPONENT_TYPES = [
+  { value: 'wide_flange', label: 'Wide Flange' },
+  { value: 'hss', label: 'HSS' },
+  { value: 'angle', label: 'Angle' },
+  { value: 'channel', label: 'Channel' },
+  { value: 'plate', label: 'Plate' },
+  { value: 'tube', label: 'Tube' },
+  { value: 'beam', label: 'Beam' },
+  { value: 'column', label: 'Column' },
+  { value: 'brace', label: 'Brace' },
+  { value: 'girder', label: 'Girder' },
+  { value: 'truss', label: 'Truss' },
+  { value: 'generic', label: 'Generic' },
+];
 
 interface FlexibleComponentCardProps {
   componentId?: string;
@@ -153,6 +172,7 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [componentType, setComponentType] = useState<string>('');
 
   const isCreating = !componentId && mode === 'create';
   const isEditing = mode === 'edit' || isCreating;
@@ -223,6 +243,9 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
       const dynamicData = component.dynamic_data?.field_values || component.dynamic_data || {};
       setFormValues(dynamicData);
 
+      // Initialize component_type from component data
+      setComponentType(component.component_type || '');
+
       // If component has schema info, use it
       if (component.schema_info) {
         setSelectedSchema(component.schema_info);
@@ -283,6 +306,7 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
         await updateMutation.mutateAsync({
           id: componentId,
           updates: {
+            component_type: componentType || undefined,
             schema_id: pendingSchemaId,
             dynamic_data: { field_values: formValues },
           },
@@ -310,6 +334,7 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
         setFormValues(dynamicData);
         setSelectedSchema(component.schema_info);
         setPendingSchemaId(component.schema_id);
+        setComponentType(component.component_type || ''); // Reset component type to original value
       }
     }
   };
@@ -642,6 +667,35 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
                           <Typography variant="body1" color={component.instance_identifier ? 'text.primary' : 'text.secondary'}>
                             {component.instance_identifier || '—'}
                           </Typography>
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            Component Type
+                          </Typography>
+                          {isEditing ? (
+                            <FormControl size="small" fullWidth>
+                              <Select
+                                value={componentType}
+                                onChange={(e) => setComponentType(e.target.value)}
+                                displayEmpty
+                                aria-label="Component type selector"
+                              >
+                                <MenuItem value="">
+                                  <em>Select type</em>
+                                </MenuItem>
+                                {COMPONENT_TYPES.map((type) => (
+                                  <MenuItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          ) : (
+                            <Typography variant="body1">
+                              {COMPONENT_TYPES.find(t => t.value === component.component_type)?.label || component.component_type || '—'}
+                            </Typography>
+                          )}
                         </Grid>
 
                         <Grid item xs={12} sm={6}>
