@@ -32,11 +32,11 @@ import {
   History as HistoryIcon,
   Straighten as DimensionsIcon,
   Settings as SpecsIcon,
-  Lock as LockIcon,
-  LockOpen as UnlockIcon,
   Schema as SchemaIcon,
   ManageAccounts as ManageIcon,
   Pageview as ViewDrawingIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
@@ -44,11 +44,9 @@ import {
   FlexibleComponent,
   ComponentSchema,
   SchemaValidationResult,
-  TypeLockStatus,
   getFlexibleComponent,
   updateFlexibleComponent,
   createFlexibleComponent,
-  unlockComponentType,
   getProjectSchemas,
   FlexibleComponentCreate,
   FlexibleComponentUpdate,
@@ -226,16 +224,6 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
     }
   );
 
-  // Unlock mutation
-  const unlockMutation = useMutation(
-    (componentId: string) => unlockComponentType(componentId),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['flexible-component', componentId]);
-      },
-    }
-  );
-
   // Initialize data when component loads
   useEffect(() => {
     if (component) {
@@ -346,14 +334,6 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
     setFormValues({});
   };
 
-  const handleUnlock = async (componentId: string) => {
-    try {
-      await unlockMutation.mutateAsync(componentId);
-    } catch (error) {
-      console.error('Failed to unlock component:', error);
-    }
-  };
-
   const handleViewDrawing = () => {
     if (component?.drawing_id) {
       // Navigate to drawing viewer with component highlighting
@@ -446,12 +426,6 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
   }
 
   const availableSchemas = projectSchemas?.schemas || (component?.schema_info ? [component.schema_info] : []);
-  const lockStatus: TypeLockStatus = {
-    is_locked: component?.is_type_locked || false,
-    lock_reason: component?.is_type_locked ? 'Component contains data' : undefined,
-    locked_fields: component?.dynamic_data ? Object.keys(component.dynamic_data).filter(k => component.dynamic_data[k]) : [],
-    can_unlock: true,
-  };
 
   return (
     <>
@@ -475,14 +449,6 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
               {component && (
                 <Box display="flex" alignItems="center" gap={1}>
                   <Chip label={component.piece_mark} color="primary" />
-                  {component.is_type_locked && (
-                    <Chip
-                      icon={<LockIcon />}
-                      label="Locked"
-                      color="warning"
-                      size="small"
-                    />
-                  )}
                 </Box>
               )}
             </Box>
@@ -553,9 +519,7 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
                       componentId={componentId}
                       currentSchemaId={pendingSchemaId}
                       availableSchemas={availableSchemas}
-                      lockStatus={lockStatus}
                       onSchemaChange={handleSchemaChangeWithUpdates}
-                      onUnlock={handleUnlock}
                       disabled={updateMutation.isLoading || createMutation.isLoading}
                     />
 
@@ -799,7 +763,7 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
             <Box display="flex" alignItems="center" gap={1}>
               {validation && (
                 <Chip
-                  icon={validation.is_valid ? <UnlockIcon /> : <LockIcon />}
+                  icon={validation.is_valid ? <CheckCircleIcon /> : <ErrorIcon />}
                   label={validation.is_valid ? 'Valid' : `${validation.errors.length} errors`}
                   color={validation.is_valid ? 'success' : 'error'}
                   size="small"

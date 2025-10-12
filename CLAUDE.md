@@ -2,7 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.  
 **be brutally honest at all times**  
-**remind me to git commit often, as I tend to overlook this important step**
 
 ## Project Overview
 

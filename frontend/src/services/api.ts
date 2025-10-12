@@ -910,13 +910,6 @@ export interface FlexibleComponentUpdate {
   };
 }
 
-export interface TypeLockStatus {
-  is_locked: boolean;
-  lock_reason?: string;
-  locked_fields: string[];
-  can_unlock: boolean;
-}
-
 export interface SchemaValidationResult {
   is_valid: boolean;
   errors: string[];
@@ -1076,16 +1069,6 @@ export const updateFlexibleComponent = async (componentId: string, updateData: F
   return response.data;
 };
 
-export const getComponentTypeLockInfo = async (componentId: string): Promise<TypeLockStatus> => {
-  const response = await api.get(`/flexible-components/${componentId}/type-lock`);
-  return response.data;
-};
-
-export const unlockComponentType = async (componentId: string): Promise<FlexibleComponent> => {
-  const response = await api.post(`/flexible-components/${componentId}/unlock`);
-  return response.data;
-};
-
 export const migrateComponentSchema = async (componentId: string, targetSchemaId: string, force: boolean = false): Promise<FlexibleComponent> => {
   const response = await api.post(`/flexible-components/${componentId}/migrate-schema`, null, {
     params: { target_schema_id: targetSchemaId, force }
@@ -1150,6 +1133,20 @@ export const validateComponentData = async (schemaId: string, componentData: Rec
   const response = await api.post('/flexible-components/validate-data', componentData, {
     params: { schema_id: schemaId }
   });
+  return response.data;
+};
+
+// Get component audit history
+export const getComponentAuditHistory = async (
+  componentId: string,
+  sessionId?: string,
+  limit: number = 100
+): Promise<any[]> => {
+  const params: any = { limit };
+  if (sessionId) {
+    params.session_id = sessionId;
+  }
+  const response = await api.get(`/flexible-components/${componentId}/audit-history`, { params });
   return response.data;
 };
 

@@ -1,0 +1,62 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e6]: Engineering Drawing Index System
+  - generic [ref=e8]:
+    - generic [ref=e10]:
+      - button [ref=e12] [cursor=pointer]:
+        - img [ref=e13] [cursor=pointer]
+      - separator [ref=e15]
+      - list [ref=e16]:
+        - listitem "Dashboard" [ref=e17]:
+          - button "Dashboard" [ref=e18] [cursor=pointer]:
+            - img [ref=e20] [cursor=pointer]
+            - generic:
+              - generic: Dashboard
+        - listitem "Projects" [ref=e22]:
+          - button "Projects" [ref=e23] [cursor=pointer]:
+            - img [ref=e25] [cursor=pointer]
+            - generic:
+              - generic: Projects
+        - listitem "Schema Management" [ref=e27]:
+          - button "Schema Management" [ref=e28] [cursor=pointer]:
+            - img [ref=e30] [cursor=pointer]
+            - generic:
+              - generic: Schema Management
+        - listitem "Search Components" [ref=e32]:
+          - button "Search Components" [ref=e33] [cursor=pointer]:
+            - img [ref=e35] [cursor=pointer]
+            - generic:
+              - generic: Search Components
+        - listitem "Upload Drawings" [ref=e37]:
+          - button "Upload Drawings" [ref=e38] [cursor=pointer]:
+            - img [ref=e40] [cursor=pointer]
+            - generic:
+              - generic: Upload Drawings
+        - listitem "Export Components" [ref=e42]:
+          - button "Export Components" [ref=e43] [cursor=pointer]:
+            - img [ref=e45] [cursor=pointer]
+            - generic:
+              - generic: Export Components
+    - main [ref=e47]:
+      - generic [ref=e50]:
+        - heading "001-08-201.jpg" [level=6] [ref=e51]
+        - generic [ref=e52]:
+          - button "70 components" [ref=e53] [cursor=pointer]:
+            - generic [ref=e55] [cursor=pointer]:
+              - text: 70 components
+              - img [ref=e56] [cursor=pointer]
+          - generic [ref=e58] [cursor=pointer]:
+            - checkbox "Show Components" [checked] [ref=e61] [cursor=pointer]
+            - generic [ref=e64] [cursor=pointer]: Show Components
+          - button "Enter Edit Mode" [ref=e65] [cursor=pointer]:
+            - img [ref=e66] [cursor=pointer]
+          - button "Zoom In" [ref=e68] [cursor=pointer]:
+            - img [ref=e69] [cursor=pointer]
+          - button "Zoom Out" [ref=e72] [cursor=pointer]:
+            - img [ref=e73] [cursor=pointer]
+          - button "Fit to Screen" [ref=e75] [cursor=pointer]:
+            - img [ref=e76] [cursor=pointer]
+```

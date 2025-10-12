@@ -10,6 +10,7 @@ from app.models.schema import (
     FlexibleComponentCreate, FlexibleComponentUpdate, FlexibleComponentResponse,
     TypeLockStatus, SchemaValidationResult, DynamicComponentData
 )
+from app.models.component import ComponentAuditLogResponse
 
 router = APIRouter()
 
@@ -40,6 +41,36 @@ async def get_flexible_component(
         raise HTTPException(status_code=404, detail="Component not found")
 
     return component
+
+@router.get("/{component_id}/audit-history", response_model=List[ComponentAuditLogResponse])
+async def get_component_audit_history(
+    component_id: UUID,
+    session_id: Optional[str] = Query(None, description="Filter by specific session (schema change)"),
+    limit: int = Query(100, ge=1, le=500, description="Maximum number of records to return"),
+    db: Session = Depends(get_db)
+):
+    """Get audit history for a component, showing all schema changes and data modifications"""
+    try:
+        flex_service = FlexibleComponentService(db)
+
+        # Verify component exists
+        component = await flex_service.get_flexible_component_by_id(component_id)
+        if not component:
+            raise HTTPException(status_code=404, detail="Component not found")
+
+        # Get audit history
+        audit_records = flex_service.audit_service.get_component_audit_history(
+            component_id=component_id,
+            session_id=session_id,
+            limit=limit
+        )
+
+        return audit_records
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve audit history: {str(e)}")
 
 @router.put("/{component_id}", response_model=FlexibleComponentResponse)
 async def update_flexible_component(

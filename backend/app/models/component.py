@@ -192,9 +192,10 @@ class ComponentAuditLogResponse(BaseModel):
     old_value: Optional[str] = None
     new_value: Optional[str] = None
     changed_by: Optional[str] = None  # Future: user ID
+    session_id: Optional[str] = None  # Links related audit records (e.g., schema changes)
     timestamp: datetime
     change_reason: Optional[str] = None
-    
+
     class Config:
         from_attributes = True
 

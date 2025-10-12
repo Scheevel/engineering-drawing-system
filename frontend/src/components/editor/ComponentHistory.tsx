@@ -11,7 +11,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useQuery } from 'react-query';
-import { getComponentHistory } from '../../services/api.ts';
+import { getComponentAuditHistory } from '../../services/api.ts';
 
 interface ComponentHistoryProps {
   componentId: string;
@@ -19,8 +19,8 @@ interface ComponentHistoryProps {
 
 const ComponentHistory: React.FC<ComponentHistoryProps> = ({ componentId }) => {
   const { data: history, isLoading, error } = useQuery(
-    ['component-history', componentId],
-    () => getComponentHistory(componentId),
+    ['component-audit-history', componentId],
+    () => getComponentAuditHistory(componentId),
     { enabled: !!componentId }
   );
 

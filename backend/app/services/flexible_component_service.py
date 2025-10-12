@@ -12,6 +12,7 @@ from app.models.schema import (
 )
 from app.services.component_service import ComponentService
 from app.services.schema_service import SchemaService
+from app.services.audit_service import AuditService
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ class FlexibleComponentService:
         self.db = db
         self.component_service = ComponentService()
         self.schema_service = SchemaService(db)
+        self.audit_service = AuditService(db)
 
     async def create_flexible_component(self, create_data: FlexibleComponentCreate) -> FlexibleComponentResponse:
         """Create a new component with schema-driven validation"""
@@ -88,32 +90,43 @@ class FlexibleComponentService:
     async def update_flexible_component(
         self,
         component_id: UUID,
-        update_data: FlexibleComponentUpdate
+        update_data: FlexibleComponentUpdate,
+        user_id: Optional[str] = None
     ) -> Optional[FlexibleComponentResponse]:
-        """Update component with schema-aware validation and type-locking"""
+        """Update component with schema-aware validation and audit logging"""
         try:
             component = self.db.query(Component).filter(Component.id == component_id).first()
             if not component:
                 return None
 
-            # Check type locking status
-            type_lock_status = await self.schema_service.check_type_lock_status(component_id)
-
             # Handle schema change requests
             if update_data.schema_id and update_data.schema_id != component.schema_id:
-                if type_lock_status.is_locked:
-                    raise ValueError(
-                        f"Cannot change schema: {type_lock_status.lock_reason}. "
-                        "Clear component data first to unlock schema selection."
-                    )
-
                 # Validate new schema exists
                 new_schema = await self.schema_service.get_schema_by_id(update_data.schema_id)
                 if not new_schema:
                     raise ValueError(f"Schema {update_data.schema_id} not found")
 
+                # Create audit trail ONLY if old schema exists (not first-time assignment)
+                if component.schema_id is not None:
+                    # Preserve old data in audit log before resetting
+                    old_dynamic_data = component.dynamic_data or {}
+
+                    try:
+                        session_id = self.audit_service.create_schema_change_audit(
+                            component_id=component_id,
+                            old_schema_id=component.schema_id,
+                            new_schema_id=update_data.schema_id,
+                            old_dynamic_data=old_dynamic_data,
+                            changed_by=user_id
+                        )
+                        logger.info(f"Created audit trail for schema change: session {session_id}")
+                    except ValueError as audit_error:
+                        # Audit failure should block schema change
+                        self.db.rollback()
+                        raise ValueError(f"Schema change aborted: {str(audit_error)}")
+
+                # Update schema and reset dynamic data
                 component.schema_id = update_data.schema_id
-                # Reset dynamic data when schema changes
                 component.dynamic_data = {}
 
             # Handle dynamic data updates
