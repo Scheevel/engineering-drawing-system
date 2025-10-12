@@ -113,17 +113,17 @@ def test_drawing(test_db_session):
     drawing = Drawing(
         id=uuid4(),
         file_name="test_integration_drawing.pdf",
-        title="Integration Test Drawing",
+        file_path="/uploads/test_integration_drawing.pdf",
         project_id=uuid4(),
-        status="completed"
+        processing_status="completed"
     )
-    
+
     test_db_session.add(drawing)
     test_db_session.commit()
     test_db_session.refresh(drawing)
-    
+
     yield drawing
-    
+
     # Cleanup is handled by session rollback
 
 
