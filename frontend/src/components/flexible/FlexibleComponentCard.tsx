@@ -204,6 +204,7 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
       onSuccess: () => {
         queryClient.invalidateQueries(['flexible-component', componentId]);
         queryClient.invalidateQueries(['component', componentId]); // Legacy cache
+        queryClient.invalidateQueries(['component-audit-history', componentId]); // Refresh history tab
         setMode('view');
       },
     }
