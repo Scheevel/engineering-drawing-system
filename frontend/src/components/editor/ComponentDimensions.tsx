@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -14,6 +14,11 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -21,7 +26,9 @@ import {
   Add as AddIcon,
 } from '@mui/icons-material';
 import { useQuery } from 'react-query';
-import { getComponentDimensions } from '../../services/api.ts';
+import { getComponentDimensions, deleteDimension } from '../../services/api.ts';
+import { DimensionFormDialog } from '../dimensions/DimensionFormDialog.tsx';
+import { useSnackbar } from '../../contexts/SnackbarContext.tsx';
 
 interface ComponentDimensionsProps {
   componentId: string;
@@ -39,6 +46,52 @@ const ComponentDimensions: React.FC<ComponentDimensionsProps> = ({
     () => getComponentDimensions(componentId),
     { enabled: !!componentId }
   );
+
+  // Dialog state management
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingDimension, setEditingDimension] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [dimensionToDelete, setDimensionToDelete] = useState<string | null>(null);
+
+  // Snackbar for notifications
+  const { showSuccess, showError } = useSnackbar();
+
+  // Event handlers
+  const handleAddClick = () => {
+    setEditingDimension(null); // null = add mode
+    setDialogOpen(true);
+  };
+
+  const handleEditClick = (dimension: any) => {
+    setEditingDimension(dimension); // set = edit mode
+    setDialogOpen(true);
+  };
+
+  const handleDeleteClick = (dimensionId: string) => {
+    setDimensionToDelete(dimensionId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (dimensionToDelete) {
+      try {
+        await deleteDimension(dimensionToDelete);
+        setDeleteDialogOpen(false);
+        setDimensionToDelete(null);
+        onUpdate?.(); // Trigger parent to refetch data
+        showSuccess('Dimension deleted successfully');
+      } catch (error) {
+        showError('Failed to delete dimension');
+        console.error('Delete dimension error:', error);
+      }
+    }
+  };
+
+  const handleSave = () => {
+    setDialogOpen(false);
+    onUpdate?.(); // Trigger parent to refetch data
+    showSuccess(editingDimension ? 'Dimension updated successfully' : 'Dimension created successfully');
+  };
 
   if (isLoading) {
     return (
@@ -65,10 +118,7 @@ const ComponentDimensions: React.FC<ComponentDimensionsProps> = ({
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => {
-              // TODO: Open add dimension dialog
-              console.log('Add dimension for component:', componentId);
-            }}
+            onClick={handleAddClick}
           >
             Add Dimension
           </Button>
@@ -127,19 +177,13 @@ const ComponentDimensions: React.FC<ComponentDimensionsProps> = ({
                     <TableCell>
                       <IconButton
                         size="small"
-                        onClick={() => {
-                          // TODO: Open edit dimension dialog
-                          console.log('Edit dimension:', dimension.id);
-                        }}
+                        onClick={() => handleEditClick(dimension)}
                       >
                         <EditIcon />
                       </IconButton>
                       <IconButton
                         size="small"
-                        onClick={() => {
-                          // TODO: Confirm and delete dimension
-                          console.log('Delete dimension:', dimension.id);
-                        }}
+                        onClick={() => handleDeleteClick(dimension.id)}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -151,6 +195,32 @@ const ComponentDimensions: React.FC<ComponentDimensionsProps> = ({
           </Table>
         </TableContainer>
       )}
+
+      {/* Dimension Form Dialog */}
+      <DimensionFormDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        componentId={componentId}
+        dimension={editingDimension}
+        onSave={handleSave}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Delete Dimension?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this dimension? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleConfirmDelete} color="error">Delete</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

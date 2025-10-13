@@ -26,7 +26,7 @@ import { LoadingButton } from '@mui/lab';
 import { useForm, Controller } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { parseFractionalInput } from '../../utils/fractionalParser';
+import { parseFractionalInput } from '../../utils/fractionalParser.ts';
 
 // Dimension type options (verified against database 2025-10-13)
 const DIMENSION_TYPES = [
