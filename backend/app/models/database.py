@@ -168,31 +168,33 @@ class Component(Base):
 
 class Dimension(Base):
     __tablename__ = "dimensions"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     component_id = Column(UUID(as_uuid=True), ForeignKey("components.id"), nullable=False)
     dimension_type = Column(String(50))  # length, width, height, diameter, etc.
     nominal_value = Column(Float)
     tolerance = Column(String(50))
     unit = Column(String(20), default="mm")
+    display_format = Column(String(10), default='decimal')  # Story 6.1: 'decimal' or 'fraction'
     confidence_score = Column(Float)
     location_x = Column(Float)
     location_y = Column(Float)
     extracted_text = Column(String(100))
-    
+
     # Relationships
     component = relationship("Component", back_populates="dimensions")
 
 class Specification(Base):
     __tablename__ = "specifications"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     component_id = Column(UUID(as_uuid=True), ForeignKey("components.id"), nullable=False)
     specification_type = Column(String(100))  # material, grade, standard, etc.
     value = Column(String(255))
     description = Column(Text)
     confidence_score = Column(Float)
-    
+    display_format = Column(String(10))  # Story 6.1: 'decimal' or 'fraction'
+
     # Relationships
     component = relationship("Component", back_populates="specifications")
 

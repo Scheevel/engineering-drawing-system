@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, validator
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 from datetime import datetime
 from uuid import UUID
 
@@ -9,9 +9,17 @@ class DimensionBase(BaseModel):
     nominal_value: float = Field(..., gt=0)
     tolerance: Optional[str] = Field(None, max_length=50)
     unit: str = Field("in", max_length=20)
+    display_format: Optional[Literal['decimal', 'fraction']] = 'decimal'
     location_x: Optional[float] = None
     location_y: Optional[float] = None
     extracted_text: Optional[str] = Field(None, max_length=100)
+
+    @validator('display_format')
+    def validate_display_format(cls, v):
+        """Ensure display_format is either 'decimal', 'fraction', or None"""
+        if v is not None and v not in ['decimal', 'fraction']:
+            raise ValueError("display_format must be 'decimal' or 'fraction'")
+        return v
 
 class DimensionCreateRequest(DimensionBase):
     confidence_score: Optional[float] = Field(None, ge=0, le=1)
@@ -25,7 +33,8 @@ class DimensionResponse(DimensionBase):
     id: UUID
     component_id: UUID
     confidence_score: Optional[float]
-    
+    display_format: Optional[Literal['decimal', 'fraction']]
+
     class Config:
         from_attributes = True
 
@@ -33,6 +42,14 @@ class SpecificationBase(BaseModel):
     specification_type: str = Field(..., min_length=1, max_length=100)
     value: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
+    display_format: Optional[Literal['decimal', 'fraction']] = 'decimal'
+
+    @validator('display_format')
+    def validate_display_format(cls, v):
+        """Ensure display_format is either 'decimal', 'fraction', or None"""
+        if v is not None and v not in ['decimal', 'fraction']:
+            raise ValueError("display_format must be 'decimal' or 'fraction'")
+        return v
 
 class SpecificationCreateRequest(SpecificationBase):
     confidence_score: Optional[float] = Field(None, ge=0, le=1)
@@ -45,7 +62,8 @@ class SpecificationResponse(SpecificationBase):
     id: UUID
     component_id: UUID
     confidence_score: Optional[float]
-    
+    display_format: Optional[Literal['decimal', 'fraction']]
+
     class Config:
         from_attributes = True
 
