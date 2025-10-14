@@ -729,11 +729,25 @@ const FlexibleComponentCard: React.FC<FlexibleComponentCardProps> = ({
               {!isCreating && componentId && (
                 <>
                   <TabPanel value={tabValue} index={1}>
-                    <ComponentDimensions componentId={componentId} />
+                    <ComponentDimensions
+                      componentId={componentId}
+                      editMode={isEditing}
+                      onUpdate={() => {
+                        queryClient.invalidateQueries(['flexible-component', componentId]);
+                        queryClient.invalidateQueries(['component', componentId]);
+                      }}
+                    />
                   </TabPanel>
 
                   <TabPanel value={tabValue} index={2}>
-                    <ComponentSpecifications componentId={componentId} />
+                    <ComponentSpecifications
+                      componentId={componentId}
+                      editMode={isEditing}
+                      onUpdate={() => {
+                        queryClient.invalidateQueries(['flexible-component', componentId]);
+                        queryClient.invalidateQueries(['component', componentId]);
+                      }}
+                    />
                   </TabPanel>
 
                   <TabPanel value={tabValue} index={3}>

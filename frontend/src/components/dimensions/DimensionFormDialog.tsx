@@ -27,6 +27,7 @@ import { useForm, Controller } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { parseFractionalInput } from '../../utils/fractionalParser.ts';
+import { createDimension, updateDimension } from '../../services/api.ts';
 
 // Dimension type options (verified against database 2025-10-13)
 const DIMENSION_TYPES = [
@@ -171,8 +172,7 @@ export const DimensionFormDialog: React.FC<DimensionFormDialogProps> = ({
       // Parse fractional input to get decimal value and display format
       const parsed = parseFractionalInput(data.nominal_value_input);
 
-      const dimensionData: DimensionData = {
-        ...(mode === 'edit' && initialData?.id ? { id: initialData.id } : {}),
+      const dimensionData = {
         dimension_type: data.dimension_type,
         nominal_value: parsed.decimalValue,
         display_format: parsed.displayFormat,
@@ -183,26 +183,13 @@ export const DimensionFormDialog: React.FC<DimensionFormDialogProps> = ({
       };
 
       // Call API to create/update dimension
-      const endpoint = mode === 'create'
-        ? `/api/v1/components/${componentId}/dimensions`
-        : `/api/v1/components/dimensions/${initialData?.id}`;
-
-      const method = mode === 'create' ? 'POST' : 'PUT';
-
-      const response = await fetch(endpoint, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dimensionData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to save dimension');
+      let result;
+      if (mode === 'create') {
+        result = await createDimension(componentId, dimensionData);
+      } else {
+        result = await updateDimension(initialData!.id!, dimensionData);
       }
 
-      const result = await response.json();
       onSuccess(result);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';

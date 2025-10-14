@@ -111,24 +111,83 @@ test.describe('Dimension Entry Workflow', () => {
 
           await expect(dimensionDialog).toBeVisible();
 
-          // Verify form fields are present
-          const dimensionTypeField = page.locator(
-            'input[name="dimension_type"], ' +
-            'select[name="dimension_type"], ' +
-            '[data-testid*="dimension-type"]'
-          );
-
+          // Verify form fields are present and fill them
           const nominalValueField = page.locator(
-            'input[name="nominal_value"], ' +
-            '[data-testid*="nominal-value"]'
+            'input[name="nominal_value_input"], ' +
+            'input[label*="Nominal Value" i], ' +
+            'input[placeholder*="value" i]'
+          ).first();
+
+          const unitField = page.locator(
+            'select[name="unit"], ' +
+            'input[name="unit"], ' +
+            '[data-testid*="unit"]'
+          ).first();
+
+          // Verify nominal value field is visible
+          await expect(nominalValueField).toBeVisible();
+
+          // Step 7: Type "11 3/4" in the Nominal Value field
+          await nominalValueField.click();
+          await nominalValueField.fill('11 3/4');
+          await page.waitForTimeout(300);
+
+          // Step 8: Verify "Inches (in)" is selected in Unit field
+          // The unit field should default to "in" or we need to select it
+          if (await unitField.count() > 0) {
+            // Check if it's a dropdown or input
+            const unitValue = await unitField.inputValue().catch(() => null);
+            if (unitValue !== 'in') {
+              // Try to click and select inches
+              await unitField.click();
+              const inchesOption = page.locator('li:has-text("Inches"), [data-value="in"]');
+              if (await inchesOption.count() > 0) {
+                await inchesOption.first().click();
+              }
+            }
+          }
+
+          // Step 9: Click the Save/Create button
+          const saveButton = page.locator(
+            'button:has-text("Save"), ' +
+            'button:has-text("Create"), ' +
+            'button[type="submit"]'
+          ).first();
+
+          await expect(saveButton).toBeVisible();
+          await saveButton.click();
+          await page.waitForTimeout(1000);
+
+          // Step 10: Check for error or success
+          // Note: Currently expecting error "Unexpected token '<', '<!DOCTYPE'..."
+          const errorAlert = page.locator(
+            '[role="alert"], ' +
+            '.MuiAlert-root, ' +
+            'text=/unexpected token/i, ' +
+            'text=/DOCTYPE/i'
           );
 
-          // At least one form field should be visible
-          const hasFormFields =
-            (await dimensionTypeField.count() > 0) ||
-            (await nominalValueField.count() > 0);
+          const successMessage = page.locator(
+            'text=/dimension.*created successfully/i, ' +
+            'text=/dimension.*saved/i'
+          );
 
-          expect(hasFormFields).toBeTruthy();
+          // Wait for either error or success
+          const hasError = await errorAlert.count() > 0;
+          const hasSuccess = await successMessage.count() > 0;
+
+          if (hasError) {
+            // Document the error for debugging
+            const errorText = await errorAlert.first().textContent();
+            console.log('API Error encountered:', errorText);
+            test.fail(true, `Backend API error: ${errorText}`);
+          } else if (hasSuccess) {
+            // Success! Dimension was created
+            await expect(successMessage.first()).toBeVisible();
+          } else {
+            // Unknown state - fail with info
+            test.fail(true, 'Unable to determine save result - no error or success message found');
+          }
         } else {
           test.skip(true, 'Unable to determine dimension entry state');
         }

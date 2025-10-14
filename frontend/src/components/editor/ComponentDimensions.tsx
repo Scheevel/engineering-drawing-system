@@ -87,10 +87,15 @@ const ComponentDimensions: React.FC<ComponentDimensionsProps> = ({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = (savedDimension: any) => {
     setDialogOpen(false);
+    setEditingDimension(null);
     onUpdate?.(); // Trigger parent to refetch data
-    showSuccess(editingDimension ? 'Dimension updated successfully' : 'Dimension created successfully');
+    showSuccess(savedDimension.id && editingDimension ? 'Dimension updated successfully' : 'Dimension created successfully');
+  };
+
+  const handleError = (error: Error) => {
+    showError(error.message || 'Failed to save dimension');
   };
 
   if (isLoading) {
@@ -199,10 +204,12 @@ const ComponentDimensions: React.FC<ComponentDimensionsProps> = ({
       {/* Dimension Form Dialog */}
       <DimensionFormDialog
         open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
+        mode={editingDimension ? 'edit' : 'create'}
         componentId={componentId}
-        dimension={editingDimension}
-        onSave={handleSave}
+        initialData={editingDimension}
+        onClose={() => setDialogOpen(false)}
+        onSuccess={handleSave}
+        onError={handleError}
       />
 
       {/* Delete Confirmation Dialog */}
