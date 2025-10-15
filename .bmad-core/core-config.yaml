@@ -2,13 +2,13 @@ markdownExploder: true
 qa:
   qaLocation: docs/qa
 prd:
-  prdFile: docs/prd.md
+  prdFile: null  # Fully sharded - no monolithic PRD file
   prdVersion: v4
   prdSharded: true
   prdShardedLocation: docs/prd
   epicFilePattern: epic-{n}*.md
 architecture:
-  architectureFile: docs/architecture.md
+  architectureFile: null  # Fully sharded - no monolithic architecture file
   architectureVersion: v4
   architectureSharded: true
   architectureShardedLocation: docs/architecture
@@ -16,7 +16,7 @@ customTechnicalDocuments: null
 devLoadAlwaysFiles:
   - docs/architecture/coding-standards.md
   - docs/architecture/tech-stack.md
-  - docs/architecture/source-tree.md
+  - docs/architecture/project-structure.md
 devDebugLog: .ai/debug-log.md
 devStoryLocation: docs/stories
 slashPrefix: BMad

@@ -151,6 +151,7 @@ erDiagram
         float nominal_value
         string tolerance
         string unit "default-mm"
+        string display_format "default-decimal"
         float confidence_score
         float location_x
         float location_y
@@ -165,6 +166,7 @@ erDiagram
         string value
         text description
         float confidence_score
+        string display_format "nullable"
     }
 
     %% Processing Tasks
@@ -441,11 +443,12 @@ erDiagram
 |--------|------|-------------|-------------|
 | id | UUID | PRIMARY KEY | Dimension identifier |
 | component_id | UUID | FK → components.id, NOT NULL | Parent component |
-| dimension_type | VARCHAR(50) | | length/width/height/diameter |
-| nominal_value | FLOAT | | Numeric dimension value |
-| tolerance | VARCHAR(50) | | Tolerance specification |
-| unit | VARCHAR(20) | DEFAULT 'mm' | Unit of measurement |
-| confidence_score | FLOAT | | OCR confidence |
+| dimension_type | VARCHAR(50) | | length/width/height/diameter/thickness/radius/depth/spacing/other |
+| nominal_value | FLOAT | | Numeric dimension value (decimal) |
+| tolerance | VARCHAR(50) | | Tolerance specification (e.g., ±0.01) |
+| unit | VARCHAR(20) | DEFAULT 'mm' | Unit of measurement (in/ft/mm/cm/m/yd) |
+| display_format | VARCHAR(10) | DEFAULT 'decimal' | Display format: 'decimal' or 'fraction' (Story 6.1) |
+| confidence_score | FLOAT | | OCR confidence (0.0-1.0) |
 | location_x | FLOAT | | X coordinate on drawing |
 | location_y | FLOAT | | Y coordinate on drawing |
 | extracted_text | VARCHAR(100) | | Raw OCR text |
@@ -454,6 +457,13 @@ erDiagram
 - `component`: Many-to-one
 
 **Cascade**: `ON DELETE CASCADE` via component relationship
+
+**Fractional Input Support (Story 6.1)**:
+- Users can enter fractional values (e.g., "11 3/4")
+- System stores `nominal_value=11.75` (decimal for calculations)
+- System stores `display_format='fraction'` (for UI display)
+- Frontend `parseFractionalInput()` utility handles conversion
+- GCD algorithm ensures proper fraction reduction (e.g., "6/8" → "3/4")
 
 ---
 
@@ -467,7 +477,8 @@ erDiagram
 | specification_type | VARCHAR(100) | | material/grade/standard |
 | value | VARCHAR(255) | | Specification value |
 | description | TEXT | | Detailed description |
-| confidence_score | FLOAT | | OCR confidence |
+| confidence_score | FLOAT | | OCR confidence (0.0-1.0) |
+| display_format | VARCHAR(10) | NULLABLE | Display format for numeric specifications (Story 6.1) |
 
 **Relationships**:
 - `component`: Many-to-one
@@ -768,6 +779,18 @@ CREATE INDEX idx_components_dynamic_data ON components USING GIN(dynamic_data);
 - ✅ Added `component_schema_fields` table
 - ✅ Added `components.schema_id` foreign key
 - ✅ Added `components.dynamic_data` JSONB column
+
+### Dimension & Specification Management (Story 6.1)
+**Migration**: `b02d6db199d3` (2025-10-13)
+- ✅ Added `dimensions.display_format` column (VARCHAR(10), default='decimal')
+- ✅ Added `specifications.display_format` column (VARCHAR(10), nullable)
+- ✅ Created `DimensionFormDialog.tsx` with fractional input support
+- ✅ Created `SpecificationFormDialog.tsx` for specification management
+- ✅ Implemented `parseFractionalInput()` utility with GCD algorithm
+- ✅ **Zero data loss**: Existing dimensions default to 'decimal' format
+- ✅ **WYSIWYG support**: Users can enter "11 3/4", system stores 11.75 + format='fraction'
+
+**Story 6.2**: Integrated dialogs with ComponentDimensions/ComponentSpecifications UI
 
 ---
 

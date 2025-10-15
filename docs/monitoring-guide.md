@@ -1,5 +1,8 @@
 # Engineering Drawing System - Monitoring Guide
 
+**Author**: Claude (AI-generated documentation, Epic 5 deliverable)
+**Created**: September 2025
+
 ## Overview
 
 The Engineering Drawing System includes a comprehensive monitoring stack for development environment observability. This guide provides developers with everything needed to effectively use the monitoring tools during development.

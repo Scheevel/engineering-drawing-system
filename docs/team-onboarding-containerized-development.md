@@ -1,5 +1,8 @@
 # Team Onboarding Guide: Containerized Development
 
+**Author**: Claude (AI-generated documentation, Epic 5 deliverable)
+**Created**: September 2025
+
 ## Welcome to Containerized Development!
 
 This guide helps team members transition from the hybrid Docker/native Node.js development environment to a fully containerized development workflow.

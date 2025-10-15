@@ -1,3 +1,18 @@
+---
+**ARCHIVE PRESERVATION NOTE**
+
+**Date Archived:** October 14, 2025
+**Reason for Preservation:** Original PRD for Epic 1 (Multiple Piece Mark Instances)
+**Why Kept:** Provides comprehensive original product vision, requirements rationale, and design decisions that led to the successful Epic 1 implementation (completed Aug 29, 2025 with 89/100 quality score). While implementation details exist in [docs/stories-archive/epic-1-completion-brief.md](../stories-archive/epic-1-completion-brief.md), this PRD captures the "why" behind feature decisions and serves as reference for future similar features. Contains valuable UX considerations, technical assumptions, and epic breakdown rationale not fully captured in completion documentation.
+
+**Status:** IMPLEMENTATION COMPLETED - This is historical reference only
+**Related Docs:**
+- [Epic 1 Completion Brief](../stories-archive/epic-1-completion-brief.md)
+- [Archived Story Files](../stories-archive/2025-q1/epic-1-multiple-instances/)
+- [Story Archive Index](../stories-archive/STORY_ARCHIVE_INDEX.md)
+
+---
+
 # Multiple Piece Mark Instances - Product Requirements Document (PRD)
 
 ## Goals and Background Context

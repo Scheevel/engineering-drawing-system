@@ -1,5 +1,8 @@
 # Docker Development Workflow
 
+**Author**: Claude (AI-generated documentation, Epic 5 deliverable)
+**Created**: September 2025
+
 ## Overview
 
 This document provides complete instructions for developing the Engineering Drawing Index System using Docker containers. The containerized approach provides unified lifecycle management, environment isolation, and development/production parity.

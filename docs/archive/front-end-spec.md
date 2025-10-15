@@ -1,3 +1,26 @@
+---
+**ARCHIVE PRESERVATION NOTE**
+
+**Date Archived:** October 14, 2025
+**Reason for Preservation:** Comprehensive UI/UX specification for advanced search page redesign with scope indicators and effectiveness metrics
+**Why Kept:** Contains detailed UX research, user personas, wireframe specifications, and interaction design patterns for a **planned but not yet implemented** feature enhancement. The search page currently exists in a simpler form without the scope selection, effectiveness panels, and progressive disclosure patterns described here. This spec represents a significant UX investment and design thinking that may be revived for future search improvements. Includes valuable component library definitions, accessibility requirements, and responsive design patterns applicable to other features.
+
+**Status:** FEATURE NOT IMPLEMENTED - May be revived for future sprint
+**Feature Scope:**
+- Scoped search field selection (piece marks, types, descriptions)
+- Search scope effectiveness panels
+- Progressive disclosure for advanced filters
+- Real-time scope coverage metrics
+
+**Current State:** Basic search functionality exists at [frontend/src/pages/SearchPage.tsx](../../frontend/src/pages/SearchPage.tsx) without these enhancements
+**Related Active Docs:**
+- [Flexible Component Detail Frontend Spec](../flexible-data-component-detail-front-end-spec.md) - Current active UX spec
+- [Architecture](../architecture.md) - Current system architecture
+
+**Decision Point:** If search enhancements are permanently abandoned, this file can be deleted. If feature is revived, this provides comprehensive design foundation.
+
+---
+
 # Engineering Drawing Index System UI/UX Specification
 
 This document defines the user experience goals, information architecture, user flows, and visual design specifications for Engineering Drawing Index System's user interface. It serves as the foundation for visual design and frontend development, ensuring a cohesive and user-centered experience.

@@ -1,5 +1,8 @@
 # Engineering Drawing Index System UI/UX Specification
 
+**Author**: Claude (AI-generated UX specification, Epic 3 deliverable)
+**Created**: September 2025
+
 This document defines the user experience goals, information architecture, user flows, and visual design specifications for the Engineering Drawing Index System's enhanced component detail card interface. It serves as the foundation for visual design and frontend development, ensuring a cohesive and user-centered experience that accommodates flexible, schema-driven component data while maintaining intuitive usability.
 
 ## Overall UX Goals & Principles

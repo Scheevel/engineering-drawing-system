@@ -1,3 +1,9 @@
+---
+**Author:** Claude (AI-generated documentation)
+**Created:** 2025 (estimated based on project timeline)
+**Purpose:** Functional, non-functional, and compatibility requirements for search enhancement
+---
+
 # Requirements
 
 ## Functional Requirements

@@ -1,3 +1,9 @@
+---
+**Author:** Claude (AI-generated documentation)
+**Created:** 2025 (estimated based on project timeline)
+**Purpose:** Technical integration guidelines and database schemas for brownfield enhancement
+---
+
 # Technical Constraints and Integration Requirements
 
 ## Existing Technology Stack

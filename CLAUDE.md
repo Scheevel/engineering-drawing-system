@@ -107,6 +107,21 @@ npm run lint:fix
 
 ```
 
+## Feature Tutorials
+
+**Executable guides that navigate you TO features** - Browser opens, highlights elements, pauses for your interaction
+
+**Quick Access:** Press `Cmd+Shift+P` → "Run Task" → Select tutorial
+
+### Available Tutorials
+- **Create Custom Schema** - Define new component types with custom fields
+- More tutorials in [docs/instruction/README.md](docs/instruction/README.md)
+
+### Creating New Tutorials
+See [docs/instruction/TUTORIAL-CREATION-GUIDE.md](docs/instruction/TUTORIAL-CREATION-GUIDE.md) for step-by-step instructions
+
+**Use tutorials when:** You forget how to access infrequently-used features or need to verify workflows after refactoring
+
 ## Key Development Workflows
 
 ### Adding a New API Endpoint

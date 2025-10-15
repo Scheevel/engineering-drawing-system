@@ -1,0 +1,7 @@
+# GIF files can be large, regenerate as needed
+*.gif
+*.webm
+*.mp4
+
+# Keep this .gitignore file
+!.gitignore
