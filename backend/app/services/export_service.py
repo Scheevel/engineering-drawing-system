@@ -49,8 +49,7 @@ class ExportService:
             # Build query with eager loading
             query = db.query(Component).options(
                 joinedload(Component.drawing).joinedload(Drawing.project),
-                joinedload(Component.dimensions) if request.include_dimensions else None,
-                joinedload(Component.specifications) if request.include_specifications else None
+                joinedload(Component.dimensions) if request.include_dimensions else None
             ).filter(Component.id.in_(component_ids))
             
             components = query.all()
@@ -78,14 +77,7 @@ class ExportService:
                         data[f"dimension_{i+1}_value"] = dim.nominal_value
                         data[f"dimension_{i+1}_unit"] = dim.unit
                         data[f"dimension_{i+1}_tolerance"] = dim.tolerance
-                
-                # Add specifications if requested
-                if request.include_specifications and component.specifications:
-                    for i, spec in enumerate(component.specifications):
-                        data[f"spec_{i+1}_type"] = spec.specification_type
-                        data[f"spec_{i+1}_value"] = spec.value
-                        data[f"spec_{i+1}_description"] = spec.description
-                
+
                 export_data.append(data)
             
             return export_data
@@ -252,8 +244,8 @@ class ExportService:
             },
             {
                 "name": "detailed",
-                "description": "Detailed export with dimensions and specifications",
-                "fields": ["piece_mark", "component_type", "quantity", "dimensions", "specifications"]
+                "description": "Detailed export with dimensions",
+                "fields": ["piece_mark", "component_type", "quantity", "dimensions"]
             },
             {
                 "name": "summary",
@@ -284,9 +276,7 @@ class ExportService:
             # Build query with efficient eager loading
             query = db.query(Drawing).options(
                 joinedload(Drawing.components)
-                    .joinedload(Component.dimensions),
-                joinedload(Drawing.components)
-                    .joinedload(Component.specifications)
+                    .joinedload(Component.dimensions)
             )
 
             # Apply filters
@@ -327,8 +317,7 @@ class ExportService:
                         "updated_at": component.updated_at,
                         "instance_identifier": component.instance_identifier,
                         "dynamic_data": component.dynamic_data or {},  # Story 7.3: Include flexible schema fields
-                        "dimensions": [DimensionResponse.from_orm(dim) for dim in component.dimensions] if component.dimensions else [],
-                        "specifications": [SpecificationResponse.from_orm(spec) for spec in component.specifications] if component.specifications else [],
+                        "dimensions": [DimensionResponse.from_orm(dim) for dim in component.dimensions] if component.dimensions else []
                     }
                     component_responses.append(ComponentResponse(**comp_data))
 

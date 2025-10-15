@@ -17,7 +17,6 @@ async def export_to_excel(
     component_ids: List[str],
     template_type: str = "standard",
     include_dimensions: bool = True,
-    include_specifications: bool = True,
     db: Session = Depends(get_db)
 ):
     """Export component data to Excel format"""
@@ -26,8 +25,7 @@ async def export_to_excel(
             component_ids=component_ids,
             format=ExportFormat.EXCEL,
             template_type=template_type,
-            include_dimensions=include_dimensions,
-            include_specifications=include_specifications
+            include_dimensions=include_dimensions
         )
         
         file_path = await export_service.export_data(export_request, db)
@@ -44,7 +42,6 @@ async def export_to_excel(
 async def export_to_csv(
     component_ids: List[str],
     include_dimensions: bool = True,
-    include_specifications: bool = True,
     db: Session = Depends(get_db)
 ):
     """Export component data to CSV format"""
@@ -52,8 +49,7 @@ async def export_to_csv(
         export_request = ExportRequest(
             component_ids=component_ids,
             format=ExportFormat.CSV,
-            include_dimensions=include_dimensions,
-            include_specifications=include_specifications
+            include_dimensions=include_dimensions
         )
         
         file_path = await export_service.export_data(export_request, db)
@@ -105,9 +101,9 @@ async def get_export_drawings(
     """
     Get all drawings with components for export (Story 7.2).
 
-    This endpoint loads ALL drawings (no pagination) with their associated components,
-    dimensions, and specifications using efficient eager loading. Designed for the
-    export page UI to preview and export component data.
+    This endpoint loads ALL drawings (no pagination) with their associated components
+    and dimensions using efficient eager loading. Designed for the export page UI to
+    preview and export component data.
 
     Query Parameters:
         - project_id: Optional UUID to filter drawings by project

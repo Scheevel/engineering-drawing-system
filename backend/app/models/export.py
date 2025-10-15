@@ -19,7 +19,6 @@ class ExportRequest(BaseModel):
     format: ExportFormat
     template_type: ExportTemplate = ExportTemplate.STANDARD
     include_dimensions: bool = True
-    include_specifications: bool = True
     include_images: bool = False
     custom_fields: Optional[List[str]] = None
     filters: Optional[Dict[str, Any]] = None
