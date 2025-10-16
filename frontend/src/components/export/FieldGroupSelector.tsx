@@ -16,28 +16,33 @@ import {
   Folder as ProjectIcon,
   Category as ComponentIcon,
   Settings as MetadataIcon,
+  Straighten as DimensionIcon,
 } from '@mui/icons-material';
 import { EXPORT_FIELD_GROUPS } from '../../config/exportFields.ts';
 import { ExportField, FieldGroup } from '../../types/export.types';
-import { getComponentDataFields } from '../../services/exportService.ts';
+import { getComponentDataFields, getDimensionFields } from '../../services/exportService.ts';
 
 interface FieldGroupSelectorProps {
   drawings: any[];
   selectedFields: string[];
   onFieldsChange: (selectedFields: string[]) => void;
+  dimensionFormatOption?: 'combined' | 'value_only';  // Story 7.4: Format option
 }
 
 const FieldGroupSelector: React.FC<FieldGroupSelectorProps> = ({
   drawings,
   selectedFields,
   onFieldsChange,
+  dimensionFormatOption = 'combined',  // Story 7.4: Default format
 }) => {
-  // Combine static fields with dynamic component fields
+  // Story 7.4: Combine static fields with dynamic component AND dimension fields
   const allFieldGroups = useMemo(() => {
     // Get static field keys to prevent duplicates
     const staticFields = EXPORT_FIELD_GROUPS.flatMap(g => g.fields);
     const staticFieldKeys = new Set(staticFields.map(f => f.key));
     const dynamicComponentFields = getComponentDataFields(drawings, staticFieldKeys);
+    // Story 7.4: Discover dimension fields
+    const dimensionFields = getDimensionFields(drawings, dimensionFormatOption);
 
     return EXPORT_FIELD_GROUPS.map(group => {
       if (group.id === 'components') {
@@ -46,10 +51,16 @@ const FieldGroupSelector: React.FC<FieldGroupSelectorProps> = ({
           ...group,
           fields: [...group.fields, ...dynamicComponentFields],
         };
+      } else if (group.id === 'dimension_values') {
+        // Story 7.4: Populate dimension_values group with discovered fields
+        return {
+          ...group,
+          fields: dimensionFields,
+        };
       }
       return group;
     });
-  }, [drawings]);
+  }, [drawings, dimensionFormatOption]);
 
   // Get icon for each group
   const getGroupIcon = (groupId: string) => {
@@ -60,8 +71,10 @@ const FieldGroupSelector: React.FC<FieldGroupSelectorProps> = ({
         return <ProjectIcon fontSize="small" sx={{ mr: 1 }} />;
       case 'components':
         return <ComponentIcon fontSize="small" sx={{ mr: 1 }} />;
-      case 'metadata':
+      case 'component_metadata':  // Fixed: was 'metadata'
         return <MetadataIcon fontSize="small" sx={{ mr: 1 }} />;
+      case 'dimension_values':  // Story 7.4: Icon for dimension values
+        return <DimensionIcon fontSize="small" sx={{ mr: 1 }} />;
       default:
         return null;
     }

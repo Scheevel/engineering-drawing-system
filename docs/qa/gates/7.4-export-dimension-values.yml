@@ -1,0 +1,285 @@
+story_id: "7.4"
+story_title: "Export Dimension Values in CSV"
+story_date: "2025-10-15"
+reviewer: "Quinn (QA Agent)"
+decision: "CONCERNS"
+risk_score: 6
+
+# PASS: Ready for implementation
+# CONCERNS: Issues identified but not blocking
+# FAIL: Critical issues prevent implementation
+# WAIVED: Issues acknowledged and accepted by stakeholder
+
+summary: |
+  Story 7.4 is well-structured with clear acceptance criteria and comprehensive technical
+  guidance. The component-centric export architecture (from Story 7.1.1) provides a solid
+  foundation for adding dimension columns.
+
+  Several medium-severity concerns exist around test coverage, performance validation,
+  and architectural decisions that should be addressed during implementation. However,
+  these do not block story approval.
+
+  The story is APPROVED with CONCERNS - implementation can proceed, but dev team should
+  pay special attention to the testing and performance issues documented below.
+
+prerequisite_check:
+  story_6_4_status: "ready"
+  story_6_4_required: true
+  story_6_4_notes: |
+    Story 6.4 (Prevent Duplicate Dimension Types) is marked as "Ready" but not yet
+    implemented. This story is a hard prerequisite for Story 7.4 because:
+
+    - Export requires 1:1 mapping between dimension type and CSV column
+    - Without duplicate prevention, ambiguity occurs (which "length" to export?)
+
+    RECOMMENDATION: Complete Story 6.4 implementation AND QA before starting Story 7.4.
+
+issues:
+  - id: "TEST-002"
+    severity: "medium"
+    category: "testing"
+    title: "Column Discovery Logic Test Coverage Insufficient"
+    description: |
+      The story describes a "two-pass approach" for column discovery (Technical Notes):
+      - Pass 1: Scan all components to determine which dimension types exist
+      - Pass 2: Generate CSV rows with discovered columns
+
+      However, the Definition of Done and test strategy don't explicitly call out tests
+      for this critical logic:
+
+      - What if 100 components exist but only 1 has a "radius" dimension?
+      - How to verify columns appear in correct order?
+      - How to test column discovery with zero dimensions?
+
+      Risk: Column discovery bugs could cause missing or incorrect columns in export.
+
+    recommendation: |
+      Add explicit test cases to Definition of Done:
+
+      ```typescript
+      describe('Dimension Column Discovery', () => {
+        it('discovers all dimension types across sparse dataset', () => {
+          // Dataset: 100 components, only 5 have "radius"
+          // Verify: "Radius" column appears for all 100 rows
+          // Verify: 95 components show empty string for radius
+        });
+
+        it('handles components with zero dimensions', () => {
+          // Dataset: 50 components with dimensions, 50 without
+          // Verify: Dimension columns appear based on first 50
+          // Verify: Last 50 show empty strings for all dimension columns
+        });
+
+        it('orders dimension columns alphabetically', () => {
+          // Dataset: Random dimension types (width, length, height)
+          // Verify: Columns appear as Height, Length, Width
+        });
+      });
+      ```
+
+      Add to Definition of Done:
+      - [ ] Unit tests for dimension type discovery logic
+      - [ ] Sparse data edge case tested (1% of components have specific type)
+
+  - id: "TEST-003"
+    severity: "medium"
+    category: "testing"
+    title: "Format Toggle Real-Time Update Not Explicitly Tested"
+    description: |
+      AC6 states "preview updates in real-time when format option changes", but the
+      Definition of Done doesn't include a specific test for this behavior.
+
+      This is critical UX functionality - users need immediate feedback when toggling
+      between "Combined Format" and "Value Only" format.
+
+      Risk: Format toggle could require full data reload, causing poor UX.
+
+    recommendation: |
+      Add specific test cases:
+
+      ```typescript
+      describe('Format Toggle', () => {
+        it('updates preview without reloading data', () => {
+          // Given: Preview showing "15.75 in ±0.01"
+          // When: Toggle to "Value Only"
+          // Then: Preview shows "15.75" without API call
+          // Verify: No loading indicator appears
+          // Verify: Update completes in <100ms
+        });
+
+        it('format toggle preserves other preview state', () => {
+          // Given: User has scrolled to row 50
+          // When: Toggle format option
+          // Then: Scroll position preserved
+          // And: Selected fields preserved
+        });
+      });
+      ```
+
+      Add to Definition of Done:
+      - [ ] Format toggle updates preview without data reload
+      - [ ] Format toggle performance (<100ms) verified
+
+  - id: "PERF-001"
+    severity: "medium"
+    category: "performance"
+    title: "Large Dataset Performance Thresholds Not Validated"
+    description: |
+      AC8 specifies performance requirements for 100+ components:
+      - Preview renders within 2 seconds for up to 100 components
+      - Export CSV generation completes within 5 seconds
+      - Warning if dataset exceeds 300 components
+
+      However, no guidance on:
+      - How to generate test dataset with 100-300 components with dimensions
+      - What performance degrades gracefully beyond 300 components?
+      - Should there be a hard limit (e.g., 500 components)?
+
+      Story's Test Data Requirements section only describes 19 components.
+
+      Risk: Performance requirements cannot be validated without proper test data.
+
+    recommendation: |
+      Document performance testing strategy:
+
+      1. Create performance test fixtures:
+         - `fixtures/perf_100_components.json` (100 components, 3-5 dimensions each)
+         - `fixtures/perf_300_components.json` (300 components, edge case)
+
+      2. Add performance test to Definition of Done:
+         ```typescript
+         describe('Export Performance', () => {
+           it('handles 100 components with dimensions within 2s', async () => {
+             const start = performance.now();
+             await renderExportPreview(perfFixture100);
+             const duration = performance.now() - start;
+             expect(duration).toBeLessThan(2000);
+           });
+
+           it('handles 300 components with graceful degradation', async () => {
+             const start = performance.now();
+             await renderExportPreview(perfFixture300);
+             const duration = performance.now() - start;
+             expect(duration).toBeLessThan(5000);
+             // Verify warning message shown
+             expect(screen.getByText(/large dataset/i)).toBeInTheDocument();
+           });
+         });
+         ```
+
+      3. Add to Definition of Done:
+         - [ ] Performance test fixtures created (100 and 300 components)
+         - [ ] Performance tests pass with actual timing measurements
+
+  - id: "ARCH-001"
+    severity: "low"
+    category: "architecture"
+    title: "Fractional to Decimal Conversion Strategy Unclear"
+    description: |
+      AC3 states: "value is converted to decimal format (e.g., 3/4 → 0.75, 15 3/4 → 15.75)"
+
+      Technical Notes mention: "Use existing `parseFractionalInput` utility for consistency"
+
+      However:
+      - `parseFractionalInput` is for INPUT parsing, not output formatting
+      - Dimension database stores `nominal_value` as decimal already
+      - If fractional display_format is used, where is the conversion?
+
+      The story conflates input parsing with display formatting.
+
+      Risk: Low - likely a documentation issue, not a functional issue.
+
+    recommendation: |
+      Clarify conversion strategy:
+
+      1. If `nominal_value` is stored as decimal (15.75), no conversion needed:
+         - Export simply uses `dimension.nominal_value.toFixed(2)`
+
+      2. If dimension has `display_format: "fractional"` metadata:
+         - That's a UI display hint, not storage format
+         - Export always uses decimal value from database
+
+      3. Update AC3 to clarify:
+         ```
+         GIVEN a component has a dimension with nominal_value=15.75
+         AND dimension has display_format="fractional" (UI shows "15 3/4")
+         WHEN that dimension is exported
+         THEN the value is exported as "15.75" (database value)
+         AND fractional display format is ignored in export
+         ```
+
+      This removes ambiguity about where conversion happens.
+
+strengths:
+  - "Clear architectural decision between eager loading vs batch fetch (Option A recommended)"
+  - "Two-pass column discovery approach is sound and well-explained"
+  - "Format options (Combined/Value Only) provide user flexibility"
+  - "Sparse data handling explicitly addressed (AC4)"
+  - "Performance requirements are specific and measurable"
+  - "Backward compatibility explicitly verified (AC11)"
+  - "Error handling for dimension load failures (AC10)"
+  - "Strong integration with existing export infrastructure (Story 7.1.1, 7.2)"
+
+dependencies_verified: true
+dependencies_notes: |
+  - Story 7.1.1 (CSV Export Component-Centric Refactor) - ✅ Completed
+  - Story 7.2 (Dedicated Export Page and API) - ✅ Completed
+  - Story 7.3 (Export Dynamic Schema Fields) - ✅ Completed
+  - Story 6.1 (Component Dimension Management UI) - ✅ Completed
+  - Story 6.2 (Integrate Dimension/Spec Dialogs) - ✅ Completed
+  - **Story 6.4 (Prevent Duplicate Dimension Types)** - ⚠️ Ready but NOT IMPLEMENTED
+
+  BLOCKER: Story 6.4 must be implemented and QA'd before Story 7.4 begins.
+
+test_coverage_assessment: "concerns"
+test_coverage_notes: |
+  Story includes good test scenarios but with gaps:
+  - ✅ Unit tests for formatting functions
+  - ✅ Integration tests for export with dimensions
+  - ✅ E2E test for full export workflow
+  - ⚠️ Column discovery logic not explicitly tested (TEST-002)
+  - ⚠️ Format toggle real-time update not explicitly tested (TEST-003)
+  - ⚠️ Performance testing lacks proper fixtures (PERF-001)
+
+  Test Data Requirements section only covers 19 components, insufficient for
+  performance validation at scale (100-300 components).
+
+nfr_assessment:
+  performance: "concerns"
+  performance_notes: |
+    AC7 and AC8 specify clear thresholds but lack validation strategy (PERF-001).
+    Recommend creating performance test fixtures and automated performance tests.
+
+  usability: "good"
+  usability_notes: |
+    Format toggle provides user flexibility. Real-time preview updates (AC6) enhance UX.
+    Pre-selected dimension fields (AC5) follow good defaults pattern.
+
+  reliability: "good"
+  reliability_notes: |
+    Error handling (AC10) covers dimension load failures gracefully.
+    Backward compatibility (AC11) ensures existing functionality unchanged.
+
+  maintainability: "good"
+  maintainability_notes: |
+    Clear code examples and architectural guidance. Eager loading approach (Option A)
+    is simpler than batch fetch, improving maintainability.
+
+recommendations:
+  - "Add explicit test cases for column discovery logic (TEST-002)"
+  - "Add explicit test for format toggle real-time updates (TEST-003)"
+  - "Create performance test fixtures for 100 and 300 components (PERF-001)"
+  - "Clarify fractional to decimal conversion strategy (ARCH-001)"
+  - "Ensure Story 6.4 is completed before starting Story 7.4"
+
+approval_conditions:
+  - "Story 6.4 (Prevent Duplicate Dimension Types) must be implemented and QA'd first"
+  - "Dev team acknowledges TEST-002, TEST-003, PERF-001 and commits to addressing during implementation"
+  - "Performance test fixtures will be created as part of implementation"
+
+next_steps:
+  - "SM: Verify Story 6.4 completion before moving Story 7.4 to InProgress"
+  - "SM: Add TEST-002, TEST-003, PERF-001 test cases to Definition of Done"
+  - "SM: Clarify AC3 regarding fractional conversion (ARCH-001)"
+  - "Dev Agent: Create performance test fixtures before beginning implementation"
+  - "QA Agent: Verify column discovery logic and format toggle performance during testing"

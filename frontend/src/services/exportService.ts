@@ -55,6 +55,74 @@ export const formatValue = (
 };
 
 /**
+ * Story 7.4: Discover dimension types across all components and generate dynamic columns
+ * Two-pass approach: (1) scan for types, (2) generate fields
+ *
+ * @param drawings - Array of drawings with components
+ * @param formatOption - Format option: 'combined' or 'value_only'
+ * @returns Array of ExportField objects for each dimension type found
+ */
+export const getDimensionFields = (
+  drawings: any[],
+  formatOption: 'combined' | 'value_only' = 'combined'
+): ExportField[] => {
+  const dimensionTypes = new Set<string>();
+
+  // Pass 1: Discover all dimension types across ALL components
+  drawings.forEach(drawing => {
+    if (drawing.components && drawing.components.length > 0) {
+      drawing.components.forEach((component: any) => {
+        if (component.dimensions && component.dimensions.length > 0) {
+          component.dimensions.forEach((dimension: any) => {
+            if (dimension.dimension_type) {
+              dimensionTypes.add(dimension.dimension_type);
+            }
+          });
+        }
+      });
+    }
+  });
+
+  // Pass 2: Generate ExportField objects for each discovered type
+  // Sort alphabetically for predictable column ordering
+  return Array.from(dimensionTypes).sort().map(type => ({
+    key: `dimension_${type}`,
+    label: type.charAt(0).toUpperCase() + type.slice(1), // "length" → "Length"
+    type: 'string',
+    group: 'dimension_values',
+    meta: { formatOption } // Store format preference
+  }));
+};
+
+/**
+ * Story 7.4: Format dimension value based on format option
+ *
+ * @param dimension - Dimension object with nominal_value, unit, tolerance
+ * @param formatOption - 'combined' (value + unit + tolerance) or 'value_only' (decimal only)
+ * @returns Formatted dimension string
+ */
+export const formatDimensionValue = (
+  dimension: any,
+  formatOption: 'combined' | 'value_only' = 'combined'
+): string => {
+  if (!dimension || dimension.nominal_value === null || dimension.nominal_value === undefined) {
+    return '';
+  }
+
+  const decimalValue = Number(dimension.nominal_value).toFixed(2);
+
+  if (formatOption === 'value_only') {
+    // Value Only format: "15.75"
+    return decimalValue;
+  } else {
+    // Combined format: "15.75 in ±0.01"
+    const unit = dimension.unit ? ` ${dimension.unit}` : '';
+    const tolerance = dimension.tolerance ? ` ±${dimension.tolerance}` : '';
+    return `${decimalValue}${unit}${tolerance}`;
+  }
+};
+
+/**
  * Dynamically discover component data fields from actual drawing data
  * Data-driven approach: export what exists, not what schema defines
  *
@@ -124,6 +192,7 @@ export const getComponentDataFields = (drawings: any[], existingFieldKeys?: Set<
 /**
  * Generate CSV content from drawings and selected fields (component-centric)
  * Each component becomes a separate row with drawing context fields
+ * Story 7.4: Added support for dimension columns
  */
 export const generateCSV = (
   drawings: any[],
@@ -138,8 +207,19 @@ export const generateCSV = (
       selectedFields.forEach(field => {
         let value: any;
 
+        // Story 7.4: Handle dimension fields (dimension_length, dimension_width, etc.)
+        if (field.key.startsWith('dimension_')) {
+          const dimensionType = field.key.replace('dimension_', '');
+          // Find dimension of this type for this component
+          const dimension = component.dimensions?.find(
+            (d: any) => d.dimension_type === dimensionType
+          );
+          // Format dimension value based on format option (from field.meta)
+          const formatOption = field.meta?.formatOption || 'combined';
+          value = formatDimensionValue(dimension, formatOption);
+        }
         // Handle component fields (primary data)
-        if (field.key.startsWith('component_')) {
+        else if (field.key.startsWith('component_')) {
           const componentKey = field.key.replace('component_', '');
           // Check top-level first, then check dynamic_data (for flexible schema fields)
           value = component[componentKey] || component.dynamic_data?.[componentKey];
@@ -155,7 +235,12 @@ export const generateCSV = (
         }
 
         // Format value based on field type (pass both component and drawing for URL generation)
-        row[field.label] = formatValue(value, field.type, { component, drawing });
+        // Note: dimension values are already formatted by formatDimensionValue
+        if (field.key.startsWith('dimension_')) {
+          row[field.label] = value || ''; // Empty string for sparse data
+        } else {
+          row[field.label] = formatValue(value, field.type, { component, drawing });
+        }
       });
 
       return row;

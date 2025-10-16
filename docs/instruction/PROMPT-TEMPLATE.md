@@ -15,8 +15,6 @@ Copy this template and fill in the bracketed sections:
 - UI Location: [e.g., /components/schema, main toolbar, settings page]
 - Primary Action: [e.g., "Create Schema button", "Export dropdown", "Edit icon"]
 - When to Use: [Brief description of use case]
-- Tutorial Type: [Core Feature | Refactor-Vulnerable]
-- Frequency: [Daily | Weekly | Monthly | Rarely]
 
 **Tutorial Structure:**
 
@@ -51,6 +49,7 @@ Copy this template and fill in the bracketed sections:
 - No testing: E2E navigates only, doesn't assert outcomes
 
 Generate the complete tutorial following templates in docs/instruction/_tutorial-template.*
+Ask me any clarifying questions
 ```
 
 ---

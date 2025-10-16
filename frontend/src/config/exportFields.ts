@@ -10,6 +10,7 @@ import { FieldGroup } from '../types/export.types';
  * - Drawing Context group is collapsed by default
  *
  * Dynamic component fields are added via getComponentDataFields() based on actual data.
+ * Story 7.4: Dimension Values group added dynamically via getDimensionFields()
  */
 export const EXPORT_FIELD_GROUPS: FieldGroup[] = [
   {
@@ -93,5 +94,11 @@ export const EXPORT_FIELD_GROUPS: FieldGroup[] = [
         group: 'component_metadata'
       }
     ]
+  },
+  {
+    id: 'dimension_values',
+    label: 'Dimension Values',
+    defaultExpanded: true,  // Story 7.4: Expanded by default, pre-selected
+    fields: []  // Dynamically populated via getDimensionFields() in ExportDialog
   }
 ];

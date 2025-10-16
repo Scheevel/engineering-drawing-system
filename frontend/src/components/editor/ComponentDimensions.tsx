@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -25,10 +25,11 @@ import {
   Delete as DeleteIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
-import { useQuery } from 'react-query';
+import { useQuery, useQueryClient } from 'react-query';
 import { getComponentDimensions, deleteDimension } from '../../services/api.ts';
 import { DimensionFormDialog } from '../dimensions/DimensionFormDialog.tsx';
 import { useSnackbar } from '../../contexts/SnackbarContext.tsx';
+import { formatDecimalToFraction } from '../../utils/fractionalParser.ts';
 
 interface ComponentDimensionsProps {
   componentId: string;
@@ -41,6 +42,7 @@ const ComponentDimensions: React.FC<ComponentDimensionsProps> = ({
   editMode = false,
   onUpdate,
 }) => {
+  const queryClient = useQueryClient();
   const { data: dimensions = [], isLoading, error } = useQuery(
     ['component-dimensions', componentId],
     () => getComponentDimensions(componentId),
@@ -55,6 +57,43 @@ const ComponentDimensions: React.FC<ComponentDimensionsProps> = ({
 
   // Snackbar for notifications
   const { showSuccess, showError } = useSnackbar();
+
+  // Format dimension value based on display_format preference
+  const formatDimensionValue = (dimension: any): string => {
+    const value = dimension.nominal_value;
+    const displayFormat = dimension.display_format || 'decimal';
+
+    if (displayFormat === 'fraction') {
+      return formatDecimalToFraction(value);
+    } else {
+      return value.toString();
+    }
+  };
+
+  // Story 6.3 AC2: Auto-scroll to newly added dimension
+  const previousDimensionCount = useRef<number>(dimensions.length);
+
+  useEffect(() => {
+    // Only auto-scroll when a new dimension is added (not on initial load or delete)
+    if (dimensions.length > previousDimensionCount.current && dimensions.length > 0) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        const lastDimensionElement = document.querySelector(
+          `[data-dimension-id="${dimensions[dimensions.length - 1].id}"]`
+        );
+
+        if (lastDimensionElement) {
+          lastDimensionElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+          });
+        }
+      }, 100);
+    }
+
+    // Update previous count
+    previousDimensionCount.current = dimensions.length;
+  }, [dimensions]);
 
   // Event handlers
   const handleAddClick = () => {
@@ -76,9 +115,13 @@ const ComponentDimensions: React.FC<ComponentDimensionsProps> = ({
     if (dimensionToDelete) {
       try {
         await deleteDimension(dimensionToDelete);
+
+        // Invalidate cache to trigger immediate UI update (Story 6.3 pattern)
+        queryClient.invalidateQueries(['component-dimensions', componentId]);
+
         setDeleteDialogOpen(false);
         setDimensionToDelete(null);
-        onUpdate?.(); // Trigger parent to refetch data
+        onUpdate?.(); // Trigger parent to refetch data (legacy support)
         showSuccess('Dimension deleted successfully');
       } catch (error) {
         showError('Failed to delete dimension');
@@ -156,7 +199,7 @@ const ComponentDimensions: React.FC<ComponentDimensionsProps> = ({
             </TableHead>
             <TableBody>
               {dimensions.map((dimension) => (
-                <TableRow key={dimension.id}>
+                <TableRow key={dimension.id} data-dimension-id={dimension.id}>
                   <TableCell>
                     <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
                       {dimension.dimension_type}
@@ -164,7 +207,7 @@ const ComponentDimensions: React.FC<ComponentDimensionsProps> = ({
                   </TableCell>
                   <TableCell>
                     <Typography variant="body1" fontWeight="bold">
-                      {dimension.nominal_value}
+                      {formatDimensionValue(dimension)}
                     </Typography>
                   </TableCell>
                   <TableCell>{dimension.unit}</TableCell>

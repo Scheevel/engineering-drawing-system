@@ -1,9 +1,10 @@
 # Database Schema - Engineering Drawing Index System
 
-**Document Version**: 1.0
-**Last Updated**: 2025-10-11
+**Document Version**: 1.1
+**Last Updated**: 2025-10-16
 **Database**: PostgreSQL 14 with PostGIS
 **Status**: As-Built (Current Production Schema)
+**Change Summary**: Added Story 6.4 (dimension duplicate prevention) and Story 6.5 (specification duplicate prevention - pending)
 
 ---
 
@@ -16,6 +17,7 @@ This document provides a comprehensive view of the Engineering Drawing Index Sys
 - **Component versioning and audit trails** for change tracking
 - **Search functionality** with saved searches per project
 - **OCR and processing task tracking** for async operations
+- **Dimension duplicate prevention** with API-level validation (Story 6.4)
 
 **Key Design Patterns**:
 - UUID primary keys for all entities
@@ -23,6 +25,7 @@ This document provides a comprehensive view of the Engineering Drawing Index Sys
 - Soft deletes via cascade constraints
 - Timestamp tracking (created_at, updated_at)
 - Composite unique constraints for data integrity
+- **Hybrid validation approach**: Database constraints for core entities, API-level validation for dimension uniqueness
 
 ---
 
@@ -47,6 +50,11 @@ erDiagram
     COMPONENTS ||--o{ SPECIFICATIONS : "has"
     COMPONENTS ||--o{ COMPONENT_AUDIT_LOGS : "tracks changes"
     COMPONENTS ||--o{ COMPONENT_VERSIONS : "versions"
+
+    %% Data Integrity Notes (As-Built)
+    %% Dimensions: Application-level validation (Story 6.4) prevents duplicate dimension_type per component
+    %% Note: NO database unique constraint - validation is API-level only (case-sensitive)
+    %% Specifications: NO duplicate prevention implemented yet (Story 6.5 pending)
 
     %% Projects Entity
     PROJECTS {
@@ -147,7 +155,7 @@ erDiagram
     DIMENSIONS {
         uuid id PK
         uuid component_id FK
-        string dimension_type
+        string dimension_type "API-validated-unique-per-component"
         float nominal_value
         string tolerance
         string unit "default-mm"
@@ -465,6 +473,15 @@ erDiagram
 - Frontend `parseFractionalInput()` utility handles conversion
 - GCD algorithm ensures proper fraction reduction (e.g., "6/8" → "3/4")
 
+**Duplicate Prevention (Story 6.4 - As-Built)**:
+- ✅ **Application-Level Validation**: API endpoints validate unique `dimension_type` per component
+- ✅ **Service Function**: `validate_dimension_type_unique()` in `dimension_service.py`
+- ✅ **API Enforcement**: POST `/api/v1/components/{id}/dimensions` returns 400 for duplicates
+- ✅ **Update Validation**: PUT `/api/v1/dimensions/{id}` prevents changing to existing type
+- ❌ **Database Constraint**: NO unique constraint on `(component_id, dimension_type)` - API-level only
+- ⚠️ **Case Sensitivity**: Current validation is **case-sensitive** ("length" ≠ "Length")
+- **Rationale**: Prevents export ambiguity in Story 7.4 (one dimension type = one CSV column)
+
 ---
 
 #### `specifications`
@@ -484,6 +501,14 @@ erDiagram
 - `component`: Many-to-one
 
 **Cascade**: `ON DELETE CASCADE` via component relationship
+
+**Duplicate Prevention (Story 6.5 - NOT IMPLEMENTED)**:
+- ❌ **No Validation**: Specifications can have duplicate `specification_type` per component
+- ❌ **No API Enforcement**: API does not prevent duplicate specification types
+- ❌ **No Database Constraint**: No unique constraint on `(component_id, specification_type)`
+- **Status**: Story 6.5 is "Ready" but not yet implemented
+- **Impact**: Multiple "material" specifications can exist on same component (causes export ambiguity)
+- **Planned**: Story 6.5 will add validation similar to dimensions (Story 6.4 pattern)
 
 ---
 
@@ -731,7 +756,7 @@ CREATE INDEX idx_components_dynamic_data ON components USING GIN(dynamic_data);
 
 ## Constraints and Data Integrity
 
-### Unique Constraints
+### Unique Constraints (Database-Level)
 
 | Table | Constraint | Purpose |
 |-------|-----------|---------|
@@ -740,6 +765,15 @@ CREATE INDEX idx_components_dynamic_data ON components USING GIN(dynamic_data);
 | `component_schema_fields` | `UNIQUE(schema_id, field_name)` | Unique field names per schema |
 | `components` | `UNIQUE(drawing_id, piece_mark, instance_identifier)` | Unique instances per drawing |
 | `drawings` | `UNIQUE(file_hash)` | Prevent duplicate file uploads |
+
+### Application-Level Constraints (API Validation Only)
+
+| Table | Validation Rule | Implementation | Status |
+|-------|----------------|----------------|--------|
+| `dimensions` | UNIQUE(component_id, dimension_type) | Story 6.4 - `validate_dimension_type_unique()` | ✅ Implemented (case-sensitive) |
+| `specifications` | UNIQUE(component_id, specification_type) | Story 6.5 - Planned | ❌ Not implemented |
+
+**Note**: Application-level constraints are enforced via API validation functions but lack database-level unique constraints. This provides flexibility but requires all data modifications to go through the API layer.
 
 ### Cascade Delete Rules
 
@@ -791,6 +825,36 @@ CREATE INDEX idx_components_dynamic_data ON components USING GIN(dynamic_data);
 - ✅ **WYSIWYG support**: Users can enter "11 3/4", system stores 11.75 + format='fraction'
 
 **Story 6.2**: Integrated dialogs with ComponentDimensions/ComponentSpecifications UI
+
+### Dimension Duplicate Prevention (Story 6.4)
+**Status**: ✅ Partially Implemented (API-level validation only)
+**Date**: October 2025
+**Migration**: None (no database schema changes)
+
+**Implementation Details**:
+- ✅ Created `dimension_service.py` with `validate_dimension_type_unique()` function
+- ✅ Integrated validation into POST `/api/v1/components/{id}/dimensions` endpoint
+- ✅ Integrated validation into PUT `/api/v1/dimensions/{id}` endpoint
+- ✅ Created comprehensive test suite in `test_dimension_duplicate_prevention.py`
+- ⚠️ Validation is **case-sensitive** (QA identified as medium-severity concern)
+- ❌ Database unique constraint on `(component_id, dimension_type)` NOT implemented
+
+**Rationale for API-Only Validation**:
+- Flexibility to allow admin/migration scripts to bypass if needed
+- Avoids migration complexity with existing duplicate data
+- Sufficient for current use case (all writes go through API)
+
+**Recommendation**: Consider adding database constraint in future for defense-in-depth
+
+### Specification Duplicate Prevention (Story 6.5)
+**Status**: ❌ NOT Implemented
+**Date**: Planned (Ready for implementation)
+
+**Planned Implementation** (mirrors Story 6.4):
+- Create `specification_service.py` with validation function
+- Integrate into specification POST/PUT endpoints
+- Add comprehensive test coverage
+- Consider case-insensitive validation (lesson learned from Story 6.4)
 
 ---
 
@@ -848,9 +912,36 @@ CREATE INDEX idx_components_dynamic_data ON components USING GIN(dynamic_data);
 ### Audit Trail
 ✅ **Comprehensive audit logging** via `component_audit_logs` and `component_versions`
 
+### API-Only Validation (Story 6.4)
+⚠️ **Application-level constraints without database enforcement**
+- **Risk**: Dimension uniqueness validation can be bypassed via direct database access
+- **Mitigation**: All production writes must go through API layer
+- **Impact**: Admin scripts, migrations, or direct DB access can create invalid data
+- **Recommendation**: Add database unique constraints for defense-in-depth (Story 6.4 AC6)
+- **Current Justification**: Flexibility for legacy data handling and migration scenarios
+
 ---
 
 ## Future Enhancements
+
+### Data Integrity Constraints (Defense-in-Depth)
+```sql
+-- Story 6.4: Add database-level unique constraint for dimensions
+-- Note: Clean up existing duplicates first using cleanup script
+ALTER TABLE dimensions
+  ADD CONSTRAINT uq_component_dimension_type
+  UNIQUE (component_id, dimension_type);
+
+-- Story 6.5: Add database-level unique constraint for specifications
+-- Note: Clean up existing duplicates first
+ALTER TABLE specifications
+  ADD CONSTRAINT uq_component_specification_type
+  UNIQUE (component_id, specification_type);
+
+-- Consider case-insensitive constraint using expression index
+CREATE UNIQUE INDEX idx_dimensions_component_type_lower
+  ON dimensions (component_id, LOWER(dimension_type));
+```
 
 ### Recommended Indexes (Performance)
 ```sql

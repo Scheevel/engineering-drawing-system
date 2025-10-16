@@ -8,11 +8,12 @@
 
 1. **Prerequisites:** Ensure dev environment is running
    ```bash
-   make dev-up              # Start all services
-   make seed-test-data      # Load test data (if needed)
+   docker-compose up -d         # Start all services
+   # OR
+   make dev-up                  # If using Makefile
    ```
 
-2. **Launch Tutorial:** Click the "▶️ Launch Tutorial" link in any tutorial markdown
+2. **Launch Tutorial:** Press `Cmd+Shift+P` → "Run Task" → Select tutorial
    - Browser opens automatically
    - Navigates to feature
    - Highlights interactive elements
@@ -26,14 +27,25 @@
 ## Available Tutorials
 
 ### Core Features
-- [Create Custom Schema](./schema-create-tutorial.md) - Build new component type schemas
-- [CSV Export with Filters](./csv-export-tutorial.md) - Export component data to spreadsheets
-- [Add Component Dimensions](./component-dimensions-tutorial.md) - Manage dimensional data
-- [Search & Filter Components](./search-filter-tutorial.md) - Find specific components
+- [Add Component Dimension with Duplicate Prevention](./dimension-duplicate-prevention-tutorial.md) - Prevent duplicate dimension types (Story 6.4)
+- [Export Component Dimensions to CSV](./export-dimension-values-tutorial.md) - Export dimension values in CSV format (Story 7.4)
 
-### Hyper-Specific (Refactor-Vulnerable)
-- [Verify Schema Change Audit Trail](./schema-audit-trail-tutorial.md) - Test audit logging after schema refactor
-- [Export Dynamic Schema Fields](./export-dynamic-fields-tutorial.md) - Verify custom fields appear in exports
+---
+
+## Tutorial File Locations
+
+**Markdown Documentation:** `docs/instruction/[feature-name]-tutorial.md`
+- Prerequisites, steps, troubleshooting
+- Quick launch instructions
+
+**Playwright Test Scripts:** `frontend/e2e/tutorials/[feature-name].spec.ts`
+- Automated navigation and highlighting
+- Pause for manual interaction
+- Optional GIF recording mode (@recordGif)
+
+**VSCode Tasks:** `.vscode/tasks.json`
+- Quick launch via `Cmd+Shift+P` → "Run Task"
+- Automatically runs from frontend directory
 
 ---
 
@@ -41,12 +53,11 @@
 
 See [TUTORIAL-CREATION-GUIDE.md](./TUTORIAL-CREATION-GUIDE.md) for step-by-step instructions on creating new tutorials.
 
-**Quick Template:**
-1. Copy `_tutorial-template.md` and `_tutorial-template.spec.ts`
-2. Rename to `[feature-name]-tutorial.*`
-3. Update markdown steps and Playwright navigation
-4. Add task to `.vscode/tasks.json`
-5. Add link to this README
+**Quick Steps:**
+1. Create test file: `frontend/e2e/tutorials/[feature-name].spec.ts`
+2. Create markdown: `docs/instruction/[feature-name]-tutorial.md`
+3. Add VSCode task to `.vscode/tasks.json`
+4. Add link to this README
 
 ---
 
@@ -54,8 +65,8 @@ See [TUTORIAL-CREATION-GUIDE.md](./TUTORIAL-CREATION-GUIDE.md) for step-by-step 
 
 **Tutorial won't launch from VSCode:**
 - Verify `.vscode/tasks.json` exists
-- Check task name matches markdown link
-- Try running manually: `npx playwright test [name]-tutorial.spec.ts --headed --debug`
+- Check task name matches the tutorial
+- Try running manually: `cd frontend && npx playwright test e2e/tutorials/[name].spec.ts --headed --debug`
 
 **Browser opens but feature not highlighted:**
 - Check Playwright selector in spec file
@@ -67,6 +78,11 @@ See [TUTORIAL-CREATION-GUIDE.md](./TUTORIAL-CREATION-GUIDE.md) for step-by-step 
 - Check Playwright is running in `--debug` mode
 - Try `PWDEBUG=1` environment variable
 
+**"No tests found" error:**
+- Ensure you're running from `frontend` directory
+- Check Playwright config points to `testDir: './e2e'`
+- Verify test file exists in `frontend/e2e/tutorials/`
+
 ---
 
-**Last Updated:** October 14, 2025
+**Last Updated:** October 15, 2025

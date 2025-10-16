@@ -2,10 +2,12 @@
  * Dimension Form Dialog Component
  *
  * Story 6.1: Dimension and Specification Management UI
+ * Story 6.4: Prevent Duplicate Dimension Types Per Component
  * Provides create/edit dialog for component dimensions with fractional input support
+ * and duplicate dimension type prevention
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -21,13 +23,15 @@ import {
   Box,
   Typography,
   FormHelperText,
+  Tooltip,
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { useForm, Controller } from 'react-hook-form';
+import { useMutation, useQuery, useQueryClient } from 'react-query';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { parseFractionalInput } from '../../utils/fractionalParser.ts';
-import { createDimension, updateDimension } from '../../services/api.ts';
+import { createDimension, updateDimension, getComponentDimensions } from '../../services/api.ts';
 
 // Dimension type options (verified against database 2025-10-13)
 const DIMENSION_TYPES = [
@@ -82,36 +86,6 @@ interface DimensionFormDialogProps {
   onError?: (error: Error) => void;
 }
 
-// Validation schema
-const dimensionSchema = yup.object({
-  dimension_type: yup
-    .string()
-    .required('Dimension type is required')
-    .oneOf(DIMENSION_TYPES.map(d => d.value)),
-  nominal_value_input: yup
-    .string()
-    .required('Nominal value is required')
-    .test('valid-format', 'Invalid format. Use decimal (15.75) or fraction (15 3/4)', (value) => {
-      if (!value) return false;
-      try {
-        parseFractionalInput(value);
-        return true;
-      } catch {
-        return false;
-      }
-    }),
-  unit: yup
-    .string()
-    .required('Unit is required')
-    .oneOf(UNITS.map(u => u.value)),
-  tolerance: yup
-    .string()
-    .nullable()
-    .max(50, 'Tolerance must be less than 50 characters'),
-  location_x: yup.number().nullable(),
-  location_y: yup.number().nullable(),
-});
-
 export const DimensionFormDialog: React.FC<DimensionFormDialogProps> = ({
   open,
   mode,
@@ -121,8 +95,68 @@ export const DimensionFormDialog: React.FC<DimensionFormDialogProps> = ({
   onSuccess,
   onError,
 }) => {
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  // Story 6.4: Fetch existing dimensions for duplicate validation
+  const { data: existingDimensions = [] } = useQuery(
+    ['component-dimensions', componentId],
+    () => getComponentDimensions(componentId),
+    { enabled: open } // Only fetch when dialog is open
+  );
+
+  // Story 6.4: Calculate which dimension types are already in use
+  const usedDimensionTypes = useMemo(() => {
+    if (mode === 'edit' && initialData) {
+      // In edit mode, allow keeping current type (exclude self)
+      return existingDimensions
+        .filter((d: DimensionData) => d.id !== initialData.id)
+        .map((d: DimensionData) => d.dimension_type);
+    }
+    // In create mode, all existing types are blocked
+    return existingDimensions.map((d: DimensionData) => d.dimension_type);
+  }, [existingDimensions, mode, initialData]);
+
+  // Story 6.4: Validation schema with duplicate checking
+  const dimensionSchema = useMemo(
+    () =>
+      yup.object({
+        dimension_type: yup
+          .string()
+          .required('Dimension type is required')
+          .oneOf(DIMENSION_TYPES.map(d => d.value))
+          .test(
+            'no-duplicate',
+            'This dimension type already exists for this component',
+            (value) => {
+              return !usedDimensionTypes.includes(value);
+            }
+          ),
+        nominal_value_input: yup
+          .string()
+          .required('Nominal value is required')
+          .test('valid-format', 'Invalid format. Use decimal (15.75) or fraction (15 3/4)', (value) => {
+            if (!value) return false;
+            try {
+              parseFractionalInput(value);
+              return true;
+            } catch {
+              return false;
+            }
+          }),
+        unit: yup
+          .string()
+          .required('Unit is required')
+          .oneOf(UNITS.map(u => u.value)),
+        tolerance: yup
+          .string()
+          .nullable()
+          .max(50, 'Tolerance must be less than 50 characters'),
+        location_x: yup.number().nullable(),
+        location_y: yup.number().nullable(),
+      }),
+    [usedDimensionTypes]
+  );
 
   const {
     control,
@@ -140,6 +174,30 @@ export const DimensionFormDialog: React.FC<DimensionFormDialogProps> = ({
       location_y: initialData?.location_y,
     },
   });
+
+  // React Query mutation for create/update with cache invalidation
+  const mutation = useMutation(
+    async (dimensionData: any) => {
+      if (mode === 'create') {
+        return await createDimension(componentId, dimensionData);
+      } else {
+        return await updateDimension(initialData!.id!, dimensionData);
+      }
+    },
+    {
+      onSuccess: (result) => {
+        // Story 6.3: Invalidate cache to trigger immediate UI update
+        queryClient.invalidateQueries(['component-dimensions', componentId]);
+        setError(null);
+        onSuccess(result);
+      },
+      onError: (err: Error) => {
+        const errorMessage = err.message || 'An error occurred';
+        setError(errorMessage);
+        onError?.(err);
+      },
+    }
+  );
 
   // Reset form when dialog opens with new initial data
   useEffect(() => {
@@ -165,7 +223,6 @@ export const DimensionFormDialog: React.FC<DimensionFormDialogProps> = ({
   }, [open, initialData, reset]);
 
   const onSubmit = async (data: DimensionFormData) => {
-    setLoading(true);
     setError(null);
 
     try {
@@ -182,21 +239,12 @@ export const DimensionFormDialog: React.FC<DimensionFormDialogProps> = ({
         location_y: data.location_y,
       };
 
-      // Call API to create/update dimension
-      let result;
-      if (mode === 'create') {
-        result = await createDimension(componentId, dimensionData);
-      } else {
-        result = await updateDimension(initialData!.id!, dimensionData);
-      }
-
-      onSuccess(result);
+      // Story 6.3: Use React Query mutation with automatic cache invalidation
+      mutation.mutate(dimensionData);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
       setError(errorMessage);
       onError?.(err as Error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -223,11 +271,28 @@ export const DimensionFormDialog: React.FC<DimensionFormDialogProps> = ({
                 control={control}
                 render={({ field }) => (
                   <Select {...field} label="Dimension Type *">
-                    {DIMENSION_TYPES.map((type) => (
-                      <MenuItem key={type.value} value={type.value}>
-                        {type.label}
-                      </MenuItem>
-                    ))}
+                    {DIMENSION_TYPES.map((type) => {
+                      const isDisabled = usedDimensionTypes.includes(type.value);
+                      return (
+                        <MenuItem
+                          key={type.value}
+                          value={type.value}
+                          disabled={isDisabled}
+                        >
+                          <Tooltip
+                            title={
+                              isDisabled
+                                ? `This component already has a '${type.label}' dimension. Edit the existing dimension instead.`
+                                : ''
+                            }
+                            placement="right"
+                            arrow
+                          >
+                            <span style={{ width: '100%' }}>{type.label}</span>
+                          </Tooltip>
+                        </MenuItem>
+                      );
+                    })}
                   </Select>
                 )}
               />
@@ -331,14 +396,14 @@ export const DimensionFormDialog: React.FC<DimensionFormDialogProps> = ({
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={onClose} disabled={loading}>
+          <Button onClick={onClose} disabled={mutation.isLoading}>
             Cancel
           </Button>
           <LoadingButton
             type="submit"
             variant="contained"
-            loading={loading}
-            disabled={loading}
+            loading={mutation.isLoading}
+            disabled={mutation.isLoading}
           >
             {mode === 'create' ? 'Create' : 'Save'}
           </LoadingButton>

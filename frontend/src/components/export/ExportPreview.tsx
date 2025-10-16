@@ -16,7 +16,7 @@ import {
   Alert,
 } from '@mui/material';
 import { ExportField } from '../../types/export.types';
-import { formatValue } from '../../services/exportService.ts';
+import { formatValue, formatDimensionValue } from '../../services/exportService.ts';
 
 interface ExportPreviewProps {
   drawings: any[];
@@ -46,24 +46,40 @@ const ExportPreview: React.FC<ExportPreviewProps> = ({
         selectedFields.forEach(field => {
           let value: any;
 
+          // Story 7.4: Handle dimension fields (dimension_length, dimension_width, etc.)
+          if (field.key.startsWith('dimension_')) {
+            const dimensionType = field.key.replace('dimension_', '');
+            // Find dimension of this type for this component
+            const dimension = component.dimensions?.find(
+              (d: any) => d.dimension_type === dimensionType
+            );
+            // Format dimension value based on format option (from field.meta)
+            const formatOption = field.meta?.formatOption || 'combined';
+            value = formatDimensionValue(dimension, formatOption);
+            // Store directly (already formatted by formatDimensionValue)
+            row[field.key] = value || '';
+          }
           // Handle component fields (primary data)
-          if (field.key.startsWith('component_')) {
+          else if (field.key.startsWith('component_')) {
             const componentKey = field.key.replace('component_', '');
             // Check top-level first, then check dynamic_data (for flexible schema fields)
             value = component[componentKey] || component.dynamic_data?.[componentKey];
+            // Format value for display (pass both component and drawing for URL generation)
+            row[field.key] = formatValue(value, field.type, { component, drawing });
           }
           // Handle drawing context fields (prefixed with 'drawing_')
           else if (field.key.startsWith('drawing_')) {
             const drawingKey = field.key.replace('drawing_', '');
             value = drawing[drawingKey];
+            // Format value for display
+            row[field.key] = formatValue(value, field.type, { component, drawing });
           }
           // Handle direct fields (backward compatibility)
           else {
             value = component[field.key] || drawing[field.key];
+            // Format value for display
+            row[field.key] = formatValue(value, field.type, { component, drawing });
           }
-
-          // Format value for display (pass both component and drawing for URL generation)
-          row[field.key] = formatValue(value, field.type, { component, drawing });
         });
 
         return row;

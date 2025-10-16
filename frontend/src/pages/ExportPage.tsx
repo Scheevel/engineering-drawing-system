@@ -32,10 +32,12 @@ import FieldGroupSelector from '../components/export/FieldGroupSelector.tsx';
 import ExportPreview from '../components/export/ExportPreview.tsx';
 import { EXPORT_FIELD_GROUPS } from '../config/exportFields.ts';
 import { ExportField } from '../types/export.types';
-import { safeExportDrawingsToCSV, getComponentDataFields } from '../services/exportService.ts';
+import { safeExportDrawingsToCSV, getComponentDataFields, getDimensionFields } from '../services/exportService.ts';
 
 const ExportPage: React.FC = () => {
   const [selectedFieldKeys, setSelectedFieldKeys] = useState<string[]>([]);
+  // Story 7.4: Dimension format option state
+  const [dimensionFormatOption, setDimensionFormatOption] = useState<'combined' | 'value_only'>('combined');
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -60,13 +62,15 @@ const ExportPage: React.FC = () => {
   const drawings = useMemo(() => data?.drawings || [], [data]);
   const componentCount = useMemo(() => data?.total_components || 0, [data]);
 
-  // Combine static fields with dynamic component fields
+  // Story 7.4: Combine static fields with dynamic component AND dimension fields
   const allFields = useMemo(() => {
     const staticFields = EXPORT_FIELD_GROUPS.flatMap(g => g.fields);
     const staticFieldKeys = new Set(staticFields.map(f => f.key));
     const dynamicComponentFields = getComponentDataFields(drawings, staticFieldKeys);
-    return [...staticFields, ...dynamicComponentFields];
-  }, [drawings]);
+    // Add dimension fields based on format option
+    const dimensionFields = getDimensionFields(drawings, dimensionFormatOption);
+    return [...staticFields, ...dynamicComponentFields, ...dimensionFields];
+  }, [drawings, dimensionFormatOption]);
 
   // Get ExportField objects for selected keys
   const selectedFields = useMemo(() => {
@@ -184,10 +188,35 @@ const ExportPage: React.FC = () => {
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
               Select Fields to Export
             </Typography>
+
+            {/* Story 7.4: Dimension Format Option Toggle */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, px: 1 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                Dimension Format:
+              </Typography>
+              <Button
+                variant={dimensionFormatOption === 'combined' ? 'contained' : 'outlined'}
+                size="small"
+                onClick={() => setDimensionFormatOption('combined')}
+                sx={{ textTransform: 'none' }}
+              >
+                Combined (15.75 in ±0.01)
+              </Button>
+              <Button
+                variant={dimensionFormatOption === 'value_only' ? 'contained' : 'outlined'}
+                size="small"
+                onClick={() => setDimensionFormatOption('value_only')}
+                sx={{ textTransform: 'none' }}
+              >
+                Value Only (15.75)
+              </Button>
+            </Box>
+
             <FieldGroupSelector
               drawings={drawings}
               selectedFields={selectedFieldKeys}
               onFieldsChange={setSelectedFieldKeys}
+              dimensionFormatOption={dimensionFormatOption}
             />
           </Paper>
 

@@ -19,6 +19,7 @@ from app.models.component import (
 )
 from app.services.component_service import ComponentService
 from app.services.search_service import SearchService
+from app.services.dimension_service import validate_dimension_type_unique
 import uuid
 from datetime import datetime
 
@@ -210,12 +211,22 @@ async def create_dimension(
         component_uuid = uuid.UUID(component_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid component ID format")
-    
+
     # Verify component exists
     component = db.query(Component).filter(Component.id == component_uuid).first()
     if not component:
         raise HTTPException(status_code=404, detail="Component not found")
-    
+
+    # Story 6.4: Validate dimension type uniqueness
+    try:
+        validate_dimension_type_unique(
+            db,
+            component_uuid,
+            dimension_data.dimension_type
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     dimension = await component_service.create_dimension(
         component_uuid, dimension_data, db
     )
@@ -232,13 +243,30 @@ async def update_dimension(
         dimension_uuid = uuid.UUID(dimension_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid dimension ID format")
-    
+
+    # Story 6.4: Get existing dimension to check if type is changing
+    existing_dimension = db.query(Dimension).filter(Dimension.id == dimension_uuid).first()
+    if not existing_dimension:
+        raise HTTPException(status_code=404, detail="Dimension not found")
+
+    # Story 6.4: Validate uniqueness if dimension_type is changing
+    if dimension_data.dimension_type != existing_dimension.dimension_type:
+        try:
+            validate_dimension_type_unique(
+                db,
+                existing_dimension.component_id,
+                dimension_data.dimension_type,
+                dimension_id=dimension_uuid  # Exclude self from check
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
     dimension = await component_service.update_dimension(
         dimension_uuid, dimension_data, db
     )
     if not dimension:
         raise HTTPException(status_code=404, detail="Dimension not found")
-    
+
     return dimension
 
 @router.delete("/dimensions/{dimension_id}")

@@ -17,6 +17,8 @@ import {
   generateCSV,
   getComponentDataFields,
   safeExportDrawingsToCSV,
+  getDimensionFields,
+  formatDimensionValue,
 } from '../exportService';
 import { ExportField } from '../../types/export.types';
 
@@ -61,6 +63,293 @@ describe('exportService', () => {
     it('should handle string values', () => {
       const result = formatValue('test value', 'string');
       expect(result).toBe('test value');
+    });
+  });
+
+  // Story 7.4: Dimension Value Formatting Tests
+  describe('formatDimensionValue', () => {
+    it('should format dimension in combined format (default)', () => {
+      const dimension = {
+        nominal_value: 15.75,
+        unit: 'in',
+        tolerance: '0.01',
+      };
+      const result = formatDimensionValue(dimension, 'combined');
+      expect(result).toBe('15.75 in ±0.01');
+    });
+
+    it('should format dimension in value_only format', () => {
+      const dimension = {
+        nominal_value: 15.75,
+        unit: 'in',
+        tolerance: '0.01',
+      };
+      const result = formatDimensionValue(dimension, 'value_only');
+      expect(result).toBe('15.75');
+    });
+
+    it('should handle dimension without tolerance in combined format', () => {
+      const dimension = {
+        nominal_value: 20.0,
+        unit: 'mm',
+      };
+      const result = formatDimensionValue(dimension, 'combined');
+      expect(result).toBe('20.00 mm');
+    });
+
+    it('should handle dimension without unit in combined format', () => {
+      const dimension = {
+        nominal_value: 10.5,
+        tolerance: '0.05',
+      };
+      const result = formatDimensionValue(dimension, 'combined');
+      expect(result).toBe('10.50 ±0.05');
+    });
+
+    it('should handle null/undefined dimension as empty string', () => {
+      expect(formatDimensionValue(null, 'combined')).toBe('');
+      expect(formatDimensionValue(undefined, 'combined')).toBe('');
+    });
+
+    it('should handle dimension with null nominal_value', () => {
+      const dimension = {
+        nominal_value: null,
+        unit: 'in',
+      };
+      expect(formatDimensionValue(dimension, 'combined')).toBe('');
+    });
+
+    it('should format decimal values with 2 decimal places', () => {
+      const dimension = {
+        nominal_value: 5,
+        unit: 'cm',
+      };
+      const result = formatDimensionValue(dimension, 'combined');
+      expect(result).toBe('5.00 cm');
+    });
+
+    it('should default to combined format when no format option provided', () => {
+      const dimension = {
+        nominal_value: 12.5,
+        unit: 'in',
+        tolerance: '0.02',
+      };
+      const result = formatDimensionValue(dimension);
+      expect(result).toBe('12.50 in ±0.02');
+    });
+  });
+
+  // Story 7.4: Dimension Field Discovery Tests
+  describe('getDimensionFields', () => {
+    it('should discover dimension types from components', () => {
+      const drawings = [
+        {
+          components: [
+            {
+              id: 'comp1',
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 15.75, unit: 'in' },
+                { dimension_type: 'width', nominal_value: 10.0, unit: 'in' },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const fields = getDimensionFields(drawings, 'combined');
+
+      expect(fields.length).toBe(2);
+      expect(fields.some(f => f.key === 'dimension_length')).toBe(true);
+      expect(fields.some(f => f.key === 'dimension_width')).toBe(true);
+      expect(fields.every(f => f.group === 'dimension_values')).toBe(true);
+    });
+
+    it('should sort dimension types alphabetically', () => {
+      const drawings = [
+        {
+          components: [
+            {
+              dimensions: [
+                { dimension_type: 'width', nominal_value: 10.0, unit: 'in' },
+                { dimension_type: 'length', nominal_value: 15.0, unit: 'in' },
+                { dimension_type: 'height', nominal_value: 5.0, unit: 'in' },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const fields = getDimensionFields(drawings, 'combined');
+
+      // Should be alphabetically ordered: height, length, width
+      expect(fields[0].key).toBe('dimension_height');
+      expect(fields[1].key).toBe('dimension_length');
+      expect(fields[2].key).toBe('dimension_width');
+    });
+
+    it('should capitalize dimension type labels', () => {
+      const drawings = [
+        {
+          components: [
+            {
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 15.75, unit: 'in' },
+                { dimension_type: 'diameter', nominal_value: 5.0, unit: 'in' },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const fields = getDimensionFields(drawings, 'combined');
+
+      const lengthField = fields.find(f => f.key === 'dimension_length');
+      const diameterField = fields.find(f => f.key === 'dimension_diameter');
+
+      expect(lengthField?.label).toBe('Length');
+      expect(diameterField?.label).toBe('Diameter');
+    });
+
+    it('should handle sparse dimension data across components', () => {
+      const drawings = [
+        {
+          components: [
+            {
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 15.0, unit: 'in' },
+              ],
+            },
+            {
+              dimensions: [
+                { dimension_type: 'width', nominal_value: 10.0, unit: 'in' },
+                { dimension_type: 'height', nominal_value: 5.0, unit: 'in' },
+              ],
+            },
+            {
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 20.0, unit: 'in' },
+                { dimension_type: 'diameter', nominal_value: 3.0, unit: 'in' },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const fields = getDimensionFields(drawings, 'combined');
+
+      // Should discover union: diameter, height, length, width (alphabetical)
+      expect(fields.length).toBe(4);
+      expect(fields[0].key).toBe('dimension_diameter');
+      expect(fields[1].key).toBe('dimension_height');
+      expect(fields[2].key).toBe('dimension_length');
+      expect(fields[3].key).toBe('dimension_width');
+    });
+
+    it('should handle components without dimensions', () => {
+      const drawings = [
+        {
+          components: [
+            { id: 'comp1', piece_mark: 'C63' }, // No dimensions
+            {
+              id: 'comp2',
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 15.0, unit: 'in' },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const fields = getDimensionFields(drawings, 'combined');
+
+      expect(fields.length).toBe(1);
+      expect(fields[0].key).toBe('dimension_length');
+    });
+
+    it('should handle drawings with no components', () => {
+      const drawings = [{ id: '1', file_name: 'test.jpg' }];
+      const fields = getDimensionFields(drawings, 'combined');
+      expect(fields).toEqual([]);
+    });
+
+    it('should handle empty dimensions array', () => {
+      const drawings = [
+        {
+          components: [
+            { id: 'comp1', dimensions: [] },
+          ],
+        },
+      ];
+      const fields = getDimensionFields(drawings, 'combined');
+      expect(fields).toEqual([]);
+    });
+
+    it('should store format option in field metadata', () => {
+      const drawings = [
+        {
+          components: [
+            {
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 15.0, unit: 'in' },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const fieldsCombined = getDimensionFields(drawings, 'combined');
+      const fieldsValueOnly = getDimensionFields(drawings, 'value_only');
+
+      expect(fieldsCombined[0].meta?.formatOption).toBe('combined');
+      expect(fieldsValueOnly[0].meta?.formatOption).toBe('value_only');
+    });
+
+    it('should deduplicate dimension types across multiple drawings', () => {
+      const drawings = [
+        {
+          components: [
+            {
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 15.0, unit: 'in' },
+                { dimension_type: 'width', nominal_value: 10.0, unit: 'in' },
+              ],
+            },
+          ],
+        },
+        {
+          components: [
+            {
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 20.0, unit: 'in' }, // Duplicate type
+                { dimension_type: 'height', nominal_value: 5.0, unit: 'in' },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const fields = getDimensionFields(drawings, 'combined');
+
+      // Should have 3 unique types: height, length, width
+      expect(fields.length).toBe(3);
+    });
+
+    it('should default to combined format when no format option provided', () => {
+      const drawings = [
+        {
+          components: [
+            {
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 15.0, unit: 'in' },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const fields = getDimensionFields(drawings);
+
+      expect(fields[0].meta?.formatOption).toBe('combined');
     });
   });
 
@@ -481,6 +770,227 @@ describe('exportService', () => {
       // Should still work without crashing
       expect(csv).toContain('Piece Mark');
       expect(csv).toContain('C63');
+    });
+
+    // Story 7.4: CSV Generation with Dimension Columns Tests
+    it('should export dimension values in combined format', () => {
+      const drawings = [
+        {
+          id: 'draw1',
+          file_name: 'test.jpg',
+          components: [
+            {
+              id: 'comp1',
+              piece_mark: 'G204',
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 15.75, unit: 'in', tolerance: '0.01' },
+                { dimension_type: 'width', nominal_value: 10.5, unit: 'in', tolerance: '0.02' },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const selectedFields: ExportField[] = [
+        { key: 'component_piece_mark', label: 'Piece Mark', type: 'string', group: 'components' },
+        { key: 'dimension_length', label: 'Length', type: 'string', group: 'dimension_values', meta: { formatOption: 'combined' } },
+        { key: 'dimension_width', label: 'Width', type: 'string', group: 'dimension_values', meta: { formatOption: 'combined' } },
+      ];
+
+      const csv = generateCSV(drawings, selectedFields);
+
+      // Should have headers
+      expect(csv).toContain('Piece Mark');
+      expect(csv).toContain('Length');
+      expect(csv).toContain('Width');
+
+      // Should have formatted dimension values
+      expect(csv).toContain('15.75 in ±0.01');
+      expect(csv).toContain('10.50 in ±0.02');
+    });
+
+    it('should export dimension values in value_only format', () => {
+      const drawings = [
+        {
+          id: 'draw1',
+          file_name: 'test.jpg',
+          components: [
+            {
+              id: 'comp1',
+              piece_mark: 'G204',
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 15.75, unit: 'in', tolerance: '0.01' },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const selectedFields: ExportField[] = [
+        { key: 'component_piece_mark', label: 'Piece Mark', type: 'string', group: 'components' },
+        { key: 'dimension_length', label: 'Length', type: 'string', group: 'dimension_values', meta: { formatOption: 'value_only' } },
+      ];
+
+      const csv = generateCSV(drawings, selectedFields);
+
+      // Should have decimal value only
+      expect(csv).toContain('15.75');
+      expect(csv).not.toContain(' in ');
+      expect(csv).not.toContain('±0.01');
+    });
+
+    it('should handle sparse dimension data in CSV (Story 7.4)', () => {
+      const drawings = [
+        {
+          id: 'draw1',
+          file_name: 'test.jpg',
+          components: [
+            {
+              id: 'comp1',
+              piece_mark: 'G204',
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 15.75, unit: 'in' },
+                { dimension_type: 'width', nominal_value: 10.5, unit: 'in' },
+              ],
+            },
+            {
+              id: 'comp2',
+              piece_mark: 'B55',
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 20.0, unit: 'in' },
+                // No width dimension
+              ],
+            },
+            {
+              id: 'comp3',
+              piece_mark: 'F106',
+              dimensions: [], // No dimensions at all
+            },
+          ],
+        },
+      ];
+
+      const selectedFields: ExportField[] = [
+        { key: 'component_piece_mark', label: 'Piece Mark', type: 'string', group: 'components' },
+        { key: 'dimension_length', label: 'Length', type: 'string', group: 'dimension_values', meta: { formatOption: 'combined' } },
+        { key: 'dimension_width', label: 'Width', type: 'string', group: 'dimension_values', meta: { formatOption: 'combined' } },
+      ];
+
+      const csv = generateCSV(drawings, selectedFields);
+
+      // Should have 3 component rows + 1 header = 4 lines
+      const lines = csv.split('\n').filter(line => line.trim());
+      expect(lines.length).toBe(4);
+
+      // All components should appear
+      expect(csv).toContain('G204');
+      expect(csv).toContain('B55');
+      expect(csv).toContain('F106');
+
+      // G204 should have both dimensions
+      expect(csv).toContain('15.75 in');
+      expect(csv).toContain('10.50 in');
+
+      // B55 should have length but empty width
+      expect(csv).toContain('20.00 in');
+    });
+
+    it('should combine component data and dimension data in CSV', () => {
+      const drawings = [
+        {
+          id: 'draw1',
+          file_name: 'bridge_01.pdf',
+          project_name: 'Bay Bridge',
+          components: [
+            {
+              id: 'comp1',
+              piece_mark: 'G204',
+              component_type: 'girder',
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 15.75, unit: 'in' },
+                { dimension_type: 'height', nominal_value: 5.5, unit: 'in' },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const selectedFields: ExportField[] = [
+        { key: 'drawing_project_name', label: 'Project', type: 'string', group: 'project' },
+        { key: 'component_piece_mark', label: 'Piece Mark', type: 'string', group: 'components' },
+        { key: 'component_component_type', label: 'Component Type', type: 'string', group: 'components' },
+        { key: 'dimension_length', label: 'Length', type: 'string', group: 'dimension_values', meta: { formatOption: 'combined' } },
+        { key: 'dimension_height', label: 'Height', type: 'string', group: 'dimension_values', meta: { formatOption: 'combined' } },
+      ];
+
+      const csv = generateCSV(drawings, selectedFields);
+
+      // Should contain all data types
+      expect(csv).toContain('Bay Bridge');
+      expect(csv).toContain('G204');
+      expect(csv).toContain('girder');
+      expect(csv).toContain('15.75 in');
+      expect(csv).toContain('5.50 in');
+    });
+
+    it('should default to combined format when meta.formatOption is missing', () => {
+      const drawings = [
+        {
+          id: 'draw1',
+          file_name: 'test.jpg',
+          components: [
+            {
+              id: 'comp1',
+              piece_mark: 'G204',
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 15.75, unit: 'in', tolerance: '0.01' },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const selectedFields: ExportField[] = [
+        { key: 'dimension_length', label: 'Length', type: 'string', group: 'dimension_values' }, // No meta.formatOption
+      ];
+
+      const csv = generateCSV(drawings, selectedFields);
+
+      // Should use combined format by default
+      expect(csv).toContain('15.75 in ±0.01');
+    });
+
+    it('should handle dimension types not present in data', () => {
+      const drawings = [
+        {
+          id: 'draw1',
+          file_name: 'test.jpg',
+          components: [
+            {
+              id: 'comp1',
+              piece_mark: 'G204',
+              dimensions: [
+                { dimension_type: 'length', nominal_value: 15.0, unit: 'in' },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const selectedFields: ExportField[] = [
+        { key: 'component_piece_mark', label: 'Piece Mark', type: 'string', group: 'components' },
+        { key: 'dimension_length', label: 'Length', type: 'string', group: 'dimension_values', meta: { formatOption: 'combined' } },
+        { key: 'dimension_diameter', label: 'Diameter', type: 'string', group: 'dimension_values', meta: { formatOption: 'combined' } },
+      ];
+
+      const csv = generateCSV(drawings, selectedFields);
+
+      // Should have length value
+      expect(csv).toContain('15.00 in');
+
+      // CSV should still be valid with empty diameter column
+      const lines = csv.split('\n').filter(line => line.trim());
+      expect(lines.length).toBe(2); // 1 header + 1 component
     });
   });
 
