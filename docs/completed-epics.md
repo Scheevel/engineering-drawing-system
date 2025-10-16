@@ -123,6 +123,8 @@ ComponentDimensions and ComponentSpecifications display components showed data i
 - **6.1**: Component Dimension and Specification Management UI - Full CRUD dialogs for dimensions and specifications
 - **6.1-fix**: Drawings List Display Bug Fix - Fixed component count display issue (showed "0" despite 71 components)
 - **6.2**: Integrate Dimension/Spec Dialogs with UI - Wired up dialogs to ComponentDimensions/ComponentSpecifications components
+- **6.3**: Dimension Immediate Display Fix - Fixed React Query cache invalidation to show new dimensions immediately after save
+- **6.4**: Prevent Duplicate Dimension Types - API-level validation prevents duplicate dimension types per component (blocks Story 7.4)
 
 ### Technical Implementation
 - **Backend**: Full CRUD API endpoints already existed (brownfield story)
@@ -130,13 +132,24 @@ ComponentDimensions and ComponentSpecifications display components showed data i
 - **Integration**: Wired dialogs into existing ComponentDimensions/ComponentSpecifications tables
 - **Validation**: react-hook-form + yup validation for dimension/spec data
 - **Fractional Input**: Support for fractional dimensions (e.g., "10 1/2 inches")
+- **Story 6.3**: React Query cache invalidation pattern for immediate UI updates
+- **Story 6.4**:
+  - Created `dimension_service.py` with `validate_dimension_type_unique()` function
+  - API validation in POST `/api/v1/components/{id}/dimensions` and PUT `/api/v1/dimensions/{id}`
+  - Comprehensive test suite with 11 test scenarios
+  - **NO database unique constraint** - API-level validation only (case-sensitive)
+  - Updated [database-schema.md](docs/architecture/database-schema.md) to document as-built validation approach
 
 ### Key Files Created/Modified
 - `frontend/src/components/editor/DimensionDialog.tsx` - Dimension CRUD dialog
 - `frontend/src/components/editor/SpecificationDialog.tsx` - Specification CRUD dialog
-- `frontend/src/components/editor/ComponentDimensions.tsx` - Integrated dimension dialogs
+- `frontend/src/components/editor/ComponentDimensions.tsx` - Integrated dimension dialogs + cache invalidation (6.3)
 - `frontend/src/components/editor/ComponentSpecifications.tsx` - Integrated spec dialogs
 - `frontend/src/components/drawing/FlexibleComponentCard.tsx` - Fixed API integration bugs
+- `backend/app/services/dimension_service.py` - Dimension validation service (6.4)
+- `backend/app/api/components.py` - API endpoint validation integration (6.4)
+- `backend/tests/test_dimension_duplicate_prevention.py` - Comprehensive test suite (6.4)
+- `docs/architecture/database-schema.md` - As-built documentation with Story 6.4 validation details
 
 ---
 
@@ -153,6 +166,7 @@ No export functionality existed. Engineers needed to manually copy data from UI 
 - **7.2**: Dedicated Export Page and API - Standalone export page at `/export` with enhanced UI
 - **7.3**: Export Dynamic Schema Fields - Support for flexible schema fields in exports
 - **7.3-implementation**: Implementation Summary - Consolidated export architecture documentation
+- **7.4**: Export Dimension Values in CSV - Dynamic dimension columns with format options (combined/value-only)
 
 **Critical Correction**: Story 7.1 initially implemented drawing-centric export (each row = 1 drawing with aggregated component data). Story 7.1.1 refactored to component-centric model (each row = 1 component with drawing context), which matches application's core purpose of component data indexing.
 
@@ -163,10 +177,18 @@ No export functionality existed. Engineers needed to manually copy data from UI 
 - **Preview**: Real-time CSV preview before download
 - **Backend**: Export API endpoints with efficient query optimization
 - **Frontend**: Standalone export page (note: Navigation links to `/export` but page implementation minimal)
+- **Story 7.4**:
+  - Two-pass dimension discovery: scan all components, generate columns dynamically
+  - `getDimensionFields()` - Auto-generates columns for each dimension type found
+  - `formatDimensionValue()` - Format options: "combined" (15.75 in ±0.01) or "value_only" (15.75)
+  - Dimension Values field group (expanded by default, pre-selected)
+  - Prerequisite: Story 6.4 ensures 1:1 dimension type mapping (prevents export ambiguity)
 
-### Key Files Created
+### Key Files Created/Modified
 - Backend: `api/export.py`, `services/export_service.py`
 - Frontend: `pages/ExportPage.tsx`, `components/ExportDialog.tsx`
+- Story 7.4: `services/exportService.ts` (dimension functions), `config/exportFields.ts` (dimension group)
+- Tests: `services/__tests__/exportService.test.ts` (dimension export test coverage)
 
 ---
 
